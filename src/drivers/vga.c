@@ -1,17 +1,34 @@
 #define VGA_ADDR 0xB8000
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
-#define VGA_ATTR 0x07
+#define VGA_DEFAULT_ATTR 0x07  // Light gray on black
 
 static volatile unsigned short *vga = (unsigned short*)VGA_ADDR;
 static int vga_x = 0, vga_y = 0;
+static unsigned char vga_current_attr = VGA_DEFAULT_ATTR;
 
 void vga_clear(void) {
     for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
-        vga[i] = (VGA_ATTR << 8) | ' ';
+        vga[i] = (vga_current_attr << 8) | ' ';
     }
     vga_x = 0;
     vga_y = 0;
+}
+
+void vga_set_color(unsigned char fg, unsigned char bg) {
+    vga_current_attr = (bg << 4) | (fg & 0x0F);
+}
+
+void vga_draw_rect(int x, int y, int width, int height, unsigned char color) {
+    // Create attribute: use color as background, same color as foreground for solid block
+    unsigned char attr = (color << 4) | color;
+    
+    for (int row = y; row < y + height && row < VGA_HEIGHT; row++) {
+        for (int col = x; col < x + width && col < VGA_WIDTH; col++) {
+            int pos = row * VGA_WIDTH + col;
+            vga[pos] = (attr << 8) | 0xDB;  // 0xDB = '█' filled block character
+        }
+    }
 }
 
 void vga_print(const char *s) {
@@ -31,7 +48,7 @@ void vga_print(const char *s) {
         }
         
         int pos = vga_y * VGA_WIDTH + vga_x;
-        vga[pos] = (VGA_ATTR << 8) | (unsigned char)*s;
+        vga[pos] = (vga_current_attr << 8) | (unsigned char)*s;
         vga_x = vga_x + 1;
         s++;
     }
@@ -52,7 +69,7 @@ void vga_putchar(char c) {
     }
     
     int pos = vga_y * VGA_WIDTH + vga_x;
-    vga[pos] = (VGA_ATTR << 8) | (unsigned char)c;
+    vga[pos] = (vga_current_attr << 8) | (unsigned char)c;
     vga_x = vga_x + 1;
 }
 

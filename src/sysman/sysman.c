@@ -1,96 +1,193 @@
 #include "../syscalls/user_syscalls.h"
-#include "../lib/heap.h"
 
-/* Helper to print hex from Ring 3 */
-static void print_hex_user(unsigned int val) {
-    char hex[11];
-    hex[0] = '0';
-    hex[1] = 'x';
-    for (int i = 9; i >= 2; i--) {
-        unsigned int digit = val & 0xF;
-        hex[i] = (digit < 10) ? ('0' + digit) : ('A' + digit - 10);
-        val >>= 4;
+/* Simple 5x7 font for drawing text */
+/* Each character is 5 pixels wide, 7 pixels tall */
+static const unsigned char font_H[] = {
+    0b10001,
+    0b10001,
+    0b10001,
+    0b11111,
+    0b10001,
+    0b10001,
+    0b10001
+};
+
+static const unsigned char font_e[] = {
+    0b00000,
+    0b00000,
+    0b01110,
+    0b10001,
+    0b11111,
+    0b10000,
+    0b01110
+};
+
+static const unsigned char font_l[] = {
+    0b01000,
+    0b01000,
+    0b01000,
+    0b01000,
+    0b01000,
+    0b01000,
+    0b01110
+};
+
+static const unsigned char font_o[] = {
+    0b00000,
+    0b00000,
+    0b01110,
+    0b10001,
+    0b10001,
+    0b10001,
+    0b01110
+};
+
+static const unsigned char font_space[] = {
+    0b00000,
+    0b00000,
+    0b00000,
+    0b00000,
+    0b00000,
+    0b00000,
+    0b00000
+};
+
+static const unsigned char font_M[] = {
+    0b10001,
+    0b11011,
+    0b10101,
+    0b10101,
+    0b10001,
+    0b10001,
+    0b10001
+};
+
+static const unsigned char font_a[] = {
+    0b00000,
+    0b00000,
+    0b01110,
+    0b00001,
+    0b01111,
+    0b10001,
+    0b01111
+};
+
+static const unsigned char font_h[] = {
+    0b10000,
+    0b10000,
+    0b10110,
+    0b11001,
+    0b10001,
+    0b10001,
+    0b10001
+};
+
+static const unsigned char font_i[] = {
+    0b00100,
+    0b00000,
+    0b01100,
+    0b00100,
+    0b00100,
+    0b00100,
+    0b01110
+};
+
+static const unsigned char font_O[] = {
+    0b01110,
+    0b10001,
+    0b10001,
+    0b10001,
+    0b10001,
+    0b10001,
+    0b01110
+};
+
+static const unsigned char font_S[] = {
+    0b01111,
+    0b10000,
+    0b10000,
+    0b01110,
+    0b00001,
+    0b00001,
+    0b11110
+};
+
+/* Draw a character at position (x, y) with color */
+static void draw_char(int x, int y, const unsigned char* font, unsigned char color) {
+    for (int row = 0; row < 7; row++) {
+        unsigned char line = font[row];
+        for (int col = 0; col < 5; col++) {
+            if (line & (1 << (4 - col))) {
+                syscall_put_pixel(x + col, y + row, color);
+            }
+        }
     }
-    hex[10] = '\0';
-    syscall_puts(hex);
 }
 
 /* Ring 3 system manager main function */
 void sysman_main_c(void) {
-    syscall_puts("\n================================\n");
-    syscall_puts("   MaahiOS System Manager\n");
-    syscall_puts("   Ring 3 + Paging Active\n");
-    syscall_puts("================================\n\n");
+    /* Clear screen to black */
+    syscall_clear_gfx(0);
     
-    syscall_puts("=== HEAP ALLOCATOR TEST ===\n\n");
-    
-    /* Initialize heap */
-    heap_init();
-    
-    /* Test 1: Request 2 pages directly via syscall (baseline) */
-    syscall_puts("Test 1: Direct syscall allocation (2 pages)\n");
-    void *page1 = syscall_alloc_page();
-    void *page2 = syscall_alloc_page();
-    
-    syscall_puts("Page 1: ");
-    print_hex_user((unsigned int)page1);
-    syscall_puts(" to ");
-    print_hex_user((unsigned int)page1 + 4095);
-    syscall_puts("\n");
-    
-    syscall_puts("Page 2: ");
-    print_hex_user((unsigned int)page2);
-    syscall_puts(" to ");
-    print_hex_user((unsigned int)page2 + 4095);
-    syscall_puts("\n\n");
-    
-    /* Test 2: First malloc - should trigger syscall for new page */
-    syscall_puts("Test 2: malloc(4000) - should trigger syscall\n");
-    void *block1 = malloc(4000);
-    syscall_puts("Allocated block at: ");
-    print_hex_user((unsigned int)block1);
-    syscall_puts("\n\n");
-    
-    /* Test 3: Second malloc (30 bytes) - should NOT trigger syscall */
-    syscall_puts("Test 3: malloc(30) - should reuse existing page\n");
-    syscall_puts("(Watch: no '[HEAP] Requesting new page' message)\n");
-    void *block2 = malloc(30);
-    syscall_puts("Allocated block at: ");
-    print_hex_user((unsigned int)block2);
-    syscall_puts("\n");
-    
-    /* Verify block2 is close to block1 (same page) */
-    unsigned int diff = (unsigned int)block2 - (unsigned int)block1;
-    syscall_puts("Distance from first block: ");
-    print_hex_user(diff);
-    syscall_puts(" bytes\n");
-    
-    if (diff < 4096) {
-        syscall_puts("SUCCESS: Both allocations in same page!\n");
-    } else {
-        syscall_puts("UNEXPECTED: Allocations in different pages\n");
+    /* Draw colorful gradient background */
+    for (int y = 0; y < 50; y++) {
+        for (int x = 0; x < 320; x++) {
+            unsigned char color = (x + y) / 4;
+            syscall_put_pixel(x, y, color);
+        }
     }
-    syscall_puts("\n");
     
-    /* Test 4: Show heap statistics */
-    unsigned int total_pages, used_bytes, free_bytes;
-    heap_stats(&total_pages, &used_bytes, &free_bytes);
+    /* Draw "Hello from MaahiOS" */
+    int start_x = 40;
+    int start_y = 80;
+    int char_spacing = 6;
     
-    syscall_puts("Heap Statistics:\n");
-    syscall_puts("  Total pages: ");
-    syscall_putchar('0' + total_pages);
-    syscall_puts("\n");
-    syscall_puts("  Used bytes: ");
-    print_hex_user(used_bytes);
-    syscall_puts("\n");
-    syscall_puts("  Free bytes: ");
-    print_hex_user(free_bytes);
-    syscall_puts("\n\n");
+    /* "Hello" in white */
+    draw_char(start_x + 0*char_spacing, start_y, font_H, 15);
+    draw_char(start_x + 1*char_spacing, start_y, font_e, 15);
+    draw_char(start_x + 2*char_spacing, start_y, font_l, 15);
+    draw_char(start_x + 3*char_spacing, start_y, font_l, 15);
+    draw_char(start_x + 4*char_spacing, start_y, font_o, 15);
     
-    syscall_puts("System ready.\n");
+    /* " from " */
+    draw_char(start_x + 6*char_spacing, start_y, font_space, 15);
     
-    /* Infinite loop (HLT is privileged, cannot use in Ring 3) */
+    /* "MaahiOS" in cyan */
+    int line2_x = start_x + 30;
+    int line2_y = start_y + 20;
+    draw_char(line2_x + 0*char_spacing, line2_y, font_M, 11);
+    draw_char(line2_x + 1*char_spacing, line2_y, font_a, 11);
+    draw_char(line2_x + 2*char_spacing, line2_y, font_a, 11);
+    draw_char(line2_x + 3*char_spacing, line2_y, font_h, 11);
+    draw_char(line2_x + 4*char_spacing, line2_y, font_i, 11);
+    draw_char(line2_x + 5*char_spacing, line2_y, font_O, 11);
+    draw_char(line2_x + 6*char_spacing, line2_y, font_S, 11);
+    
+    /* Draw some colorful boxes */
+    for (int i = 0; i < 10; i++) {
+        int box_x = 20 + i * 28;
+        int box_y = 150;
+        unsigned char color = i * 2 + 4;
+        
+        for (int y = 0; y < 30; y++) {
+            for (int x = 0; x < 25; x++) {
+                syscall_put_pixel(box_x + x, box_y + y, color);
+            }
+        }
+    }
+    
+    /* White border around screen */
+    for (int x = 0; x < 320; x++) {
+        syscall_put_pixel(x, 0, 15);
+        syscall_put_pixel(x, 199, 15);
+    }
+    for (int y = 0; y < 200; y++) {
+        syscall_put_pixel(0, y, 15);
+        syscall_put_pixel(319, y, 15);
+    }
+    
+    /* Infinite loop */
     while(1) {
-        /* Idle */
+        /* Idle in Ring 3 */
     }
 }

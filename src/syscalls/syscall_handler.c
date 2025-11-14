@@ -20,6 +20,13 @@
 extern void vga_putchar(char c);
 extern void vga_putint(int num);
 extern void vga_clear();
+extern void vga_set_color(unsigned char fg, unsigned char bg);
+extern void vga_draw_rect(int x, int y, int width, int height, unsigned char color);
+
+/* Forward declare graphics functions from graphics.c */
+extern void graphics_mode_13h(void);
+extern void put_pixel(int x, int y, unsigned char color);
+extern void clear_screen(unsigned char color);
 
 /* Forward declare VMM functions (which wrap PMM) */
 extern void *vmm_alloc_page();
@@ -162,6 +169,39 @@ unsigned int syscall_dispatcher(unsigned int syscall_num,
         case SYSCALL_CLEAR:
             // Clear screen
             kernel_clear();
+            break;
+            
+        case SYSCALL_SET_COLOR:
+            // arg1 = foreground color, arg2 = background color
+            vga_set_color((unsigned char)arg1, (unsigned char)arg2);
+            break;
+            
+        case SYSCALL_DRAW_RECT:
+            // arg1 = x, arg2 = y, arg3 = width, EDX stack = height, ESI stack = color
+            // For now, use arg3 as packed: low 16 bits = width+height, high byte = color
+            {
+                int x = (int)arg1;
+                int y = (int)arg2;
+                int width = arg3 & 0xFF;
+                int height = (arg3 >> 8) & 0xFF;
+                unsigned char color = (arg3 >> 16) & 0xFF;
+                vga_draw_rect(x, y, width, height, color);
+            }
+            break;
+            
+        case SYSCALL_GRAPHICS_MODE:
+            // Switch to 320x200 graphics mode
+            graphics_mode_13h();
+            break;
+            
+        case SYSCALL_PUT_PIXEL:
+            // arg1 = x, arg2 = y, arg3 = color
+            put_pixel((int)arg1, (int)arg2, (unsigned char)arg3);
+            break;
+            
+        case SYSCALL_CLEAR_GFX:
+            // arg1 = color
+            clear_screen((unsigned char)arg1);
             break;
             
         default:

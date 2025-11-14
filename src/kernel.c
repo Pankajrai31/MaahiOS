@@ -32,6 +32,9 @@ void idt_install_exception_handlers(void);
 /* Ring 3 manager functions */
 void ring3_switch(unsigned int entry_point);
 
+/* Graphics functions */
+void graphics_mode_13h(void);
+
 /* PMM functions */
 void pmm_init(struct multiboot_info *mbi);
 
@@ -71,6 +74,10 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
     /* Initialize Paging */
     paging_init(mbi);
     vga_print("\n");
+    
+    /* Switch to graphics mode before entering Ring 3 */
+    vga_print("Switching to graphics mode...\n");
+    graphics_mode_13h();
     
     /* Switch to Ring 3 and run sysman */
     if (mbi->flags & 0x8 && mbi->mods_count > 0) {

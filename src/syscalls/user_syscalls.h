@@ -47,4 +47,36 @@ void syscall_free_page(void *addr);
  */
 void syscall_clear();
 
+/**
+ * syscall_set_color - Set foreground and background text color
+ * fg: 0-15 (foreground color)
+ * bg: 0-15 (background color)
+ */
+void syscall_set_color(unsigned char fg, unsigned char bg);
+
+/**
+ * syscall_draw_rect - Draw a filled rectangle
+ * x, y: position (0-79 for x, 0-24 for y)
+ * width, height: size in characters
+ * color: attribute byte (fg | (bg << 4))
+ */
+void syscall_draw_rect(int x, int y, int width, int height, unsigned char color);
+
+/**
+ * syscall_graphics_mode - Switch to 320x200 graphics mode
+ */
+void syscall_graphics_mode(void);
+
+/**
+ * syscall_put_pixel - Draw a pixel in graphics mode
+ * x: 0-319, y: 0-199, color: 0-255
+ */
+void syscall_put_pixel(int x, int y, unsigned char color);
+
+/**
+ * syscall_clear_gfx - Clear graphics screen to color
+ * color: 0-255
+ */
+void syscall_clear_gfx(unsigned char color);
+
 #endif // USER_SYSCALLS_H

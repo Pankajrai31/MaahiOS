@@ -42,6 +42,11 @@ i686-elf-gcc -c "$SRC_DIR/drivers/vga.c" -o "$BINARIES_DIR/vga.o" \
     -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
 echo -e "${GREEN}✓ vga.o created${NC}"
 
+echo -e "\n${YELLOW}[2b2/5] Compiling graphics.c...${NC}"
+i686-elf-gcc -c "$SRC_DIR/drivers/graphics.c" -o "$BINARIES_DIR/graphics.o" \
+    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
+echo -e "${GREEN}✓ graphics.o created${NC}"
+
 echo -e "\n${YELLOW}[2c/5] Compiling gdt.c...${NC}"
 i686-elf-gcc -c "$SRC_DIR/managers/gdt/gdt.c" -o "$BINARIES_DIR/gdt.o" \
     -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
@@ -106,7 +111,7 @@ echo -e "${GREEN}✓ paging.o created${NC}"
 
 echo -e "\n${YELLOW}[3/5] Linking kernel (WITHOUT sysman)...${NC}"
 i686-elf-ld -T "$SRC_DIR/linker.ld" -o "$BUILD_DIR/kernel.bin" \
-    "$BINARIES_DIR/boot.o" "$BINARIES_DIR/kernel.o" "$BINARIES_DIR/vga.o" "$BINARIES_DIR/gdt.o" "$BINARIES_DIR/idt.o" "$BINARIES_DIR/interrupt_stubs.o" "$BINARIES_DIR/exception_handler.o" "$BINARIES_DIR/ring3.o" "$BINARIES_DIR/ring3_switch.o" "$BINARIES_DIR/user_syscalls.o" "$BINARIES_DIR/syscall_handler.o" "$BINARIES_DIR/pmm.o" "$BINARIES_DIR/paging.o"
+    "$BINARIES_DIR/boot.o" "$BINARIES_DIR/kernel.o" "$BINARIES_DIR/vga.o" "$BINARIES_DIR/graphics.o" "$BINARIES_DIR/gdt.o" "$BINARIES_DIR/idt.o" "$BINARIES_DIR/interrupt_stubs.o" "$BINARIES_DIR/exception_handler.o" "$BINARIES_DIR/ring3.o" "$BINARIES_DIR/ring3_switch.o" "$BINARIES_DIR/user_syscalls.o" "$BINARIES_DIR/syscall_handler.o" "$BINARIES_DIR/pmm.o" "$BINARIES_DIR/paging.o"
 echo -e "${GREEN}✓ kernel.bin created${NC}"
 
 echo -e "\n${YELLOW}[3b/5] Linking sysman.bin (separate user-mode binary)...${NC}"

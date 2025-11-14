@@ -79,3 +79,50 @@ void syscall_clear() {
         : "memory"
     );
 }
+
+void syscall_set_color(unsigned char fg, unsigned char bg) {
+    asm volatile(
+        "int $0x80"
+        :
+        : "a"(SYSCALL_SET_COLOR), "b"(fg), "c"(bg)
+        : "memory"
+    );
+}
+
+void syscall_draw_rect(int x, int y, int width, int height, unsigned char color) {
+    // Pack parameters: arg3 = width | (height << 8) | (color << 16)
+    unsigned int packed = width | (height << 8) | (color << 16);
+    asm volatile(
+        "int $0x80"
+        :
+        : "a"(SYSCALL_DRAW_RECT), "b"(x), "c"(y), "d"(packed)
+        : "memory"
+    );
+}
+
+void syscall_graphics_mode(void) {
+    asm volatile(
+        "int $0x80"
+        :
+        : "a"(SYSCALL_GRAPHICS_MODE)
+        : "memory"
+    );
+}
+
+void syscall_put_pixel(int x, int y, unsigned char color) {
+    asm volatile(
+        "int $0x80"
+        :
+        : "a"(SYSCALL_PUT_PIXEL), "b"(x), "c"(y), "d"(color)
+        : "memory"
+    );
+}
+
+void syscall_clear_gfx(unsigned char color) {
+    asm volatile(
+        "int $0x80"
+        :
+        : "a"(SYSCALL_CLEAR_GFX), "b"(color)
+        : "memory"
+    );
+}
