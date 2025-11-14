@@ -1,0 +1,18 @@
+# Build artifacts
+build/binaries/
+build/isodir/
+build/*.bin
+build/*.elf
+build/*.iso
+build/*.o
+build/sysman_disasm.txt
+
+# Editor files
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
