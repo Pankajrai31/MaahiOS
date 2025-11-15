@@ -110,7 +110,7 @@ static uint32_t find_highest_used_address(multiboot_info_t *mbi) {
 }
 
 // Initialize paging with identity mapping
-void paging_init(multiboot_info_t *mbi) {
+int paging_init(multiboot_info_t *mbi) {
     // Calculate where kernel and modules end
     uint32_t kernel_modules_end = find_highest_used_address(mbi);
     
@@ -146,9 +146,7 @@ void paging_init(multiboot_info_t *mbi) {
     // Reserve the full identity-mapped region in PMM
     pmm_mark_region_used(0x00100000, identity_map_end);
     
-    vga_puts("Paging enabled (identity: 0-");
-    vga_put_hex(identity_map_end);
-    vga_puts(")\n");
+    return 1;  /* Success */
 }
 
 // VMM wrapper functions (simple for now, full VMM in Phase 3)

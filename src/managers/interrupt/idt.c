@@ -26,7 +26,7 @@ void idt_set_entry(int index, unsigned int handler, unsigned short selector, uns
 }
 
 /* Initialize IDT table */
-void idt_init(void) {
+int idt_init(void) {
     int i;
     
     /* Set up IDT pointer */
@@ -37,11 +37,14 @@ void idt_init(void) {
     for (i = 0; i < IDT_ENTRIES; i++) {
         idt_set_entry(i, 0, 0, 0);
     }
+    
+    return 1;  /* Success */
 }
 
 /* Load IDT into CPU */
-void idt_load(void) {
+int idt_load(void) {
     asm volatile("lidt %0" : : "m"(idt_pointer));
+    return 1;  /* Success */
 }
 
 /* Register exception handlers and syscall handler */
@@ -67,7 +70,7 @@ extern void exception_stub_18(void);
 extern void exception_stub_19(void);
 extern void syscall_int(void);
 
-void idt_install_exception_handlers(void) {
+int idt_install_exception_handlers(void) {
     /* Type: 0x8F = Present, Ring 0, Trap Gate (allows nested exceptions, doesn't disable interrupts) */
     idt_set_entry(0, (unsigned int)exception_stub_0, 0x08, 0x8F);
     idt_set_entry(1, (unsigned int)exception_stub_1, 0x08, 0x8F);
@@ -99,4 +102,6 @@ void idt_install_exception_handlers(void) {
      * Bit 4-0: Type = 01110 (Trap Gate)
      */
     idt_set_entry(128, (unsigned int)syscall_int, 0x08, 0xEE);
+    
+    return 1;  /* Success */
 }

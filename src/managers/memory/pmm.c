@@ -45,9 +45,7 @@ static int bitmap_test(uint32_t page) {
 // Find the end of kernel (assuming kernel starts at 1MB)
 extern uint32_t kernel_end;  // Will be defined in linker script
 
-void pmm_init(multiboot_info_t *mbi) {
-    vga_puts("PMM: Initializing...\n");
-    
+int pmm_init(multiboot_info_t *mbi) {
     // Calculate total memory (upper memory in KB, convert to bytes)
     uint32_t total_memory = (mbi->mem_upper * 1024) + 0x100000;  // Add 1MB
     
@@ -104,9 +102,7 @@ void pmm_init(multiboot_info_t *mbi) {
     uint32_t bitmap_end = bitmap_addr + (bitmap_size * 4);
     pmm_mark_region_used(bitmap_addr, bitmap_end);
     
-    vga_puts("PMM: Ready. ");
-    vga_put_hex((total_pages - used_pages) * 4 / 1024);
-    vga_puts(" MB free\n");
+    return 1;  /* Success */
 }
 
 void pmm_mark_region_used(uint32_t start, uint32_t end) {

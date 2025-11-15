@@ -21,13 +21,13 @@ void vga_clear(void);
 void vga_print(const char *s);
 
 /* GDT manager functions */
-void gdt_init(void);
-void gdt_load(void);
+int gdt_init(void);
+int gdt_load(void);
 
 /* IDT manager functions */
-void idt_init(void);
-void idt_load(void);
-void idt_install_exception_handlers(void);
+int idt_init(void);
+int idt_load(void);
+int idt_install_exception_handlers(void);
 
 /* Ring 3 manager functions */
 void ring3_switch(unsigned int entry_point);
@@ -36,10 +36,10 @@ void ring3_switch(unsigned int entry_point);
 void graphics_mode_13h(void);
 
 /* PMM functions */
-void pmm_init(struct multiboot_info *mbi);
+int pmm_init(struct multiboot_info *mbi);
 
 /* Paging functions */
-void paging_init(struct multiboot_info *mbi);
+int paging_init(struct multiboot_info *mbi);
 
 /* VMM functions */
 void *vmm_alloc_page(void);
@@ -59,24 +59,62 @@ static void print_hex(unsigned int val) {
 
 void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
     vga_clear();
-    vga_print("=== MaahiOS Kernel Starting ===\n\n");
+    vga_print("=== MaahiOS Kernel v1.1 ===\n\n");
     
-    /* Setup GDT and IDT */
-    gdt_init();
-    gdt_load();
-    idt_init();
-    idt_install_exception_handlers();
-    idt_load();
+    /* Initialize GDT */
+    if (gdt_init()) {
+        vga_print("[OK] GDT initialized\n");
+    } else {
+        vga_print("[FAIL] GDT initialization failed\n");
+        while(1) __asm__ volatile("hlt");
+    }
+    
+    if (gdt_load()) {
+        vga_print("[OK] GDT loaded\n");
+    } else {
+        vga_print("[FAIL] GDT load failed\n");
+        while(1) __asm__ volatile("hlt");
+    }
+    
+    /* Initialize IDT */
+    if (idt_init()) {
+        vga_print("[OK] IDT initialized\n");
+    } else {
+        vga_print("[FAIL] IDT initialization failed\n");
+        while(1) __asm__ volatile("hlt");
+    }
+    
+    if (idt_install_exception_handlers()) {
+        vga_print("[OK] Exception handlers installed\n");
+    } else {
+        vga_print("[FAIL] Exception handler installation failed\n");
+        while(1) __asm__ volatile("hlt");
+    }
+    
+    if (idt_load()) {
+        vga_print("[OK] IDT loaded\n");
+    } else {
+        vga_print("[FAIL] IDT load failed\n");
+        while(1) __asm__ volatile("hlt");
+    }
     
     /* Initialize Physical Memory Manager */
-    pmm_init(mbi);
+    if (pmm_init(mbi)) {
+        vga_print("[OK] PMM initialized\n");
+    } else {
+        vga_print("[FAIL] PMM initialization failed\n");
+        while(1) __asm__ volatile("hlt");
+    }
     
     /* Initialize Paging */
-    paging_init(mbi);
-    vga_print("\n");
+    if (paging_init(mbi)) {
+        vga_print("[OK] Paging enabled\n");
+    } else {
+        vga_print("[FAIL] Paging initialization failed\n");
+        while(1) __asm__ volatile("hlt");
+    }
     
-    /* Switch to graphics mode before entering Ring 3 */
-    vga_print("Switching to graphics mode...\n");
+    vga_print("\n[INFO] Switching to graphics mode...\n");
     graphics_mode_13h();
     
     /* Switch to Ring 3 and run sysman */

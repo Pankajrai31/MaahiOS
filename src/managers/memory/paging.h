@@ -21,7 +21,7 @@ typedef uint32_t page_table_entry_t;
 typedef uint32_t page_directory_entry_t;
 
 // Paging functions
-void paging_init(multiboot_info_t *mbi);
+int paging_init(multiboot_info_t *mbi);
 void paging_enable();
 void paging_map_page(uint32_t *page_dir, uint32_t virt, uint32_t phys, uint32_t flags);
 void identity_map_region(uint32_t *page_dir, uint32_t start, uint32_t end);

@@ -65,7 +65,7 @@ void gdt_set_tss_entry(int index, unsigned int base, unsigned int limit) {
     gdt_set_entry(index, base, limit, 0x89, 0x40);
 }
 
-void gdt_init(void) {
+int gdt_init(void) {
     gdt_pointer.limit = (sizeof(struct gdt_entry) * GDT_ENTRIES) - 1;
     gdt_pointer.base = (unsigned int)&gdt;
     
@@ -92,9 +92,11 @@ void gdt_init(void) {
     tss.ss0 = 0x10;              /* Ring 0 Data Segment */
     tss.esp0 = 0x00090000;       /* Ring 0 stack at 576KB (safe kernel area) */
     tss.iomap_base = sizeof(struct tss_entry);  /* No I/O port bitmap */
+    
+    return 1;  /* Success */
 }
 
-void gdt_load(void) {
+int gdt_load(void) {
     asm volatile("lgdt %0" : : "m"(gdt_pointer));
     
     /* Reload code segment */
@@ -112,4 +114,6 @@ void gdt_load(void) {
     /* Load TSS - selector 0x28 = entry 5 * 8, no RPL bits needed for TSS */
     asm volatile("mov $0x28, %eax\n"
                  "ltr %ax");
+    
+    return 1;  /* Success */
 }

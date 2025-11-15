@@ -26,7 +26,7 @@ typedef struct {
 #define PAGES_PER_BYTE 8
 
 // PMM Functions
-void pmm_init(multiboot_info_t *mbi);
+int pmm_init(multiboot_info_t *mbi);
 void pmm_mark_region_used(uint32_t start, uint32_t end);
 void *pmm_alloc_page();
 void pmm_free_page(void *addr);
