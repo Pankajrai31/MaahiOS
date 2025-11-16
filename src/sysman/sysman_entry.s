@@ -7,16 +7,9 @@
  * Ring 3 Entry Point
  * 
  * When Ring 3 is entered via IRET, execution jumps directly here.
- * This is the very first code that runs in user mode.
+ * Data segments (DS/ES/FS/GS) are already set to 0x23 by ring3_switch()
  */
 sysman_main:
-    /* Set up Ring 3 data segments (IRET only loads CS and SS) */
-    mov $0x23, %ax
-    mov %ax, %ds
-    mov %ax, %es
-    mov %ax, %fs
-    mov %ax, %gs
-    
     /* Set up stack frame and call C code */
     push %ebp
     mov %esp, %ebp

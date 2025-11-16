@@ -71,22 +71,18 @@ i686-elf-gcc -c "$SRC_DIR/managers/ring3/ring3.c" -o "$BINARIES_DIR/ring3.o" \
     -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
 echo -e "${GREEN}✓ ring3.o created${NC}"
 
-echo -e "\n${YELLOW}[2e1/5] Assembling ring3_switch.s...${NC}"
-i686-elf-as "$SRC_DIR/managers/ring3/ring3_switch.s" -o "$BINARIES_DIR/ring3_switch.o"
-echo -e "${GREEN}✓ ring3_switch.o created${NC}"
-
 echo -e "\n${YELLOW}[2e2/5] Assembling sysman_entry.s...${NC}"
 i686-elf-as "$SRC_DIR/sysman/sysman_entry.s" -o "$BINARIES_DIR/sysman_entry.o"
 echo -e "${GREEN}✓ sysman_entry.o created${NC}"
 
-echo -e "\n${YELLOW}[2f/5] Compiling sysman.c...${NC}"
+echo -e "\n${YELLOW}[2f/5] Compiling sysman.c (position-independent)...${NC}"
 i686-elf-gcc -c "$SRC_DIR/sysman/sysman.c" -o "$BINARIES_DIR/sysman.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
+    -ffreestanding -fno-stack-protector -fPIC -m32
 echo -e "${GREEN}✓ sysman.o created (will be linked separately)${NC}"
 
-echo -e "\n${YELLOW}[2g/5] Compiling user_syscalls.c (OSDev inline asm)...${NC}"
+echo -e "\n${YELLOW}[2g/5] Compiling user_syscalls.c (position-independent)...${NC}"
 i686-elf-gcc -c "$SRC_DIR/syscalls/user_syscalls.c" -o "$BINARIES_DIR/user_syscalls.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
+    -ffreestanding -fno-stack-protector -fPIC -m32
 echo -e "${GREEN}✓ user_syscalls.o created${NC}"
 
 echo -e "\n${YELLOW}[2g1/5] Compiling heap.c (user library)...${NC}"
@@ -111,7 +107,7 @@ echo -e "${GREEN}✓ paging.o created${NC}"
 
 echo -e "\n${YELLOW}[3/5] Linking kernel (WITHOUT sysman)...${NC}"
 i686-elf-ld -T "$SRC_DIR/linker.ld" -o "$BUILD_DIR/kernel.bin" \
-    "$BINARIES_DIR/boot.o" "$BINARIES_DIR/kernel.o" "$BINARIES_DIR/vga.o" "$BINARIES_DIR/graphics.o" "$BINARIES_DIR/gdt.o" "$BINARIES_DIR/idt.o" "$BINARIES_DIR/interrupt_stubs.o" "$BINARIES_DIR/exception_handler.o" "$BINARIES_DIR/ring3.o" "$BINARIES_DIR/ring3_switch.o" "$BINARIES_DIR/user_syscalls.o" "$BINARIES_DIR/syscall_handler.o" "$BINARIES_DIR/pmm.o" "$BINARIES_DIR/paging.o"
+    "$BINARIES_DIR/boot.o" "$BINARIES_DIR/kernel.o" "$BINARIES_DIR/vga.o" "$BINARIES_DIR/graphics.o" "$BINARIES_DIR/gdt.o" "$BINARIES_DIR/idt.o" "$BINARIES_DIR/interrupt_stubs.o" "$BINARIES_DIR/exception_handler.o" "$BINARIES_DIR/ring3.o" "$BINARIES_DIR/user_syscalls.o" "$BINARIES_DIR/syscall_handler.o" "$BINARIES_DIR/pmm.o" "$BINARIES_DIR/paging.o"
 echo -e "${GREEN}✓ kernel.bin created${NC}"
 
 echo -e "\n${YELLOW}[3b/5] Linking sysman.bin (separate user-mode binary)...${NC}"

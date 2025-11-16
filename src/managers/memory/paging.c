@@ -120,10 +120,9 @@ int paging_init(multiboot_info_t *mbi) {
     // Round up to 4MB boundary for clean mapping
     reservation_end = (reservation_end + 0x003FFFFF) & 0xFFC00000;
     
-    // Reserve this region in PMM - page directory will be allocated AFTER this
-    pmm_mark_region_used(0x00100000, reservation_end);
+    // NOTE: PMM already marked kernel+modules+bitmap as used, so we don't need to mark again
     
-    // Allocate page directory - will be at reservation_end or higher
+    // Allocate page directory - PMM will give us first free page after bitmap
     kernel_page_directory = (uint32_t *)pmm_alloc_page();
     
     // Clear page directory
@@ -131,20 +130,27 @@ int paging_init(multiboot_info_t *mbi) {
         kernel_page_directory[i] = 0;
     }
     
-    // Identity map must include page directory + all page tables (add 1MB extra)
-    identity_map_end = (uint32_t)kernel_page_directory + 0x00100000;  // PD + 1MB
+    // Identity map must include kernel + modules + page directory + page tables
+    // Use reservation_end which already includes everything, then add space for page tables
+    identity_map_end = reservation_end;
+    
+    // Add space for page directory and page tables (1MB should be enough)
+    if ((uint32_t)kernel_page_directory + 0x00100000 > identity_map_end) {
+        identity_map_end = (uint32_t)kernel_page_directory + 0x00100000;
+    }
     
     // Round up to 4MB boundary
     identity_map_end = (identity_map_end + 0x003FFFFF) & 0xFFC00000;
     
-    // Identity map the region (includes page directory and page tables)
+    // CRITICAL: Reserve the identity-mapped region in PMM BEFORE identity mapping
+    // This ensures page tables allocated during identity_map_region() come from high memory
+    pmm_mark_region_used(0x00100000, identity_map_end);
+    
+    // Identity map the region (includes kernel, modules, page directory and page tables)
     identity_map_region(kernel_page_directory, 0x00000000, identity_map_end);
     
     // Enable paging
     paging_enable();
-    
-    // Reserve the full identity-mapped region in PMM
-    pmm_mark_region_used(0x00100000, identity_map_end);
     
     return 1;  /* Success */
 }

@@ -2,8 +2,8 @@ ENTRY(sysman_main)
 
 SECTIONS
 {
-    /* User mode code - GRUB loads modules at 0x00115000 (observed from boot) */
-    . = 0x00115000;
+    /* Position-Independent Executable - works at any address GRUB loads it */
+    . = 0;
 
     .text BLOCK(4K) : ALIGN(4K)
     {

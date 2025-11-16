@@ -45,6 +45,9 @@ int paging_init(struct multiboot_info *mbi);
 void *vmm_alloc_page(void);
 void vmm_free_page(void *addr);
 
+/* Global variable for exception handler to restart sysman */
+unsigned int sysman_entry_point = 0;
+
 /* Helper function to print hex */
 static void print_hex(unsigned int val) {
     char hex[9];
@@ -114,13 +117,24 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
         while(1) __asm__ volatile("hlt");
     }
     
-    vga_print("\n[INFO] Switching to graphics mode...\n");
-    graphics_mode_13h();
+    vga_print("\n[INFO] Kernel initialization complete.\n");
+    vga_print("[INFO] Starting sysman (Ring 3)...\n");
     
     /* Switch to Ring 3 and run sysman */
     if (mbi->flags & 0x8 && mbi->mods_count > 0) {
         struct multiboot_module *mod = (struct multiboot_module *)mbi->mods_addr;
-        ring3_switch(mod[0].mod_start);
+        sysman_entry_point = mod[0].mod_start;
+        
+        vga_print("[DEBUG] Sysman loaded at: 0x");
+        print_hex(sysman_entry_point);
+        vga_print("\n[DEBUG] Sysman size: ");
+        print_hex(mod[0].mod_end - mod[0].mod_start);
+        vga_print(" bytes\n");
+        vga_print("[DEBUG] About to switch to Ring 3...\n");
+        
+        ring3_switch(sysman_entry_point);
+        
+        vga_print("[ERROR] Ring 3 switch returned - should never happen!\n");
     }
     
     /* Should never reach here */
