@@ -29,6 +29,9 @@ int idt_init(void);
 int idt_load(void);
 int idt_install_exception_handlers(void);
 
+/* PIC functions */
+void pic_remap(void);
+
 /* Ring 3 manager functions */
 void ring3_switch(unsigned int entry_point);
 
@@ -40,6 +43,22 @@ int pmm_init(struct multiboot_info *mbi);
 
 /* Paging functions */
 int paging_init(struct multiboot_info *mbi);
+
+/* PIT and Scheduler functions */
+void pit_init(unsigned int frequency);
+void scheduler_init();
+int scheduler_create_task(void (*entry_point)(), const char *name);
+void scheduler_enable();
+
+/* Task entry points */
+extern void task1_main();
+extern void task2_main();
+extern void task3_main();
+
+/* VGA drawing functions */
+extern void vga_set_color(unsigned char fg, unsigned char bg);
+extern void vga_draw_box(int x, int y, int width, int height);
+extern void vga_print_at(int x, int y, const char *s);
 
 /* VMM functions */
 void *vmm_alloc_page(void);
@@ -60,83 +79,148 @@ static void print_hex(unsigned int val) {
     vga_print(hex);
 }
 
+/* Port I/O functions */
+static inline void outb(unsigned short port, unsigned char val) {
+    asm volatile("outb %0, %1" : : "a"(val), "Nd"(port));
+}
+
+static inline unsigned char inb(unsigned short port) {
+    unsigned char ret;
+    asm volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
+    return ret;
+}
+
+/* Remap PIC to avoid conflict with CPU exceptions */
+void pic_remap(void) {
+    /* Save masks */
+    unsigned char mask1 = inb(0x21);
+    unsigned char mask2 = inb(0xA1);
+    
+    /* Start initialization */
+    outb(0x20, 0x11);  /* ICW1: Init + ICW4 */
+    outb(0xA0, 0x11);
+    
+    /* ICW2: Vector offsets (remap IRQ 0-7 to INT 32-39, IRQ 8-15 to INT 40-47) */
+    outb(0x21, 0x20);  /* Master PIC starts at 32 */
+    outb(0xA1, 0x28);  /* Slave PIC starts at 40 */
+    
+    /* ICW3: Cascading */
+    outb(0x21, 0x04);  /* Master: Slave on IRQ2 */
+    outb(0xA1, 0x02);  /* Slave: Cascade identity */
+    
+    /* ICW4: 8086 mode */
+    outb(0x21, 0x01);
+    outb(0xA1, 0x01);
+    
+    /* Restore masks */
+    outb(0x21, mask1);
+    outb(0xA1, mask2);
+}
+
 void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
     vga_clear();
     vga_print("=== MaahiOS Kernel v1.1 ===\n\n");
     
     /* Initialize GDT */
-    if (gdt_init()) {
-        vga_print("[OK] GDT initialized\n");
-    } else {
+    if (!gdt_init()) {
         vga_print("[FAIL] GDT initialization failed\n");
         while(1) __asm__ volatile("hlt");
     }
     
-    if (gdt_load()) {
-        vga_print("[OK] GDT loaded\n");
-    } else {
+    if (!gdt_load()) {
         vga_print("[FAIL] GDT load failed\n");
         while(1) __asm__ volatile("hlt");
     }
     
     /* Initialize IDT */
-    if (idt_init()) {
-        vga_print("[OK] IDT initialized\n");
-    } else {
+    if (!idt_init()) {
         vga_print("[FAIL] IDT initialization failed\n");
         while(1) __asm__ volatile("hlt");
     }
     
-    if (idt_install_exception_handlers()) {
-        vga_print("[OK] Exception handlers installed\n");
-    } else {
+    if (!idt_install_exception_handlers()) {
         vga_print("[FAIL] Exception handler installation failed\n");
         while(1) __asm__ volatile("hlt");
     }
     
-    if (idt_load()) {
-        vga_print("[OK] IDT loaded\n");
-    } else {
+    if (!idt_load()) {
         vga_print("[FAIL] IDT load failed\n");
         while(1) __asm__ volatile("hlt");
     }
     
+    /* Remap PIC to avoid conflict with exceptions */
+    pic_remap();
+    
     /* Initialize Physical Memory Manager */
-    if (pmm_init(mbi)) {
-        vga_print("[OK] PMM initialized\n");
-    } else {
+    if (!pmm_init(mbi)) {
         vga_print("[FAIL] PMM initialization failed\n");
         while(1) __asm__ volatile("hlt");
     }
     
     /* Initialize Paging */
-    if (paging_init(mbi)) {
-        vga_print("[OK] Paging enabled\n");
-    } else {
+    if (!paging_init(mbi)) {
         vga_print("[FAIL] Paging initialization failed\n");
         while(1) __asm__ volatile("hlt");
     }
     
-    vga_print("\n[INFO] Kernel initialization complete.\n");
-    vga_print("[INFO] Starting sysman (Ring 3)...\n");
+    /* Enable interrupts globally */
+    asm volatile("sti");
     
-    /* Switch to Ring 3 and run sysman */
-    if (mbi->flags & 0x8 && mbi->mods_count > 0) {
+    /* Initialize kernel heap */
+    extern void kheap_init(void);
+    kheap_init();
+    
+    /* Initialize process manager */
+    extern void process_manager_init(void);
+    process_manager_init();
+    
+    /* Initialize scheduler */
+    extern void scheduler_init(void);
+    scheduler_init();
+    
+    /* Initialize PIT (100 Hz = 10ms time slices) */
+    extern void pit_init(unsigned int frequency);
+    pit_init(100);
+    
+    /* Enable timer interrupts (unmask IRQ 0) */
+    unsigned char mask = inb(0x21);
+    mask &= ~0x01;  /* Unmask IRQ 0 */
+    outb(0x21, mask);
+    
+    /* Enable scheduler */
+    extern void scheduler_enable(void);
+    scheduler_enable();
+    
+    vga_print("Kernel ready. Starting sysman...\n\n");
+    
+    /* Create and start sysman process */
+    if (mbi->mods_count > 0) {
         struct multiboot_module *mod = (struct multiboot_module *)mbi->mods_addr;
-        sysman_entry_point = mod[0].mod_start;
+        sysman_entry_point = mod->mod_start;
         
-        vga_print("[DEBUG] Sysman loaded at: 0x");
-        print_hex(sysman_entry_point);
-        vga_print("\n[DEBUG] Sysman size: ");
-        print_hex(mod[0].mod_end - mod[0].mod_start);
-        vga_print(" bytes\n");
-        vga_print("[DEBUG] About to switch to Ring 3...\n");
+        /* Create sysman process via process manager */
+        extern int process_create_sysman(unsigned int address);
+        extern void process_start(void *pcb);
         
-        ring3_switch(sysman_entry_point);
+        int pid = process_create_sysman(sysman_entry_point);
         
-        vga_print("[ERROR] Ring 3 switch returned - should never happen!\n");
+        if (pid > 0) {
+            /* Get PCB from process manager - we'll add a getter function */
+            extern void* process_get_by_pid(int pid);
+            void *pcb = process_get_by_pid(pid);
+            process_start(pcb);
+            
+            /* Should never return */
+            vga_print("[ERROR] Process returned - should never happen!\n");
+        } else {
+            vga_print("[FAIL] Failed to create sysman process!\n");
+        }
+    } else {
+        vga_print("[FAIL] No modules loaded! Cannot start sysman.\n");
     }
     
-    /* Should never reach here */
-    while(1) __asm__ volatile("hlt");
+    /* Kernel idle loop (should never reach here) */
+    while(1) {
+        asm volatile("hlt");
+    }
 }

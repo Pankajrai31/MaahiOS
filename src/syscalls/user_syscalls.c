@@ -126,3 +126,32 @@ void syscall_clear_gfx(unsigned char color) {
         : "memory"
     );
 }
+
+void syscall_print_at(int x, int y, const char *str) {
+    asm volatile(
+        "int $0x80"
+        :
+        : "a"(SYSCALL_PRINT_AT), "b"(x), "c"(y), "d"(str)
+        : "memory"
+    );
+}
+
+void syscall_set_cursor(int x, int y) {
+    asm volatile(
+        "int $0x80"
+        :
+        : "a"(SYSCALL_SET_CURSOR), "b"(x), "c"(y)
+        : "memory"
+    );
+}
+
+void syscall_draw_box(int x, int y, int width, int height) {
+    // Pack width and height into arg3
+    unsigned int packed = width | (height << 16);
+    asm volatile(
+        "int $0x80"
+        :
+        : "a"(SYSCALL_DRAW_BOX), "b"(x), "c"(y), "d"(packed)
+        : "memory"
+    );
+}

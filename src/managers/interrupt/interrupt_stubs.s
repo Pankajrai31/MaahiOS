@@ -20,10 +20,12 @@
 .globl exception_stub_18
 .globl exception_stub_19
 .globl syscall_int
+.globl irq0_stub
 
 /* Extern C handler functions */
 .extern exception_handler
 .extern syscall_dispatcher
+.extern pit_handler
 
 /* Exception stub for exceptions WITHOUT error code (e.g., exception 0 - divide by zero) */
 .macro exception_no_error_code exception_num
@@ -162,4 +164,25 @@ syscall_int:
     pop %ebp
     
     /* Return to Ring 3 - IRET restores CS:EIP and EFLAGS */
+    iret
+
+/* ============================================================ */
+/* IRQ 0 HANDLER - PIT Timer (with preemptive multitasking) */
+/* ============================================================ */
+.align 4
+irq0_stub:
+    /* Save all general purpose registers (part of context) */
+    pusha
+    
+    /* Call simple PIT handler (no context switching yet) */
+    call pit_handler
+    
+    /* Send EOI to PIC (End of Interrupt) */
+    movb $0x20, %al
+    outb %al, $0x20
+    
+    /* Restore registers */
+    popa
+    
+    /* Return from interrupt */
     iret

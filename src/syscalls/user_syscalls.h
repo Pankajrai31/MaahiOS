@@ -79,4 +79,22 @@ void syscall_put_pixel(int x, int y, unsigned char color);
  */
 void syscall_clear_gfx(unsigned char color);
 
+/**
+ * syscall_print_at - Print string at specific position
+ * x: 0-79, y: 0-24, str: null-terminated string
+ */
+void syscall_print_at(int x, int y, const char *str);
+
+/**
+ * syscall_set_cursor - Set cursor position
+ * x: 0-79, y: 0-24
+ */
+void syscall_set_cursor(int x, int y);
+
+/**
+ * syscall_draw_box - Draw box border with '=' and '|'
+ * x, y: position, width, height: size in characters
+ */
+void syscall_draw_box(int x, int y, int width, int height);
+
 #endif // USER_SYSCALLS_H

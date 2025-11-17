@@ -5,8 +5,8 @@
 extern void vga_puts(const char *str);
 extern void vga_put_hex(uint32_t num);
 
-// Global page directory pointer
-static uint32_t *kernel_page_directory = 0;
+// Global page directory pointer (exposed for kheap)
+uint32_t *kernel_page_directory = 0;
 static uint32_t identity_map_end = 0;
 
 // Map a single 4KB page
@@ -130,8 +130,7 @@ int paging_init(multiboot_info_t *mbi) {
         kernel_page_directory[i] = 0;
     }
     
-    // Identity map must include kernel + modules + page directory + page tables
-    // Use reservation_end which already includes everything, then add space for page tables
+    // Calculate actual used memory (kernel + modules + bitmap + structures)
     identity_map_end = reservation_end;
     
     // Add space for page directory and page tables (1MB should be enough)
@@ -140,13 +139,21 @@ int paging_init(multiboot_info_t *mbi) {
     }
     
     // Round up to 4MB boundary
-    identity_map_end = (identity_map_end + 0x003FFFFF) & 0xFFC00000;
+    uint32_t actual_used = (identity_map_end + 0x003FFFFF) & 0xFFC00000;
     
-    // CRITICAL: Reserve the identity-mapped region in PMM BEFORE identity mapping
-    // This ensures page tables allocated during identity_map_region() come from high memory
-    pmm_mark_region_used(0x00100000, identity_map_end);
+    // CRITICAL: Reserve ONLY the actually used region in PMM
+    pmm_mark_region_used(0x00100000, actual_used);
     
-    // Identity map the region (includes kernel, modules, page directory and page tables)
+    // BUT: Identity map 128MB for kernel space (leaves room for growth)
+    // This space is NOT reserved by PMM - available for kmalloc() on demand
+    identity_map_end = 0x08000000;  // 128MB
+    
+    vga_puts("[PAGING] Identity mapping 0x00000000 - 0x08000000 (128MB)\n");
+    vga_puts("[PAGING] PMM reserved: 0x00100000 - 0x");
+    vga_put_hex(actual_used);
+    vga_puts("\n");
+    
+    // Identity map the entire 128MB region (but PMM only reserves actual usage)
     identity_map_region(kernel_page_directory, 0x00000000, identity_map_end);
     
     // Enable paging

@@ -22,6 +22,9 @@ extern void vga_putint(int num);
 extern void vga_clear();
 extern void vga_set_color(unsigned char fg, unsigned char bg);
 extern void vga_draw_rect(int x, int y, int width, int height, unsigned char color);
+extern void vga_print_at(int x, int y, const char *s);
+extern void vga_set_cursor(int x, int y);
+extern void vga_draw_box(int x, int y, int width, int height);
 
 /* Forward declare graphics functions from graphics.c */
 extern void graphics_mode_13h(void);
@@ -202,6 +205,27 @@ unsigned int syscall_dispatcher(unsigned int syscall_num,
         case SYSCALL_CLEAR_GFX:
             // arg1 = color
             clear_screen((unsigned char)arg1);
+            break;
+            
+        case SYSCALL_PRINT_AT:
+            // arg1 = x, arg2 = y, arg3 = string pointer
+            vga_print_at((int)arg1, (int)arg2, (const char*)arg3);
+            break;
+            
+        case SYSCALL_SET_CURSOR:
+            // arg1 = x, arg2 = y
+            vga_set_cursor((int)arg1, (int)arg2);
+            break;
+            
+        case SYSCALL_DRAW_BOX:
+            // arg1 = x, arg2 = y, arg3 = width, EDX = height (packed)
+            {
+                int x = (int)arg1;
+                int y = (int)arg2;
+                int width = arg3 & 0xFFFF;
+                int height = (arg3 >> 16) & 0xFFFF;
+                vga_draw_box(x, y, width, height);
+            }
             break;
             
         default:

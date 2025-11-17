@@ -113,3 +113,55 @@ void vga_put_hex(unsigned int val) {
 void vga_puts(const char *s) {
     vga_print(s);
 }
+
+void vga_set_cursor(int x, int y) {
+    if (x >= 0 && x < VGA_WIDTH && y >= 0 && y < VGA_HEIGHT) {
+        vga_x = x;
+        vga_y = y;
+    }
+}
+
+void vga_print_at(int x, int y, const char *s) {
+    if (x < 0 || x >= VGA_WIDTH || y < 0 || y >= VGA_HEIGHT) return;
+    
+    int saved_x = vga_x, saved_y = vga_y;
+    vga_x = x;
+    vga_y = y;
+    
+    while (*s && vga_x < VGA_WIDTH) {
+        if (*s == '\n') {
+            break;  // Don't wrap in positioned output
+        }
+        int pos = vga_y * VGA_WIDTH + vga_x;
+        vga[pos] = (vga_current_attr << 8) | (unsigned char)*s;
+        vga_x++;
+        s++;
+    }
+    
+    vga_x = saved_x;
+    vga_y = saved_y;
+}
+
+void vga_draw_box(int x, int y, int width, int height) {
+    if (x < 0 || y < 0 || x + width > VGA_WIDTH || y + height > VGA_HEIGHT) return;
+    
+    // Draw top border
+    for (int i = 0; i < width; i++) {
+        int pos = y * VGA_WIDTH + (x + i);
+        vga[pos] = (vga_current_attr << 8) | '=';
+    }
+    
+    // Draw bottom border
+    for (int i = 0; i < width; i++) {
+        int pos = (y + height - 1) * VGA_WIDTH + (x + i);
+        vga[pos] = (vga_current_attr << 8) | '=';
+    }
+    
+    // Draw left and right borders
+    for (int i = 1; i < height - 1; i++) {
+        int left_pos = (y + i) * VGA_WIDTH + x;
+        int right_pos = (y + i) * VGA_WIDTH + (x + width - 1);
+        vga[left_pos] = (vga_current_attr << 8) | '|';
+        vga[right_pos] = (vga_current_attr << 8) | '|';
+    }
+}

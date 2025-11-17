@@ -69,6 +69,7 @@ extern void exception_stub_17(void);
 extern void exception_stub_18(void);
 extern void exception_stub_19(void);
 extern void syscall_int(void);
+extern void irq0_stub(void);  /* Timer IRQ */
 
 int idt_install_exception_handlers(void) {
     /* Type: 0x8F = Present, Ring 0, Trap Gate (allows nested exceptions, doesn't disable interrupts) */
@@ -102,6 +103,10 @@ int idt_install_exception_handlers(void) {
      * Bit 4-0: Type = 01110 (Trap Gate)
      */
     idt_set_entry(128, (unsigned int)syscall_int, 0x08, 0xEE);
+    
+    /* Set up IRQ 0 (PIT timer) handler - IRQ 0 is remapped to INT 32 */
+    /* Type: 0x8E = Present (1), DPL=0 (kernel only), Interrupt Gate */
+    idt_set_entry(32, (unsigned int)irq0_stub, 0x08, 0x8E);
     
     return 1;  /* Success */
 }

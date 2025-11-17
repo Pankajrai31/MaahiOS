@@ -2,7 +2,7 @@ ENTRY(sysman_main)
 
 SECTIONS
 {
-    /* Position-Independent Executable - works at any address GRUB loads it */
+    /* Position-independent - works at any address GRUB loads it */
     . = 0;
 
     .text BLOCK(4K) : ALIGN(4K)

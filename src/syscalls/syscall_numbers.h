@@ -17,6 +17,9 @@
 #define SYSCALL_GRAPHICS_MODE 11 // graphics_mode() - Switch to 320x200 graphics mode
 #define SYSCALL_PUT_PIXEL   12  // put_pixel(x, y, color) - Draw a pixel
 #define SYSCALL_CLEAR_GFX   13  // clear_gfx(color) - Clear graphics screen
+#define SYSCALL_PRINT_AT    14  // print_at(x, y, str) - Print string at position
+#define SYSCALL_SET_CURSOR  15  // set_cursor(x, y) - Set cursor position
+#define SYSCALL_DRAW_BOX    16  // draw_box(x, y, width, height) - Draw box border
 
 // VGA Color constants (for reference)
 // Foreground/Background colors: 0-15
