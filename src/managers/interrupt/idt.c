@@ -108,5 +108,7 @@ int idt_install_exception_handlers(void) {
     /* Type: 0x8E = Present (1), DPL=0 (kernel only), Interrupt Gate */
     idt_set_entry(32, (unsigned int)irq0_stub, 0x08, 0x8E);
     
+    /* IRQ 15 (ATA) handler removed - now using AHCI */
+    
     return 1;  /* Success */
 }

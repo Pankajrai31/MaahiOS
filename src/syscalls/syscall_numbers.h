@@ -20,6 +20,8 @@
 #define SYSCALL_PRINT_AT    14  // print_at(x, y, str) - Print string at position
 #define SYSCALL_SET_CURSOR  15  // set_cursor(x, y) - Set cursor position
 #define SYSCALL_DRAW_BOX    16  // draw_box(x, y, width, height) - Draw box border
+#define SYSCALL_CREATE_PROCESS 17  // create_process(entry_point) - Create new process
+#define SYSCALL_GET_ORBIT_ADDR 18  // get_orbit_address() - Get orbit module address
 
 // VGA Color constants (for reference)
 // Foreground/Background colors: 0-15

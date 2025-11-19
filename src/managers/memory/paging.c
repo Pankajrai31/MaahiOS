@@ -148,10 +148,7 @@ int paging_init(multiboot_info_t *mbi) {
     // This space is NOT reserved by PMM - available for kmalloc() on demand
     identity_map_end = 0x08000000;  // 128MB
     
-    vga_puts("[PAGING] Identity mapping 0x00000000 - 0x08000000 (128MB)\n");
-    vga_puts("[PAGING] PMM reserved: 0x00100000 - 0x");
-    vga_put_hex(actual_used);
-    vga_puts("\n");
+    /* Identity mapped 128MB */
     
     // Identity map the entire 128MB region (but PMM only reserves actual usage)
     identity_map_region(kernel_page_directory, 0x00000000, identity_map_end);
@@ -186,4 +183,33 @@ void vmm_free_page(void *addr) {
     // 1. Look up virtual -> physical mapping
     // 2. Unmap from page table
     // 3. Free physical page via PMM
+}
+
+/**
+ * Map a MMIO (Memory-Mapped I/O) region into kernel address space
+ * Used for PCI device BARs like AHCI controller registers
+ */
+void paging_map_mmio_region(uint32_t phys_start, uint32_t size) {
+    if (!kernel_page_directory) {
+        vga_puts("[PAGING] ERROR: Cannot map MMIO - paging not initialized\n");
+        return;
+    }
+    
+    // Align to page boundaries
+    uint32_t phys_aligned = phys_start & 0xFFFFF000;
+    uint32_t size_aligned = (size + PAGE_SIZE_4KB - 1) & 0xFFFFF000;
+    
+    /* Mapping MMIO region */
+    
+    // Identity map the MMIO region (virtual = physical for simplicity)
+    for (uint32_t offset = 0; offset < size_aligned; offset += PAGE_SIZE_4KB) {
+        uint32_t addr = phys_aligned + offset;
+        paging_map_page(kernel_page_directory, addr, addr, 
+                       PAGE_PRESENT | PAGE_WRITE);  // No USER flag for MMIO
+    }
+    
+    // Flush TLB to ensure mappings take effect
+    asm volatile("mov %%cr3, %%eax; mov %%eax, %%cr3" ::: "eax");
+    
+    /* MMIO region mapped */
 }

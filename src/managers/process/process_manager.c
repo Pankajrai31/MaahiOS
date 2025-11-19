@@ -6,8 +6,6 @@
 #include "process_manager.h"
 
 /* External functions */
-extern void vga_puts(const char *str);
-extern void vga_put_hex(uint32_t val);
 extern void* kmalloc(uint32_t size);
 extern void kfree(void* ptr);
 extern void ring3_switch(uint32_t entry_point);
@@ -26,40 +24,51 @@ void process_manager_init(void) {
         process_table[i] = 0;
     }
     next_pid = 1;
-    
-    vga_puts("[PROCESS] Process manager initialized\n");
 }
 
 /**
- * Create sysman process (PID 1)
+ * Create sysman process (PID 1) and start it immediately
  */
 int process_create_sysman(uint32_t sysman_address) {
-    vga_puts("[PROCESS] Creating sysman process...\n");
-    
-    /* Allocate PCB from kernel heap */
     process_t *pcb = (process_t *)kmalloc(sizeof(process_t));
     if (!pcb) {
-        vga_puts("[PROCESS] ERROR: Failed to allocate PCB!\n");
         return -1;
     }
     
-    vga_puts("[PROCESS] PCB allocated at: 0x");
-    vga_put_hex((uint32_t)pcb);
-    vga_puts("\n");
-    
-    /* Initialize PCB */
     pcb->pid = next_pid++;
     pcb->entry_point = sysman_address;
-    pcb->state = PROCESS_STATE_READY;
+    pcb->state = PROCESS_STATE_RUNNING;
     
-    /* Add to process table */
     process_table[pcb->pid - 1] = pcb;
     
-    vga_puts("[PROCESS] Sysman process created (PID ");
-    vga_put_hex(pcb->pid);
-    vga_puts(", entry: 0x");
-    vga_put_hex(pcb->entry_point);
-    vga_puts(")\n");
+    /* Jump to Ring 3 - NEVER RETURNS */
+    ring3_switch(pcb->entry_point);
+    
+    return pcb->pid;
+}
+
+/**
+ * Create a generic process (used by syscall)
+ * Creates PCB and starts the process immediately
+ */
+int process_create(uint32_t entry_point) {
+    if (next_pid >= MAX_PROCESSES) {
+        return -1;
+    }
+    
+    process_t *pcb = (process_t *)kmalloc(sizeof(process_t));
+    if (!pcb) {
+        return -1;
+    }
+    
+    pcb->pid = next_pid++;
+    pcb->entry_point = entry_point;
+    pcb->state = PROCESS_STATE_RUNNING;
+    
+    process_table[pcb->pid - 1] = pcb;
+    
+    /* Jump to Ring 3 - NEVER RETURNS */
+    ring3_switch(pcb->entry_point);
     
     return pcb->pid;
 }
@@ -87,24 +96,4 @@ int process_manager_get_count(void) {
     return count;
 }
 
-/**
- * Start a process (jump to Ring 3)
- */
-void process_start(process_t *pcb) {
-    if (!pcb) {
-        vga_puts("[PROCESS] ERROR: Invalid PCB!\n");
-        return;
-    }
-    
-    vga_puts("[PROCESS] Starting process PID ");
-    vga_put_hex(pcb->pid);
-    vga_puts(" at 0x");
-    vga_put_hex(pcb->entry_point);
-    vga_puts("\n");
-    
-    /* Mark as running */
-    pcb->state = PROCESS_STATE_RUNNING;
-    
-    /* Jump to Ring 3 - NEVER RETURNS */
-    ring3_switch(pcb->entry_point);
-}
+

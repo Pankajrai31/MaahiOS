@@ -1,30 +1,26 @@
 #include "../syscalls/user_syscalls.h"
 
 void sysman_main_c(void) {
-    /* Clear screen */
-    syscall_clear();
+    /* Debug: Sysman is running */
+    syscall_set_color(14, 0);  // Yellow
+    syscall_print_at(0, 10, "[SYSMAN] Running in Ring 3");
     
-    /* Print welcome message */
-    syscall_set_color(15, 1);  /* White on Blue */
-    syscall_print_at(20, 0, "=== Welcome to MaahiOS System Manager ===");
+    /* Get orbit address via syscall and create orbit process */
+    syscall_print_at(0, 11, "[SYSMAN] Getting orbit address...");
+    unsigned int orbit_addr = syscall_get_orbit_address();
     
-    syscall_set_color(10, 0);  /* Green on Black */
-    syscall_print_at(0, 2, "sysman: System Manager is now running in Ring 3 (user mode)");
+    /* Create orbit process via syscall */
+    syscall_print_at(0, 12, "[SYSMAN] Creating orbit process...");
+    int orbit_pid = syscall_create_process(orbit_addr);
     
-    syscall_set_color(14, 0);  /* Yellow on Black */
-    syscall_print_at(0, 4, "sysman: This is the first user-mode process (PID 1)");
-    
-    syscall_set_color(11, 0);  /* Light Cyan on Black */
-    syscall_print_at(0, 6, "sysman: In the future, this will:");
-    syscall_print_at(0, 7, "  - Handle authentication and security");
-    syscall_print_at(0, 8, "  - Initialize system services");
-    syscall_print_at(0, 9, "  - Launch the Orbit shell");
-    
-    syscall_set_color(7, 0);  /* Light Gray on Black */
-    syscall_print_at(0, 11, "sysman: Currently in idle mode...");
+    if (orbit_pid > 0) {
+        syscall_print_at(0, 13, "[SYSMAN] Orbit created! Waiting...");
+    } else {
+        syscall_print_at(0, 13, "[SYSMAN] ERROR: Failed to create orbit");
+    }
     
     /* Infinite loop - sysman stays alive */
     while(1) {
-        /* Idle - in future will wait for events/syscalls */
+        /* Busy wait - scheduler will preempt us */
     }
 }

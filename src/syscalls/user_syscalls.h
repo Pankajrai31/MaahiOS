@@ -97,4 +97,17 @@ void syscall_set_cursor(int x, int y);
  */
 void syscall_draw_box(int x, int y, int width, int height);
 
+/**
+ * syscall_create_process - Create new process
+ * entry_point: Address where process starts execution
+ * Returns: Process ID (PID) on success, -1 on failure
+ */
+int syscall_create_process(unsigned int entry_point);
+
+/**
+ * syscall_get_orbit_address - Get orbit module address from kernel
+ * Returns: Address of orbit.bin loaded by GRUB
+ */
+int syscall_get_orbit_address(void);
+
 #endif // USER_SYSCALLS_H

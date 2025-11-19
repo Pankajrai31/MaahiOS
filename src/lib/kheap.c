@@ -27,14 +27,6 @@ void kheap_init(void) {
     
     /* Start allocating from heap_start */
     heap_current = heap_start;
-    
-    vga_puts("[KHEAP] Heap: 0x");
-    vga_put_hex(heap_start);
-    vga_puts(" - 0x");
-    vga_put_hex(heap_end);
-    vga_puts(" (");
-    vga_put_hex((heap_end - heap_start) / (1024 * 1024));
-    vga_puts(" MB)\n");
 }
 
 /* Bump allocator - allocates from identity-mapped free space */
@@ -48,10 +40,7 @@ void* kmalloc(size_t size) {
     
     /* Check if we have space */
     if (heap_current + size > heap_end) {
-        vga_puts("[KHEAP] Out of memory! Requested: ");
-        vga_put_hex(size);
-        vga_puts(" bytes\n");
-        return 0;
+        return 0;  /* Out of memory */
     }
     
     /* Allocate */
@@ -68,6 +57,39 @@ void* kmalloc(size_t size) {
         while (last_page_allocated < page_end) {
             pmm_alloc_page();  /* This marks the page as used */
             last_page_allocated += 4096;
+        }
+    }
+    
+    return ptr;
+}
+
+/* Aligned allocation for DMA buffers, etc. */
+void* kmalloc_aligned(size_t size, size_t alignment) {
+    if (size == 0) {
+        return 0;
+    }
+    
+    /* Align heap_current to the requested alignment */
+    unsigned int aligned_current = (heap_current + alignment - 1) & ~(alignment - 1);
+    
+    /* Check if we have space */
+    if (aligned_current + size > heap_end) {
+        return 0;  /* Out of memory */
+    }
+    
+    /* Allocate */
+    heap_current = aligned_current;
+    void *ptr = (void *)heap_current;
+    heap_current += size;
+    
+    /* Allocate physical pages as needed */
+    unsigned int page_end = (heap_current + 4095) & ~4095;
+    static unsigned int last_page_allocated_aligned = 0;
+    
+    if (page_end > last_page_allocated_aligned) {
+        while (last_page_allocated_aligned < page_end) {
+            pmm_alloc_page();
+            last_page_allocated_aligned += 4096;
         }
     }
     

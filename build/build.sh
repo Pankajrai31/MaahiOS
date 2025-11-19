@@ -71,21 +71,6 @@ i686-elf-gcc -c "$SRC_DIR/managers/ring3/ring3.c" -o "$BINARIES_DIR/ring3.o" \
     -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
 echo -e "${GREEN}✓ ring3.o created${NC}"
 
-echo -e "\n${YELLOW}[2f/5] Compiling task1.c (kernel)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/tasks/task1.c" -o "$BINARIES_DIR/task1.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ task1.o created${NC}"
-
-echo -e "\n${YELLOW}[2f2/5] Compiling task2.c (kernel)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/tasks/task2.c" -o "$BINARIES_DIR/task2.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ task2.o created${NC}"
-
-echo -e "\n${YELLOW}[2f3/5] Compiling task3.c (kernel)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/tasks/task3.c" -o "$BINARIES_DIR/task3.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ task3.o created${NC}"
-
 echo -e "\n${YELLOW}[2h/5] Compiling syscall_handler.c...${NC}"
 i686-elf-gcc -c "$SRC_DIR/syscalls/syscall_handler.c" -o "$BINARIES_DIR/syscall_handler.o" \
     -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
@@ -127,10 +112,10 @@ echo -e "${GREEN}✓ switch.o created (OSDev approach)${NC}"
 
 echo -e "\n${YELLOW}[3/5] Linking kernel...${NC}"
 i686-elf-ld -T "$SRC_DIR/linker.ld" -o "$BUILD_DIR/kernel.bin" \
-    "$BINARIES_DIR/boot.o" "$BINARIES_DIR/kernel.o" "$BINARIES_DIR/vga.o" "$BINARIES_DIR/graphics.o" "$BINARIES_DIR/gdt.o" "$BINARIES_DIR/idt.o" "$BINARIES_DIR/interrupt_stubs.o" "$BINARIES_DIR/exception_handler.o" "$BINARIES_DIR/ring3.o" "$BINARIES_DIR/syscall_handler.o" "$BINARIES_DIR/pmm.o" "$BINARIES_DIR/paging.o" "$BINARIES_DIR/kheap.o" "$BINARIES_DIR/process_manager.o" "$BINARIES_DIR/pit.o" "$BINARIES_DIR/scheduler.o" "$BINARIES_DIR/switch.o" "$BINARIES_DIR/task1.o" "$BINARIES_DIR/task2.o" "$BINARIES_DIR/task3.o"
-echo -e "${GREEN}✓ kernel.bin created (with process manager)${NC}"
+    "$BINARIES_DIR/boot.o" "$BINARIES_DIR/kernel.o" "$BINARIES_DIR/vga.o" "$BINARIES_DIR/graphics.o" "$BINARIES_DIR/gdt.o" "$BINARIES_DIR/idt.o" "$BINARIES_DIR/interrupt_stubs.o" "$BINARIES_DIR/exception_handler.o" "$BINARIES_DIR/ring3.o" "$BINARIES_DIR/syscall_handler.o" "$BINARIES_DIR/pmm.o" "$BINARIES_DIR/paging.o" "$BINARIES_DIR/kheap.o" "$BINARIES_DIR/process_manager.o" "$BINARIES_DIR/pit.o" "$BINARIES_DIR/scheduler.o" "$BINARIES_DIR/switch.o"
+echo -e "${GREEN}✓ kernel.bin created${NC}"
 
-echo -e "\n${YELLOW}[4a/6] Building sysman (Ring 3 System Manager)...${NC}"
+echo -e "\n${YELLOW}[4a/7] Building sysman (Ring 3 System Manager)...${NC}"
 # Assemble sysman entry
 i686-elf-as "$SRC_DIR/sysman/sysman_entry.s" -o "$BINARIES_DIR/sysman_entry.o"
 echo -e "${GREEN}✓ sysman_entry.o created${NC}"
@@ -145,24 +130,45 @@ i686-elf-gcc -c "$SRC_DIR/syscalls/user_syscalls.c" -o "$BINARIES_DIR/user_sysca
     -ffreestanding -fno-stack-protector -fPIC -m32
 echo -e "${GREEN}✓ user_syscalls.o created (position-independent)${NC}"
 
-# Link sysman as ELF first
+# Link sysman as ELF (uses syscalls only - no direct kernel calls)
 i686-elf-ld -T "$SRC_DIR/sysman_linker.ld" -o "$BUILD_DIR/sysman.elf" \
     "$BINARIES_DIR/sysman_entry.o" "$BINARIES_DIR/sysman.o" "$BINARIES_DIR/user_syscalls.o"
-echo -e "${GREEN}✓ sysman.elf created${NC}"
+echo -e "${GREEN}✓ sysman.elf created (uses syscalls only)${NC}"
 
 # Convert ELF to flat binary for position-independence
 i686-elf-objcopy -O binary "$BUILD_DIR/sysman.elf" "$BUILD_DIR/sysman.bin"
-echo -e "${GREEN}✓ sysman.bin (flat binary) created${NC}"
+echo -e "${GREEN}✓ sysman.bin created${NC}"
 
-echo -e "\n${YELLOW}[4b/6] Copying kernel to ISO directory...${NC}"
+echo -e "\n${YELLOW}[4b/7] Building orbit (Ring 3 Shell)...${NC}"
+# Assemble orbit entry
+i686-elf-as "$SRC_DIR/orbit/orbit_entry.s" -o "$BINARIES_DIR/orbit_entry.o"
+echo -e "${GREEN}✓ orbit_entry.o created${NC}"
+
+# Compile orbit C code (position-independent)
+i686-elf-gcc -c "$SRC_DIR/orbit/orbit.c" -o "$BINARIES_DIR/orbit.o" \
+    -ffreestanding -fno-stack-protector -fPIC -m32
+echo -e "${GREEN}✓ orbit.o created (position-independent)${NC}"
+
+# Link orbit as ELF (uses syscalls only)
+i686-elf-ld -T "$SRC_DIR/orbit/orbit_linker.ld" -o "$BUILD_DIR/orbit.elf" \
+    "$BINARIES_DIR/orbit_entry.o" "$BINARIES_DIR/orbit.o" "$BINARIES_DIR/user_syscalls.o"
+echo -e "${GREEN}✓ orbit.elf created${NC}"
+
+# Convert ELF to flat binary
+i686-elf-objcopy -O binary "$BUILD_DIR/orbit.elf" "$BUILD_DIR/orbit.bin"
+echo -e "${GREEN}✓ orbit.bin created${NC}"
+
+echo -e "\n${YELLOW}[5/7] Copying files to ISO directory...${NC}"
 cp "$BUILD_DIR/kernel.bin" "$ISODIR/boot/kernel.bin"
-echo -e "${GREEN}✓ kernel.bin copied to ISO directory${NC}"
+echo -e "${GREEN}✓ kernel.bin copied${NC}"
 
-echo -e "\n${YELLOW}[4c/6] Copying sysman to ISO directory...${NC}"
 cp "$BUILD_DIR/sysman.bin" "$ISODIR/boot/sysman.bin"
-echo -e "${GREEN}✓ sysman.bin copied to ISO directory${NC}"
+echo -e "${GREEN}✓ sysman.bin copied${NC}"
 
-echo -e "\n${YELLOW}[5/6] Creating grub.cfg...${NC}"
+cp "$BUILD_DIR/orbit.bin" "$ISODIR/boot/orbit.bin"
+echo -e "${GREEN}✓ orbit.bin copied${NC}"
+
+echo -e "\n${YELLOW}[6/7] Creating grub.cfg...${NC}"
 cat > "$ISODIR/boot/grub/grub.cfg" << 'EOF'
 set default=0
 set timeout=0
@@ -170,11 +176,12 @@ set timeout=0
 menuentry "MaahiOS" {
     multiboot /boot/kernel.bin
     module /boot/sysman.bin
+    module /boot/orbit.bin
 }
 EOF
-echo -e "${GREEN}✓ grub.cfg created (with sysman module)${NC}"
+echo -e "${GREEN}✓ grub.cfg created (kernel + sysman + orbit)${NC}"
 
-echo -e "\n${YELLOW}[6/6] Creating ISO image...${NC}"
+echo -e "\n${YELLOW}[7/7] Creating ISO image...${NC}"
 
 grub-mkrescue -o "$BUILD_DIR/boot.iso" "$ISODIR" 2>&1
 echo -e "${GREEN}✓ boot.iso created${NC}"

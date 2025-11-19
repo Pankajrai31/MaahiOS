@@ -155,3 +155,25 @@ void syscall_draw_box(int x, int y, int width, int height) {
         : "memory"
     );
 }
+
+int syscall_create_process(unsigned int entry_point) {
+    int result;
+    asm volatile(
+        "int $0x80"
+        : "=a"(result)
+        : "a"(SYSCALL_CREATE_PROCESS), "b"(entry_point)
+        : "memory"
+    );
+    return result;
+}
+
+int syscall_get_orbit_address(void) {
+    int result;
+    asm volatile(
+        "int $0x80"
+        : "=a"(result)
+        : "a"(SYSCALL_GET_ORBIT_ADDR)
+        : "memory"
+    );
+    return result;
+}

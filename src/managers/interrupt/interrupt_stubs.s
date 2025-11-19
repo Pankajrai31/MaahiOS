@@ -21,11 +21,13 @@
 .globl exception_stub_19
 .globl syscall_int
 .globl irq0_stub
+/* .globl ata_irq_handler - removed (using AHCI now) */
 
 /* Extern C handler functions */
 .extern exception_handler
 .extern syscall_dispatcher
 .extern pit_handler
+.extern ata_irq_c_handler
 
 /* Exception stub for exceptions WITHOUT error code (e.g., exception 0 - divide by zero) */
 .macro exception_no_error_code exception_num
@@ -186,3 +188,6 @@ irq0_stub:
     
     /* Return from interrupt */
     iret
+
+/* IRQ 14 handler removed - now using AHCI instead of IDE */
+

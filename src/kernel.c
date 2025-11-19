@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 /* Multiboot header - Complete structure for module support */
 struct multiboot_module {
     unsigned int mod_start;
@@ -38,6 +40,9 @@ void ring3_switch(unsigned int entry_point);
 /* Graphics functions */
 void graphics_mode_13h(void);
 
+/* Global variable to pass orbit address to sysman */
+unsigned int orbit_module_address = 0;
+
 /* PMM functions */
 int pmm_init(struct multiboot_info *mbi);
 
@@ -49,11 +54,6 @@ void pit_init(unsigned int frequency);
 void scheduler_init();
 int scheduler_create_task(void (*entry_point)(), const char *name);
 void scheduler_enable();
-
-/* Task entry points */
-extern void task1_main();
-extern void task2_main();
-extern void task3_main();
 
 /* VGA drawing functions */
 extern void vga_set_color(unsigned char fg, unsigned char bg);
@@ -163,9 +163,6 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
         while(1) __asm__ volatile("hlt");
     }
     
-    /* Enable interrupts globally */
-    asm volatile("sti");
-    
     /* Initialize kernel heap */
     extern void kheap_init(void);
     kheap_init();
@@ -174,52 +171,56 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
     extern void process_manager_init(void);
     process_manager_init();
     
-    /* Initialize scheduler */
+    /* Initialize Scheduler (stub for now) */
     extern void scheduler_init(void);
     scheduler_init();
     
-    /* Initialize PIT (100 Hz = 10ms time slices) */
+    /* Initialize PIT at 100 Hz (10ms intervals - reduces overhead) */
     extern void pit_init(unsigned int frequency);
     pit_init(100);
+    
+    /* Enable interrupts */
+    asm volatile("sti");
     
     /* Enable timer interrupts (unmask IRQ 0) */
     unsigned char mask = inb(0x21);
     mask &= ~0x01;  /* Unmask IRQ 0 */
     outb(0x21, mask);
     
-    /* Enable scheduler */
+    /* Enable scheduler (even with one process, to test multitasking infrastructure) */
     extern void scheduler_enable(void);
     scheduler_enable();
     
-    vga_print("Kernel ready. Starting sysman...\n\n");
+    /* Start sysman and orbit (Ring 3 processes) */
+    vga_print("Kernel ready. Starting processes...\n\n");
     
-    /* Create and start sysman process */
-    if (mbi->mods_count > 0) {
-        struct multiboot_module *mod = (struct multiboot_module *)mbi->mods_addr;
-        sysman_entry_point = mod->mod_start;
+    /* Create processes from GRUB modules */
+    if (mbi->mods_count >= 2) {
+        struct multiboot_module *modules = (struct multiboot_module *)mbi->mods_addr;
+        
+        /* Module 0: sysman.bin */
+        uint32_t sysman_addr = modules[0].mod_start;
+        
+        /* Module 1: orbit.bin - pass address to sysman */
+        uint32_t orbit_addr = modules[1].mod_start;
+        
+        /* Store orbit address for sysman to access */
+        extern unsigned int orbit_module_address;
+        orbit_module_address = orbit_addr;
         
         /* Create sysman process via process manager */
         extern int process_create_sysman(unsigned int address);
-        extern void process_start(void *pcb);
         
-        int pid = process_create_sysman(sysman_entry_point);
+        /* Create and start sysman (PID 1) - NEVER RETURNS */
+        process_create_sysman(sysman_addr);
         
-        if (pid > 0) {
-            /* Get PCB from process manager - we'll add a getter function */
-            extern void* process_get_by_pid(int pid);
-            void *pcb = process_get_by_pid(pid);
-            process_start(pcb);
-            
-            /* Should never return */
-            vga_print("[ERROR] Process returned - should never happen!\n");
-        } else {
-            vga_print("[FAIL] Failed to create sysman process!\n");
-        }
+        /* Should never reach here */
+        vga_print("[ERROR] Impossible - sysman returned!\n");
     } else {
-        vga_print("[FAIL] No modules loaded! Cannot start sysman.\n");
+        vga_print("[FAIL] Need at least 2 modules (sysman + orbit)!\n");
     }
     
-    /* Kernel idle loop (should never reach here) */
+    /* Kernel idle loop */
     while(1) {
         asm volatile("hlt");
     }

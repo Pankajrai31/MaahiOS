@@ -25,6 +25,9 @@ void* krealloc(void* ptr, size_t new_size);
 /* Allocate and zero memory */
 void* kcalloc(size_t count, size_t size);
 
+/* Allocate aligned memory (for DMA, etc.) */
+void* kmalloc_aligned(size_t size, size_t alignment);
+
 /* Get heap statistics */
 void kheap_stats(unsigned int *total_pages, unsigned int *used_bytes, unsigned int *free_bytes);
 

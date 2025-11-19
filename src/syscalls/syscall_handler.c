@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "syscall_numbers.h"
 
 /**
@@ -34,6 +35,9 @@ extern void clear_screen(unsigned char color);
 /* Forward declare VMM functions (which wrap PMM) */
 extern void *vmm_alloc_page();
 extern void vmm_free_page(void *addr);
+
+/* Forward declare ISO9660 functions */
+extern int iso9660_list_files(void);
 
 /**
  * Kernel-side: putchar implementation
@@ -226,6 +230,20 @@ unsigned int syscall_dispatcher(unsigned int syscall_num,
                 int height = (arg3 >> 16) & 0xFFFF;
                 vga_draw_box(x, y, width, height);
             }
+            break;
+            
+        case SYSCALL_CREATE_PROCESS: {
+            // Create new process
+            extern int process_create(uint32_t entry_point);
+            uint32_t entry_point = arg1;  // Entry point passed in arg1
+            return_value = process_create(entry_point);
+            break;
+        }
+        
+        case SYSCALL_GET_ORBIT_ADDR:
+            // Return orbit module address
+            extern uint32_t orbit_module_address;
+            return_value = orbit_module_address;
             break;
             
         default:
