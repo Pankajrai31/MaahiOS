@@ -54,48 +54,9 @@ void syscall_clear();
  */
 void syscall_set_color(unsigned char fg, unsigned char bg);
 
-/**
- * syscall_draw_rect - Draw a filled rectangle
- * x, y: position (0-79 for x, 0-24 for y)
- * width, height: size in characters
- * color: attribute byte (fg | (bg << 4))
- */
-void syscall_draw_rect(int x, int y, int width, int height, unsigned char color);
 
-/**
- * syscall_graphics_mode - Switch to 320x200 graphics mode
- */
-void syscall_graphics_mode(void);
 
-/**
- * syscall_put_pixel - Draw a pixel in graphics mode
- * x: 0-319, y: 0-199, color: 0-255
- */
-void syscall_put_pixel(int x, int y, unsigned char color);
 
-/**
- * syscall_clear_gfx - Clear graphics screen to color
- * color: 0-255
- */
-void syscall_clear_gfx(unsigned char color);
-
-/**
- * syscall_print_at - Print string at specific position
- * x: 0-79, y: 0-24, str: null-terminated string
- */
-void syscall_print_at(int x, int y, const char *str);
-
-/**
- * syscall_set_cursor - Set cursor position
- * x: 0-79, y: 0-24
- */
-void syscall_set_cursor(int x, int y);
-
-/**
- * syscall_draw_box - Draw box border with '=' and '|'
- * x, y: position, width, height: size in characters
- */
-void syscall_draw_box(int x, int y, int width, int height);
 
 /**
  * syscall_create_process - Create new process
@@ -109,5 +70,73 @@ int syscall_create_process(unsigned int entry_point);
  * Returns: Address of orbit.bin loaded by GRUB
  */
 int syscall_get_orbit_address(void);
+
+/**
+ * Graphics Syscalls - Simple text-mode-like API
+ * Just like printf() - no hex values, no memory addresses
+ */
+
+/* Color constants - use these instead of hex values */
+#define COLOR_BLACK     0
+#define COLOR_WHITE     1
+#define COLOR_RED       2
+#define COLOR_GREEN     3
+#define COLOR_BLUE      4
+#define COLOR_YELLOW    5
+#define COLOR_CYAN      6
+#define COLOR_MAGENTA   7
+
+/**
+ * gfx_putc - Print a single character at cursor
+ * c: character to print
+ */
+void gfx_putc(char c);
+
+/**
+ * gfx_puts - Print string at cursor (like puts())
+ * str: null-terminated string
+ */
+void gfx_puts(const char *str);
+
+/**
+ * gfx_clear - Clear screen
+ */
+void gfx_clear(void);
+
+/**
+ * gfx_set_color - Set text colors for next print
+ * fg: foreground color (use COLOR_xxx constants)
+ * bg: background color (use COLOR_xxx constants)
+ */
+void gfx_set_color(int fg, int bg);
+
+/**
+ * Graphics primitive syscalls for desktop/GUI
+ */
+void syscall_fill_rect(int x, int y, int width, int height, unsigned int color);
+void syscall_draw_rect(int x, int y, int width, int height, unsigned int color);
+void syscall_print_at(int x, int y, const char *str, unsigned int fg, unsigned int bg);
+void syscall_gfx_clear_color(unsigned int rgb_color);
+void syscall_draw_bmp(int x, int y, unsigned int bmp_data_addr);
+
+/**
+ * Mouse syscalls
+ */
+int syscall_mouse_get_x(void);
+int syscall_mouse_get_y(void);
+unsigned int syscall_mouse_get_buttons(void);
+
+/**
+ * Scheduler syscalls
+ */
+void syscall_yield(void);
+
+/**
+ * Debug syscalls
+ */
+int syscall_mouse_get_irq_total(void);
+int syscall_poll_mouse(void);  // Returns 1 if polled data, 0 if no data
+unsigned int syscall_get_pic_mask(void);
+void syscall_re_enable_mouse(void);
 
 #endif // USER_SYSCALLS_H

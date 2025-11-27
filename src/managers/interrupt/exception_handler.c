@@ -102,6 +102,10 @@ static void handle_kernel_exception(unsigned int exception_num, unsigned int err
     __asm__ volatile("mov %%cr2, %0" : "=r"(cr2));
     __asm__ volatile("mov %%cr3, %0" : "=r"(cr3));
     
+    /* CRITICAL: Switch back to VGA text mode for panic screen */
+    extern void vbe_emergency_text_mode(void);
+    vbe_emergency_text_mode();
+    
     /* Clear screen and setup BLACKHOLE display */
     vga_clear();
     

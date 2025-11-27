@@ -1,8 +1,17 @@
 #include "pmm.h"
 
 // External functions
-extern void vga_puts(const char *str);
-extern void vga_put_hex(uint32_t num);
+extern void vga_print(const char *s);
+static void print_hex(uint32_t val) {
+    char hex[9];
+    hex[8] = '\0';
+    for (int i = 7; i >= 0; i--) {
+        uint32_t digit = val & 0xF;
+        hex[i] = (digit < 10) ? ('0' + digit) : ('a' + digit - 10);
+        val >>= 4;
+    }
+    vga_print(hex);
+}
 
 // Bitmap and memory tracking
 static uint32_t *bitmap = 0;
@@ -147,13 +156,13 @@ void pmm_free_page(void *addr) {
 }
 
 void pmm_print_stats() {
-    vga_puts("PMM Stats: ");
-    vga_put_hex(total_pages - used_pages);
-    vga_puts(" pages free / ");
-    vga_put_hex(total_pages);
-    vga_puts(" total (");
-    vga_put_hex((total_pages - used_pages) * PAGE_SIZE / (1024 * 1024));
-    vga_puts(" MB free)\n");
+    vga_print("PMM Stats: ");
+    print_hex(total_pages - used_pages);
+    vga_print(" pages free / ");
+    print_hex(total_pages);
+    vga_print(" total (");
+    print_hex((total_pages - used_pages) * PAGE_SIZE / (1024 * 1024));
+    vga_print(" MB free)\n");
 }
 
 uint32_t pmm_get_free_pages() {

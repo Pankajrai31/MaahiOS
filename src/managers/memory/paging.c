@@ -2,8 +2,17 @@
 #include "pmm.h"
 
 // External VGA functions
-extern void vga_puts(const char *str);
-extern void vga_put_hex(uint32_t num);
+extern void vga_print(const char *s);
+static void print_hex(uint32_t val) {
+    char hex[9];
+    hex[8] = '\0';
+    for (int i = 7; i >= 0; i--) {
+        uint32_t digit = val & 0xF;
+        hex[i] = (digit < 10) ? ('0' + digit) : ('a' + digit - 10);
+        val >>= 4;
+    }
+    vga_print(hex);
+}
 
 // Global page directory pointer (exposed for kheap)
 uint32_t *kernel_page_directory = 0;
@@ -22,9 +31,9 @@ void paging_map_page(uint32_t *page_dir, uint32_t virt, uint32_t phys, uint32_t 
         
         // Sanity check - page table should be in high memory
         if ((uint32_t)page_table < 0x02400000) {
-            vga_puts("ERROR: Page table allocated in reserved region: 0x");
-            vga_put_hex((uint32_t)page_table);
-            vga_puts("\n");
+            vga_print("ERROR: Page table allocated in reserved region: 0x");
+            print_hex((uint32_t)page_table);
+            vga_print("\n");
         }
         
         // Clear page table
@@ -58,7 +67,7 @@ void identity_map_region(uint32_t *page_dir, uint32_t start, uint32_t end) {
 // Enable paging by setting CR0 and CR3
 void paging_enable() {
     if (!kernel_page_directory) {
-        vga_puts("ERROR: Cannot enable paging - no page directory!\n");
+        vga_print("ERROR: Cannot enable paging - no page directory!\n");
         return;
     }
     
@@ -153,6 +162,8 @@ int paging_init(multiboot_info_t *mbi) {
     // Identity map the entire 128MB region (but PMM only reserves actual usage)
     identity_map_region(kernel_page_directory, 0x00000000, identity_map_end);
     
+    // Note: Graphics framebuffer will be mapped manually by kernel after paging init
+    
     // Enable paging
     paging_enable();
     
@@ -191,7 +202,7 @@ void vmm_free_page(void *addr) {
  */
 void paging_map_mmio_region(uint32_t phys_start, uint32_t size) {
     if (!kernel_page_directory) {
-        vga_puts("[PAGING] ERROR: Cannot map MMIO - paging not initialized\n");
+        vga_print("[PAGING] ERROR: Cannot map MMIO - paging not initialized\n");
         return;
     }
     

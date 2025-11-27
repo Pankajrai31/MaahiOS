@@ -12,6 +12,8 @@ typedef struct {
     int pid;
     uint32_t entry_point;
     uint32_t state;
+    uint32_t user_stack_top;    /* User stack pointer */
+    uint32_t kernel_stack_top;  /* Kernel interrupt stack pointer */
 } process_t;
 
 /**

@@ -21,6 +21,7 @@
 .globl exception_stub_19
 .globl syscall_int
 .globl irq0_stub
+.globl irq12_stub
 /* .globl ata_irq_handler - removed (using AHCI now) */
 
 /* Extern C handler functions */
@@ -28,6 +29,7 @@
 .extern syscall_dispatcher
 .extern pit_handler
 .extern ata_irq_c_handler
+.extern mouse_handler
 
 /* Exception stub for exceptions WITHOUT error code (e.g., exception 0 - divide by zero) */
 .macro exception_no_error_code exception_num
@@ -147,8 +149,16 @@ syscall_int:
      * EDX = arg3
      */
     
-    /* Call dispatcher: syscall_dispatcher(eax, ebx, ecx, edx)
+    /* Call dispatcher: syscall_dispatcher(eax, ebx, ecx, edx, esi, user_esp)
      * In cdecl, we need to push args right-to-left */
+    
+    /* Calculate user ESP (before interrupt pushed EFLAGS, CS, EIP) */
+    mov %ebp, %edi              /* EBP points to saved EBP */
+    add $20, %edi               /* Skip saved regs (EBP+EBX+EDI+ESI=16) + saved EBP(4) = 20 */
+    add $12, %edi               /* Skip interrupt frame (EIP+CS+EFLAGS = 12) */
+    
+    push %edi                   /* user_esp -> 5th parameter */
+    push %esi                   /* arg4 (ESI) -> 4th parameter */
     push %edx                   /* arg3 -> 3rd parameter */
     push %ecx                   /* arg2 -> 2nd parameter */
     push %ebx                   /* arg1 -> 1st parameter */
@@ -157,7 +167,7 @@ syscall_int:
     call syscall_dispatcher
     
     /* Pop arguments */
-    add $16, %esp
+    add $24, %esp
     
     /* Restore callee-saved registers */
     pop %esi
@@ -190,4 +200,26 @@ irq0_stub:
     iret
 
 /* IRQ 14 handler removed - now using AHCI instead of IDE */
+
+/* ============================================================ */
+/* IRQ 12 HANDLER - PS/2 Mouse */
+/* ============================================================ */
+.align 4
+irq12_stub:
+    /* Save all general purpose registers */
+    pusha
+    
+    /* Call mouse handler */
+    call mouse_handler
+    
+    /* Send EOI to slave PIC (IRQ 12 is on slave PIC) */
+    movb $0x20, %al
+    outb %al, $0xA0     /* Slave PIC */
+    outb %al, $0x20     /* Master PIC */
+    
+    /* Restore registers */
+    popa
+    
+    /* Return from interrupt */
+    iret
 

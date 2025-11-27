@@ -117,3 +117,12 @@ int gdt_load(void) {
     
     return 1;  /* Success */
 }
+
+/**
+ * Update TSS esp0 for current process
+ * CRITICAL: This must be called before switching to any ring 3 process!
+ * Each process needs its own kernel interrupt stack
+ */
+void gdt_set_kernel_stack(unsigned int esp0_value) {
+    tss.esp0 = esp0_value;
+}

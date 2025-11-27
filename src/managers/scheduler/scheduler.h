@@ -24,4 +24,10 @@ void scheduler_disable(void);
  */
 int scheduler_get_current_pid(void);
 
+/**
+ * Add a new process to the ready queue
+ * Process will be started on next scheduler tick
+ */
+void scheduler_add_process(int pid, uint32_t entry_point, uint32_t user_stack, uint32_t kernel_stack);
+
 #endif // SCHEDULER_H

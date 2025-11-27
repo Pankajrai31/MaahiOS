@@ -112,3 +112,13 @@ int idt_install_exception_handlers(void) {
     
     return 1;  /* Success */
 }
+
+extern void irq12_stub(void);  /* Mouse IRQ */
+
+int idt_install_mouse_handler(void) {
+    /* Set up IRQ 12 (PS/2 Mouse) handler - IRQ 12 is remapped to INT 44 (32 + 12) */
+    /* Type: 0x8E = Present (1), DPL=0 (kernel), 32-bit Interrupt Gate */
+    /* Hardware IRQs MUST use DPL=0 - they can interrupt any privilege level */
+    idt_set_entry(44, (unsigned int)irq12_stub, 0x08, 0x8E);
+    return 1;  /* Success */
+}

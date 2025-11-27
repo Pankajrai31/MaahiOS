@@ -11,9 +11,7 @@ static unsigned int heap_start = 0;
 static unsigned int heap_end = 0;
 static unsigned int heap_current = 0;
 
-/* External VGA and PMM for debug */
-extern void vga_puts(const char *str);
-extern void vga_put_hex(unsigned int val);
+/* External PMM functions */
 extern void* pmm_alloc_page(void);
 
 /* Initialize kernel heap - use identity-mapped space after kernel structures */

@@ -1,9 +1,5 @@
 #include "pit.h"
 
-/* External VGA functions */
-extern void vga_puts(const char *str);
-extern void vga_put_hex(unsigned int val);
-
 /* External scheduler functions */
 extern void scheduler_tick(void);
 
