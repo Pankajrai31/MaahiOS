@@ -110,9 +110,12 @@ unsigned int syscall_dispatcher(
 ### Critical: Re-enable Interrupts
 ```c
 // CRITICAL: Re-enable interrupts during syscall handling
-// INT 0x80 clears IF, but we need timer/mouse IRQs to work
+// Using an Interrupt Gate (0x8E) in IDT clears IF on entry,
+// but we need timer/mouse IRQs to work during syscall handling
 __asm__ volatile("sti");
 ```
+
+Note: The IDT entry type (Interrupt Gate vs Trap Gate) determines whether IF is cleared on interrupt entry. MaahiOS uses a Trap Gate (0xEE) for INT 0x80, which does not clear IF, but the explicit `sti` ensures interrupts are enabled regardless.
 
 ### Syscall Implementations
 

@@ -2,6 +2,8 @@
 
 This document provides a comprehensive list of issues identified in the codebase and suggestions for fixing them.
 
+> **Note:** Line number references are approximate and may change as the code evolves. Use them as guidance to locate the relevant code sections.
+
 ---
 
 ## Critical Issues

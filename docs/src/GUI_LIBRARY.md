@@ -56,9 +56,11 @@ typedef struct {
 
 ### Issues Identified
 
-1. **Alpha in Color Constants**
-   - Colors include alpha (0xFF prefix) but BGA strips alpha.
-   - **Suggestion:** Use RGB only or document alpha handling.
+1. **Alpha Channel Value in Color Constants**
+   - Colors include alpha channel (0xFF = fully opaque) in the high byte.
+   - Example: `0xFFFFFFFF` = 0xFF alpha, 0xFF red, 0xFF green, 0xFF blue
+   - BGA driver strips the alpha channel since hardware doesn't support it.
+   - **Suggestion:** Use RGB only (0x00RRGGBB) or document alpha handling.
 
 2. **Missing IconType Enum**
    - `icons.h` references `IconType` but it's not defined in `libgui.h`.

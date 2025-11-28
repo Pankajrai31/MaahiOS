@@ -10,7 +10,7 @@ MaahiOS implements a complete interrupt handling system:
 
 ---
 
-## gdt.c
+## GDT - Global Descriptor Table (gdt.c)
 
 **Purpose:** Global Descriptor Table setup with Ring 0/3 segments and TSS.
 
