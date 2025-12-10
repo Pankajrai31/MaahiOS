@@ -139,4 +139,9 @@ int syscall_poll_mouse(void);  // Returns 1 if polled data, 0 if no data
 unsigned int syscall_get_pic_mask(void);
 void syscall_re_enable_mouse(void);
 
+/**
+ * Cursor compositor syscall - read pixel from framebuffer
+ */
+unsigned int syscall_read_pixel(int x, int y);
+
 #endif // USER_SYSCALLS_H

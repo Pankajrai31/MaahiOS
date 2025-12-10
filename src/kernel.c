@@ -270,15 +270,31 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
         
         serial_print("[KERNEL] Getting orbit address...\n");
         uint32_t orbit_addr = modules[1].mod_start;
+        uint32_t orbit_end = modules[1].mod_end;
+        uint32_t orbit_size = orbit_end - orbit_addr;
         serial_print("[KERNEL] orbit at 0x");
         serial_hex((orbit_addr >> 24) & 0xFF);
         serial_hex((orbit_addr >> 16) & 0xFF);
         serial_hex((orbit_addr >> 8) & 0xFF);
         serial_hex(orbit_addr & 0xFF);
+        serial_print(" size=");
+        serial_hex((orbit_size >> 24) & 0xFF);
+        serial_hex((orbit_size >> 16) & 0xFF);
+        serial_hex((orbit_size >> 8) & 0xFF);
+        serial_hex(orbit_size & 0xFF);
         serial_print("\n");
         
+        // Copy orbit to its linked address (0x00300000)
+        serial_print("[KERNEL] Copying orbit to 0x00300000...\n");
+        uint8_t *src = (uint8_t *)orbit_addr;
+        uint8_t *dst = (uint8_t *)0x00300000;
+        for (uint32_t i = 0; i < orbit_size; i++) {
+            dst[i] = src[i];
+        }
+        serial_print("[KERNEL] Orbit copied\n");
+        
         extern unsigned int orbit_module_address;
-        orbit_module_address = orbit_addr;
+        orbit_module_address = 0x00300000;  // Use the copied location
         
         // Disable interrupts before process creation to prevent timer from firing
         serial_print("[KERNEL] Disabling interrupts for process creation...\n");

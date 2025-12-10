@@ -26,8 +26,12 @@ def bmp_to_c_array(bmp_filename, array_name):
     return output
 
 def main():
-    icons_dir = '../libraries/icons'
-    output_file = '../src/orbit/embedded_icons.h'
+    # Icons are now in tools directory
+    icons_dir = '.'
+    # Output C header to libraries/icons
+    output_dir = '../libraries/icons'
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, 'embedded_icons.h')
     
     header = """#ifndef EMBEDDED_ICONS_H
 #define EMBEDDED_ICONS_H
@@ -36,7 +40,7 @@ def main():
 
 /**
  * Embedded BMP icon data for MaahiOS desktop
- * Generated from libraries/icons/*.bmp files
+ * Generated from tools/*.bmp files
  */
 
 """
@@ -48,10 +52,10 @@ def main():
     
     # Convert each BMP file
     icons = {
-        'process.bmp': 'icon_process_bmp',
-        'disk.bmp': 'icon_disk_bmp',
-        'files.bmp': 'icon_files_bmp',
-        'notebook.bmp': 'icon_notebook_bmp'
+        'file_icon.bmp': 'icon_file_bmp',
+        'process_icon.bmp': 'icon_process_bmp',
+        'disk_icon.bmp': 'icon_disk_bmp',
+        'notebook_icon.bmp': 'icon_notebook_bmp'
     }
     
     for filename, array_name in icons.items():
@@ -60,7 +64,7 @@ def main():
             print(f"Converting {filename}...")
             content += bmp_to_c_array(filepath, array_name)
         else:
-            print(f"Warning: {filepath} not found")
+            print(f"Warning: {filepath} not found, skipping...")
     
     content += footer
     

@@ -1,5 +1,7 @@
 #include "../libgui/libgui.h"
+#include "../libgui/cursor_compositor.h"
 #include "../syscalls/user_syscalls.h"
+#include "../../libraries/icons/embedded_icons.h"
 
 /**
  * Orbit - MaahiOS Desktop Shell
@@ -34,6 +36,9 @@ static void int_to_str(int num, char *buf) {
 }
 
 void orbit_main_c(void) {
+    // Initialize cursor compositor
+    orbit_cursor_init();
+    
     // Simplest possible test
     syscall_puts("[ORBIT_ENTRY] orbit_main_c started!\n");
     
@@ -70,9 +75,6 @@ void orbit_main_c(void) {
     }
     syscall_puts("\n");
     
-    char x_buf[16], y_buf[16];
-    static int loop_counter = 0;
-    
     // Clear screen to dark blue background
     gui_clear_screen(0x001020);
     
@@ -84,110 +86,46 @@ void orbit_main_c(void) {
     
     gui_draw_text(300, 40, "MaahiOS Desktop - Move your mouse!", 0xFFFF00, 0);
     
-    // Loop: read mouse X, Y and display
+    // Test: Draw file icon - check if icon data is valid
+    // Read first two bytes to verify BMP signature
+    uint8_t byte0 = icon_file_bmp[0];
+    uint8_t byte1 = icon_file_bmp[1];
+    
+    if (byte0 == 0x42 && byte1 == 0x4D) {
+        syscall_puts("Icon signature OK in Ring3!\n");
+    } else {
+        syscall_puts("Icon signature INVALID in Ring3!\n");
+    }
+    
+    syscall_draw_bmp(200, 165, (unsigned int)icon_file_bmp);
+    syscall_puts("Icon syscall complete\n");
+    
+    // Main event loop - clean and silent
     static int last_irq_count = 0;
     static int polls_since_irq = 0;
     
     while(1) {
-        loop_counter++;
-        
-        // DO NOT re-init mouse - let kernel's one-time init handle it
-        
-        // Smaller delay for more responsive polling (IRQ12 may not fire reliably in QEMU)
+        // Small delay for responsive polling
         for (volatile int i = 0; i < 1000; i++);
         
-        // Update display every iteration for responsive mouse tracking
-        // Force volatile reads through pointers to prevent compiler optimization
-        volatile int *kernel_mouse_x = (volatile int *)0x00118040;
-        volatile int *kernel_mouse_y = (volatile int *)0x00118044;
-        volatile int *kernel_irq_total = (volatile int *)0x0011804C;
-        
-        // Use syscalls to read - this forces kernel to do the read
+        // Get current mouse position
         int x = syscall_mouse_get_x();
         int y = syscall_mouse_get_y();
         int irq = syscall_mouse_get_irq_total();
-        unsigned int pic = syscall_get_pic_mask();
         
         // WORKAROUND: If IRQ12 stopped firing, manually poll 8042
         // QEMU bug: IRQ12 stops firing randomly even though 8042 has data
         if (irq == last_irq_count) {
             polls_since_irq++;
-            if (polls_since_irq > 2) {  // IRQ12 hasn't fired for 2 iterations - poll immediately
-                syscall_poll_mouse();  // Manually check 8042 and call handler if data available
+            if (polls_since_irq > 2) {
+                syscall_poll_mouse();
             }
         } else {
-            polls_since_irq = 0;  // IRQ12 is working
+            polls_since_irq = 0;
             last_irq_count = irq;
         }
         
-        // ALSO try direct volatile memory reads for comparison
-        int direct_x = *kernel_mouse_x;
-        int direct_y = *kernel_mouse_y;
-        
-        // QEMU PS/2 workaround: The issue is that IRQ12 stops firing in Ring 3
-        // For now, the mouse works during boot but stops in orbit
-        // This is a QEMU emulation limitation - works fine on real hardware
-        
-        // Clear old display area  
-        gui_draw_filled_rect(300, 100, 400, 140, 0x001020);
-        
-        // Convert to strings
-        int_to_str(x, x_buf);
-        int_to_str(y, y_buf);
-        char loop_buf[16], irq_buf[16], pic_buf[16], dx_buf[16], dy_buf[16];
-        int_to_str(loop_counter, loop_buf);
-        int_to_str(irq, irq_buf);
-        int_to_str(pic, pic_buf);
-        int_to_str(direct_x, dx_buf);
-        int_to_str(direct_y, dy_buf);
-        
-        // Display current mouse position
-        gui_draw_text(300, 110, "Mouse: X=", 0xFFFFFF, 0);
-        gui_draw_text(420, 110, x_buf, 0x00FF00, 0);
-        gui_draw_text(500, 110, " Y=", 0xFFFFFF, 0);
-        gui_draw_text(550, 110, y_buf, 0x00FF00, 0);
-        
-        // Display loop counter and IRQ total
-        gui_draw_text(300, 140, "Loop=", 0xFFFF00, 0);
-        gui_draw_text(380, 140, loop_buf, 0xFFFF00, 0);
-        gui_draw_text(500, 140, "IRQ=", 0x00FFFF, 0);
-        gui_draw_text(560, 140, irq_buf, 0x00FFFF, 0);
-        
-        // Display PIC mask to see if IRQ12 is masked
-        gui_draw_text(300, 170, "PIC=", 0xFF0000, 0);
-        gui_draw_text(360, 170, pic_buf, 0xFF0000, 0);
-        
-        // Display direct kernel memory reads
-        gui_draw_text(300, 230, "DirectX=", 0x00FFFF, 0);
-        gui_draw_text(400, 230, dx_buf, 0x00FFFF, 0);
-        gui_draw_text(500, 230, "DirectY=", 0x00FFFF, 0);
-        gui_draw_text(600, 230, dy_buf, 0x00FFFF, 0);
-        
-        // Clear old cursor position (track previous position)
-        static int prev_x = -1, prev_y = -1;
-        if (prev_x >= 0 && prev_y >= 0) {
-            syscall_fill_rect(prev_x, prev_y, 12, 18, 0x001020);  // Erase old cursor with background color
-        }
-        
-        // Draw cursor at current mouse position
-        // Draw a simple white square with black border as cursor
-        syscall_fill_rect(x, y, 12, 18, 0x000000);      // Black border
-        syscall_fill_rect(x+1, y+1, 10, 16, 0xFFFFFF);  // White fill
-        
-        prev_x = x;
-        prev_y = y;
-        
-        // Log mouse position changes to serial (only when changed)
-        static int last_logged_x = -1;
-        static int last_logged_y = -1;
-        if (x != last_logged_x || y != last_logged_y) {
-            syscall_puts("[MOUSE_MOVED] X=");
-            syscall_puts(x_buf);
-            syscall_puts(" Y=");
-            syscall_puts(y_buf);
-            syscall_puts("\n");
-            last_logged_x = x;
-            last_logged_y = y;
-        }
+        // Update cursor position (with built-in change detection)
+        orbit_draw_cursor(x, y);
     }
 }

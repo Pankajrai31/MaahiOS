@@ -485,6 +485,13 @@ unsigned int syscall_dispatcher(unsigned int syscall_num,
             }
             break;
         }
+        
+        case SYSCALL_READ_PIXEL:
+            // arg1 = x, arg2 = y
+            // Returns pixel color at (x, y)
+            extern uint32_t bga_get_pixel(int x, int y);
+            return_value = bga_get_pixel((int)arg1, (int)arg2);
+            break;
             
         default:
             // Unknown syscall - print error

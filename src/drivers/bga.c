@@ -6,6 +6,33 @@
 #include "bga.h"
 #include <stdint.h>
 
+/* Serial debug helpers */
+static inline unsigned char inb(unsigned short port) {
+    unsigned char ret;
+    __asm__ volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
+    return ret;
+}
+
+static inline void outb(unsigned short port, unsigned char val) {
+    __asm__ volatile("outb %0, %1" : : "a"(val), "Nd"(port));
+}
+
+static void serial_print(const char *str) {
+    while (*str) {
+        while ((inb(0x3FD) & 0x20) == 0);
+        outb(0x3F8, *str++);
+    }
+}
+
+static void serial_hex(uint32_t value) {
+    char hex[] = "0123456789ABCDEF";
+    for (int i = 7; i >= 0; i--) {
+        unsigned char nibble = (value >> (i * 4)) & 0xF;
+        while ((inb(0x3FD) & 0x20) == 0);
+        outb(0x3F8, hex[nibble]);
+    }
+}
+
 /* Global state */
 static uint32_t *framebuffer = 0;
 static uint16_t screen_width = 0;
@@ -13,6 +40,17 @@ static uint16_t screen_height = 0;
 static uint16_t screen_bpp = 0;
 static int cursor_x = 0;
 static int cursor_y = 0;
+
+/**
+ * Read a pixel from the framebuffer
+ * Used by cursor compositor to save/restore background
+ */
+uint32_t bga_get_pixel(int x, int y) {
+    if (!framebuffer || x < 0 || y < 0 || x >= screen_width || y >= screen_height) {
+        return 0x000000;  // Black for out-of-bounds
+    }
+    return framebuffer[y * screen_width + x];
+}
 
 /* 8x16 VGA Font (same as VBE - for text rendering) */
 static const uint8_t font_8x16[128][16] = {
@@ -456,14 +494,29 @@ void bga_draw_rect(int x, int y, int width, int height, uint32_t color) {
  * Supports 32-bit BMP files only
  */
 void bga_draw_bmp(int x, int y, const uint8_t *bmp_data) {
-    if (!framebuffer || !bmp_data) return;
+    if (!framebuffer || !bmp_data) {
+        serial_print("[BMP] NULL pointer\n");
+        return;
+    }
+    
+    // Debug: Print first few bytes
+    serial_print("[BMP] Data at 0x");
+    serial_hex((uint32_t)bmp_data);
+    serial_print(" bytes: 0x");
+    serial_hex(bmp_data[0]);
+    serial_print(" 0x");
+    serial_hex(bmp_data[1]);
+    serial_print("\n");
     
     // Verify BMP signature (should be 'BM')
     if (bmp_data[0] != 0x42 || bmp_data[1] != 0x4D) {
         // Invalid BMP - just draw a red square to show error
+        serial_print("[BMP] Invalid signature!\n");
         bga_fill_rect(x, y, 32, 32, 0xFF0000);
         return;
     }
+    
+    serial_print("[BMP] Valid signature, drawing...\n");
     
     // Parse BMP header to get dimensions
     // Offset 18: width (4 bytes, little-endian)

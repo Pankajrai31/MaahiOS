@@ -196,6 +196,11 @@ i686-elf-gcc -c "$SRC_DIR/libgui/cursor.c" -o "$BINARIES_DIR/gui_cursor.o" \
     -ffreestanding -fno-stack-protector -fPIC -m32
 echo -e "${GREEN}✓ gui_cursor.o created${NC}"
 
+# Compile cursor compositor
+i686-elf-gcc -c "$SRC_DIR/libgui/cursor_compositor.c" -o "$BINARIES_DIR/cursor_compositor.o" \
+    -ffreestanding -fno-stack-protector -fPIC -m32
+echo -e "${GREEN}✓ cursor_compositor.o created${NC}"
+
 # Compile orbit C code (position-independent)
 i686-elf-gcc -c "$SRC_DIR/orbit/orbit.c" -o "$BINARIES_DIR/orbit.o" \
     -ffreestanding -fno-stack-protector -fPIC -m32
@@ -206,6 +211,7 @@ i686-elf-ld -T "$SRC_DIR/orbit/orbit_linker.ld" -o "$BUILD_DIR/orbit.elf" \
     "$BINARIES_DIR/orbit_entry.o" "$BINARIES_DIR/orbit.o" \
     "$BINARIES_DIR/gui_draw.o" "$BINARIES_DIR/gui_window.o" \
     "$BINARIES_DIR/gui_controls.o" "$BINARIES_DIR/gui_cursor.o" \
+    "$BINARIES_DIR/cursor_compositor.o" \
     "$BINARIES_DIR/user_syscalls.o"
 echo -e "${GREEN}✓ orbit.elf created (with mouse support)${NC}"
 

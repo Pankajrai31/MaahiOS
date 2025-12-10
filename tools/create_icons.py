@@ -66,7 +66,7 @@ def create_process_icon():
             else:
                 pixels.append((0, 0, 0))            # Black (transparent)
     
-    create_bmp('../libraries/icons/process.bmp', width, height, pixels)
+    create_bmp('process_icon.bmp', width, height, pixels)
 
 
 # Disk Manager Icon (32x32) - Red square
@@ -85,26 +85,37 @@ def create_disk_icon():
             else:
                 pixels.append((0, 0, 0))            # Black (transparent)
     
-    create_bmp('../libraries/icons/disk.bmp', width, height, pixels)
+    create_bmp('disk_icon.bmp', width, height, pixels)
 
 
-# File Explorer Icon (32x32) - Yellow square
+# File Explorer Icon (32x32) - Folder shape
 def create_files_icon():
     width, height = 32, 32
     pixels = []
     
     for y in range(height):
         for x in range(width):
-            # Draw a simple yellow square with border
-            if (8 <= x < 24) and (8 <= y < 24):
-                if x == 8 or x == 23 or y == 8 or y == 23:
-                    pixels.append((255, 255, 255))  # White border
+            # Draw a folder icon (simplified)
+            # Tab at top: y 6-10, x 6-14
+            # Main body: y 10-26, x 6-26
+            
+            # Folder tab (darker yellow/orange)
+            if (6 <= y < 10) and (6 <= x < 14):
+                if x == 6 or x == 13 or y == 6:
+                    pixels.append((139, 69, 19))  # Brown border
                 else:
-                    pixels.append((255, 255, 0))    # Yellow fill
+                    pixels.append((255, 165, 0))  # Orange fill
+            # Folder body (yellow)
+            elif (10 <= y < 26) and (6 <= x < 26):
+                # Border
+                if x == 6 or x == 25 or y == 10 or y == 25:
+                    pixels.append((139, 69, 19))  # Brown border
+                else:
+                    pixels.append((255, 215, 0))  # Gold fill
             else:
-                pixels.append((0, 0, 0))            # Black (transparent)
+                pixels.append((0, 0, 0))  # Black (transparent)
     
-    create_bmp('../libraries/icons/files.bmp', width, height, pixels)
+    create_bmp('file_icon.bmp', width, height, pixels)
 
 
 # Notebook Icon (32x32) - Green square
@@ -123,7 +134,7 @@ def create_notebook_icon():
             else:
                 pixels.append((0, 0, 0))            # Black (transparent)
     
-    create_bmp('../libraries/icons/notebook.bmp', width, height, pixels)
+    create_bmp('notebook_icon.bmp', width, height, pixels)
 
 
 if __name__ == '__main__':

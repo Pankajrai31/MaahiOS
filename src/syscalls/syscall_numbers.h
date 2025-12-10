@@ -47,6 +47,7 @@
 #define SYSCALL_GET_PIC_MASK        33  // get_pic_mask() - Get PIC mask register
 #define SYSCALL_RE_ENABLE_MOUSE     34  // re_enable_mouse() - Re-enable IRQ12
 #define SYSCALL_POLL_MOUSE          35  // poll_mouse() - Manually poll 8042 for mouse data if IRQ12 stopped
+#define SYSCALL_READ_PIXEL          36  // read_pixel(x, y) - Read pixel from framebuffer for cursor compositor
 
 // VGA Color constants (for reference)
 // Foreground/Background colors: 0-15

@@ -322,3 +322,14 @@ int syscall_poll_mouse(void) {
     );
     return result;
 }
+
+unsigned int syscall_read_pixel(int x, int y) {
+    unsigned int result;
+    asm volatile(
+        "int $0x80"
+        : "=a"(result)
+        : "a"(SYSCALL_READ_PIXEL), "b"(x), "c"(y)
+        : "memory"
+    );
+    return result;
+}
