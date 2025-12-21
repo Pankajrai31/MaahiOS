@@ -49,6 +49,10 @@
 #define SYSCALL_POLL_MOUSE          35  // poll_mouse() - Manually poll 8042 for mouse data if IRQ12 stopped
 #define SYSCALL_READ_PIXEL          36  // read_pixel(x, y) - Read pixel from framebuffer for cursor compositor
 
+// UIManager syscalls
+#define SYSCALL_UI_REGISTER_BUTTON  37  // ui_register_button(owner_pid, x, y, w, h, label) - Register button with UIManager
+#define SYSCALL_GET_UIMANAGER_ADDR  38  // get_uimanager_address() - Get UIManager module address
+
 // VGA Color constants (for reference)
 // Foreground/Background colors: 0-15
 // 0=Black, 1=Blue, 2=Green, 3=Cyan, 4=Red, 5=Magenta, 6=Brown, 7=Light Gray

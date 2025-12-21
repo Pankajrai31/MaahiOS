@@ -65,9 +65,6 @@ uint32_t vbe_get_height(void);
 uint32_t vbe_get_framebuffer_addr(void);
 uint32_t vbe_get_framebuffer_size(void);
 
-/* Global variable to pass orbit address to sysman */
-unsigned int orbit_module_address = 0;
-
 /* PMM functions */
 int pmm_init(struct multiboot_info *mbi);
 
@@ -89,7 +86,10 @@ extern void vga_print_at(int x, int y, const char *s);
 void *vmm_alloc_page(void);
 void vmm_free_page(void *addr);
 
+/* Global variables for module addresses */
 unsigned int sysman_entry_point = 0;
+unsigned int uimanager_module_address = 0;
+unsigned int orbit_module_address = 0;
 
 static inline void outb(unsigned short port, unsigned char val) {
     asm volatile("outb %0, %1" : : "a"(val), "Nd"(port));

@@ -1,11 +1,12 @@
 // Syscall implementations are in pure assembly (user_syscalls.s)
 // This file is empty - all functions implemented in assembly
 #include "user_syscalls.h"
+#include <stdint.h>
 
 /**
  * Ring 3 Syscall Wrappers
  * 
- * Uses the OSDev-recommended approach:
+ * - Uses the OSDev-recommended approach:
  * - Load parameters directly into registers (EAX, EBX, ECX, EDX)
  * - Use volatile inline asm with explicit register constraints
  * - Trigger INT 0x80
@@ -106,6 +107,33 @@ int syscall_get_orbit_address(void) {
         "int $0x80"
         : "=a"(result)
         : "a"(SYSCALL_GET_ORBIT_ADDR)
+        : "memory"
+    );
+    return result;
+}
+
+int syscall_get_uimanager_address(void) {
+    int result;
+    asm volatile(
+        "int $0x80"
+        : "=a"(result)
+        : "a"(SYSCALL_GET_UIMANAGER_ADDR)
+        : "memory"
+    );
+    return result;
+}
+
+int syscall_ui_register_button(int owner_pid, int x, int y, int w, int h, const char *label) {
+    int result;
+    // Pack parameters: owner_pid in ebx, x in ecx, y in edx
+    // Width and height combined in esi (w in low 16 bits, h in high 16 bits)
+    // Label pointer in edit
+    uint32_t wh_packed = (h << 16) | (w & 0xFFFF);
+    asm volatile(
+        "int $0x80"
+        : "=a"(result)
+        : "a"(SYSCALL_UI_REGISTER_BUTTON), "b"(owner_pid), "c"(x), "d"(y), 
+          "S"(wh_packed), "D"(label)
         : "memory"
     );
     return result;

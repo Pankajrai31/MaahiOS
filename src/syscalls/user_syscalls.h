@@ -72,6 +72,22 @@ int syscall_create_process(unsigned int entry_point);
 int syscall_get_orbit_address(void);
 
 /**
+ * syscall_get_uimanager_address - Get UIManager module address from kernel
+ * Returns: Address of uimanager.bin loaded by GRUB
+ */
+int syscall_get_uimanager_address(void);
+
+/**
+ * syscall_ui_register_button - Register a button with UIManager
+ * owner_pid: Process ID of the owner
+ * x, y: Position
+ * w, h: Width and height
+ * label: Button text
+ * Returns: Control ID or -1 on failure
+ */
+int syscall_ui_register_button(int owner_pid, int x, int y, int w, int h, const char *label);
+
+/**
  * Graphics Syscalls - Simple text-mode-like API
  * Just like printf() - no hex values, no memory addresses
  */

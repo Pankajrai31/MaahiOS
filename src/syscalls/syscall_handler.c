@@ -318,6 +318,19 @@ unsigned int syscall_dispatcher(unsigned int syscall_num,
             return_value = orbit_module_address;
             break;
             
+        case SYSCALL_GET_UIMANAGER_ADDR:
+            // Return UIManager module address
+            extern uint32_t uimanager_module_address;
+            return_value = uimanager_module_address;
+            break;
+            
+        case SYSCALL_UI_REGISTER_BUTTON:
+            // arg1=owner_pid, arg2=x, arg3=y, arg4=w, arg5=h, ebp=label
+            // This is a cross-process call - need to send message to UIManager
+            // For now, just return -1 (not implemented yet)
+            return_value = -1;
+            break;
+            
         case SYSCALL_GFX_PUTC:
             // arg1 = character
             {
