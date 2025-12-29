@@ -4,17 +4,29 @@
  */
 
 #include "scheduler.h"
+#include "../process/process_manager.h"
 
-/* External VBE functions */
-extern void vbe_print(const char *str, uint32_t fg, uint32_t bg);
+/* Simple serial port output for debugging */
+static void serial_print(const char *str) {
+    while (*str) {
+        while (!(*(volatile unsigned char*)0x3FD & 0x20));
+        *(volatile unsigned char*)0x3F8 = *str++;
+    }
+}
+
+static void serial_hex(unsigned char byte) {
+    const char hex[] = "0123456789ABCDEF";
+    while (!(*(volatile unsigned char*)0x3FD & 0x20));
+    *(volatile unsigned char*)0x3F8 = hex[(byte >> 4) & 0xF];
+    while (!(*(volatile unsigned char*)0x3FD & 0x20));
+    *(volatile unsigned char*)0x3F8 = hex[byte & 0xF];
+}
 
 /* External process manager functions */
-extern int process_manager_get_count(void);
-extern void* process_manager_get_next_ready(int current_pid);
-extern int process_manager_get_pid(void *pcb);
+extern process_t* process_get_by_pid(int pid);
 
-/* Current running process PID */
-static int current_pid = -1;
+/* Current running process PID (0 = kernel idle) */
+static int current_pid = 0;
 
 /* Flag to enable/disable scheduling */
 static int scheduling_enabled = 0;
@@ -37,9 +49,9 @@ static int queue_count = 0;
  * Initialize the scheduler
  */
 void scheduler_init(void) {
-    current_pid = -1;
+    current_pid = 0;  /* 0 = kernel idle */
     scheduling_enabled = 0;
-    vbe_print("[SCHEDULER] Initialized\n", 0xFF00FF00, 0xFF001020);
+    serial_print("[SCHEDULER] Initialized\n");
 }
 
 /**
@@ -62,6 +74,10 @@ void scheduler_tick(void) {
     if (queue_count > 0) {
         queued_process_t *proc = &process_queue[queue_head];
         
+        serial_print("[SCHEDULER] Starting PID ");
+        serial_hex(proc->pid);
+        serial_print(" from queue\n");
+        
         /* Set TSS kernel stack for this process */
         extern void gdt_set_kernel_stack(unsigned int esp0_value);
         gdt_set_kernel_stack(proc->kernel_stack);
@@ -72,13 +88,26 @@ void scheduler_tick(void) {
         
         current_pid = proc->pid;
         
+        /* Mark process as running */
+        process_t *pcb = process_get_by_pid(proc->pid);
+        if (pcb) {
+            pcb->state = PROCESS_STATE_RUNNING;
+            /* Initialize context for first run */
+            pcb->eip = proc->entry_point;
+            pcb->esp = proc->user_stack;
+            pcb->cs = 0x1B;  /* Ring 3 code segment */
+            pcb->ds = 0x23;  /* Ring 3 data segment */
+            pcb->ss = 0x23;  /* Ring 3 stack segment */
+            pcb->eflags = 0x202;  /* IF=1 (interrupts enabled) */
+        }
+        
         /* Jump to the new process in Ring 3 - DOES NOT RETURN */
         extern void ring3_switch_with_stack(uint32_t entry_point, uint32_t stack_top);
         ring3_switch_with_stack(proc->entry_point, proc->user_stack);
     }
     
-    /* If no queued processes, continue running current process */
-    /* TODO: Implement context switching between running processes */
+    /* Context switch between running processes - not yet implemented */
+    /* Will add this in next step after verifying basic scheduler works */
 }
 
 /**
@@ -86,7 +115,7 @@ void scheduler_tick(void) {
  */
 void scheduler_enable() {
     scheduling_enabled = 1;
-    vbe_print("[SCHEDULER] Enabled\n", 0xFF00FF00, 0xFF001020);
+    serial_print("[SCHEDULER] Enabled\n");
 }
 
 /**
@@ -94,7 +123,7 @@ void scheduler_enable() {
  */
 void scheduler_disable() {
     scheduling_enabled = 0;
-    vbe_print("[SCHEDULER] Disabled\n", 0xFFFFFF00, 0xFF001020);
+    serial_print("[SCHEDULER] Disabled\n");
 }
 
 /**

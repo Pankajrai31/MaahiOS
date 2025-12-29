@@ -319,16 +319,33 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
         serial_hex(s2);
         serial_print("\n");
         
-        serial_print("[KERNEL] Calling process_create_sysman...\n");
-        extern int process_create_sysman(unsigned int address);
-        int result = process_create_sysman(sysman_addr);
-        serial_print("[KERNEL] ERROR: process_create_sysman returned!\n");
+        serial_print("[KERNEL] Creating sysman process (PID 1)...\n");
+        extern int process_create(uint32_t entry_point);
+        int sysman_pid = process_create(sysman_addr);
+        
+        if (sysman_pid < 0) {
+            serial_print("[KERNEL] ERROR: Failed to create sysman!\n");
+            while(1) asm volatile("hlt");
+        }
+        
+        serial_print("[KERNEL] Sysman created with PID: ");
+        serial_hex(sysman_pid);
+        serial_print("\n");
+        
+        serial_print("[KERNEL] Enabling scheduler...\n");
+        extern void scheduler_enable(void);
+        scheduler_enable();
+        
+        serial_print("[KERNEL] Enabling interrupts (timer will start multitasking)...\n");
+        __asm__ volatile("sti");
+        
+        serial_print("[KERNEL] Entering idle loop (scheduler controls execution)\n");
     } else {
         serial_print("[KERNEL] ERROR: No modules loaded by bootloader!\n");
     }
     
-    serial_print("[KERNEL] Entering idle loop\n");
+    serial_print("[KERNEL] Entering idle loop (PID 0)\n");
     while(1) {
-        asm volatile("hlt");
+        asm volatile("hlt");  /* Wait for interrupts, scheduler runs processes */
     }
 }

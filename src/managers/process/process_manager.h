@@ -14,6 +14,13 @@ typedef struct {
     uint32_t state;
     uint32_t user_stack_top;    /* User stack pointer */
     uint32_t kernel_stack_top;  /* Kernel interrupt stack pointer */
+    
+    /* CPU Context for context switching */
+    uint32_t eax, ebx, ecx, edx;
+    uint32_t esi, edi, ebp, esp;
+    uint32_t eip;
+    uint32_t eflags;
+    uint32_t cs, ds, ss;
 } process_t;
 
 /**
