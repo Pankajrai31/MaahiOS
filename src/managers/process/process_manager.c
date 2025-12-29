@@ -121,8 +121,13 @@ int process_create(uint32_t entry_point) {
         return -1;
     }
     
+    serial_print("[PROCESS_CREATE] Creating process at 0x");
+    serial_hex32(entry_point);
+    serial_print("\n");
+    
     process_t *pcb = (process_t *)kmalloc(sizeof(process_t));
     if (!pcb) {
+        serial_print("[PROCESS_CREATE] ERROR: kmalloc failed!\n");
         return -1;
     }
     
@@ -145,9 +150,15 @@ int process_create(uint32_t entry_point) {
     /* Add to process table */
     process_table[pcb->pid - 1] = pcb;
     
+    serial_print("[PROCESS_CREATE] Created PID ");
+    serial_hex32(pcb->pid);
+    serial_print(", adding to scheduler queue\n");
+    
     /* Add to scheduler's ready queue */
     extern void scheduler_add_process(int pid, uint32_t entry_point, uint32_t user_stack, uint32_t kernel_stack);
     scheduler_add_process(pcb->pid, pcb->entry_point, stack_top, kernel_stack_top);
+    
+    serial_print("[PROCESS_CREATE] Process queued, returning PID\n");
     
     /* RETURN to caller - process will be started by scheduler */
     return pcb->pid;

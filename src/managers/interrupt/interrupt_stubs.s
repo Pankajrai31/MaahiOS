@@ -183,20 +183,26 @@ syscall_int:
 /* ============================================================ */
 .align 4
 irq0_stub:
-    /* Save all general purpose registers (part of context) */
+    /* Save all general purpose registers */
     pusha
     
-    /* Call simple PIT handler (no context switching yet) */
-    call pit_handler
+    /* Push current ESP (points to saved context) for context switching */
+    push %esp
+    
+    /* Call PIT handler with context switching support */
+    call pit_handler_with_context
+    
+    /* EAX now contains new ESP (might be different process) */
+    mov %eax, %esp
     
     /* Send EOI to PIC (End of Interrupt) */
     movb $0x20, %al
     outb %al, $0x20
     
-    /* Restore registers */
+    /* Restore registers (might be from different process now) */
     popa
     
-    /* Return from interrupt */
+    /* Return from interrupt (might return to different process) */
     iret
 
 /* IRQ 14 handler removed - now using AHCI instead of IDE */

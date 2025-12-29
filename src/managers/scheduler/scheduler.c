@@ -61,9 +61,14 @@ int scheduler_get_current_pid(void) {
     return current_pid;
 }
 
+/* List of all running processes for round-robin */
+static int running_processes[MAX_QUEUED_PROCESSES];
+static int running_count = 0;
+static int current_index = -1;
+
 /**
  * Called by timer interrupt - switches between processes
- * Starts queued processes on first tick after they're added
+ * Starts queued processes and switches between running ones
  */
 void scheduler_tick(void) {
     if (!scheduling_enabled) {
@@ -88,6 +93,11 @@ void scheduler_tick(void) {
         
         current_pid = proc->pid;
         
+        /* Add to running processes list */
+        if (running_count < MAX_QUEUED_PROCESSES) {
+            running_processes[running_count++] = proc->pid;
+        }
+        
         /* Mark process as running */
         process_t *pcb = process_get_by_pid(proc->pid);
         if (pcb) {
@@ -106,8 +116,24 @@ void scheduler_tick(void) {
         ring3_switch_with_stack(proc->entry_point, proc->user_stack);
     }
     
-    /* Context switch between running processes - not yet implemented */
-    /* Will add this in next step after verifying basic scheduler works */
+    /* Context switch between running processes */
+    if (running_count > 1) {
+        /* Round-robin: switch to next process */
+        current_index = (current_index + 1) % running_count;
+        int next_pid = running_processes[current_index];
+        
+        if (next_pid != current_pid) {
+            serial_print("[SCHEDULER] Switching from PID ");
+            serial_hex(current_pid);
+            serial_print(" to PID ");
+            serial_hex(next_pid);
+            serial_print("\n");
+            
+            current_pid = next_pid;
+            
+            /* Context switch will happen in pit_handler_with_context */
+        }
+    }
 }
 
 /**

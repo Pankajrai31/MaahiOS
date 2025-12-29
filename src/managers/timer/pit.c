@@ -1,4 +1,5 @@
 #include "pit.h"
+#include <stdint.h>
 
 /* External scheduler functions */
 extern void scheduler_tick(void);
@@ -22,6 +23,21 @@ void pit_handler(void) {
     
     /* Call scheduler - for now just checks if scheduling is needed */
     scheduler_tick();
+}
+
+/**
+ * PIT handler with context switching support
+ * Called from irq0_stub with current ESP on stack
+ * Returns new ESP (same process or switched process)
+ */
+uint32_t pit_handler_with_context(uint32_t current_esp) {
+    pit_ticks++;
+    
+    /* For now, just call scheduler and return same ESP */
+    /* TODO: Implement actual context save/restore */
+    scheduler_tick();
+    
+    return current_esp;  /* Return same ESP for now */
 }
 
 /**

@@ -216,8 +216,6 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
     // Print loading messages centered in the box
     extern void bga_print_at(int x, int y, const char *str, uint32_t fg, uint32_t bg);
     bga_print_at(box_x + 140, box_y + 50, "M a a h i O S", 0xFFFFFFFF, 0x00001040);
-    bga_print_at(box_x + 120, box_y + 100, "Loading system...", 0xFF00BBFF, 0x00001040);
-    bga_print_at(box_x + 120, box_y + 140, "Initializing components", 0xFF888888, 0x00001040);
     bga_print_at(box_x + 120, box_y + 180, "Please wait...", 0xFF666666, 0x00001040);
     
     // Debug: Print to serial to see if we got here
