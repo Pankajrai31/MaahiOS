@@ -424,26 +424,24 @@ unsigned int syscall_dispatcher(unsigned int syscall_num,
             break;
             
         case SYSCALL_MOUSE_GET_X:
-            // Return current mouse X position
+            // Return current mouse X position (atomic read - disable IRQs to prevent race with IRQ12)
+            __asm__ volatile("cli");  // Disable interrupts
             return_value = (unsigned int)mouse_get_x();
-            serial_print("[SYSCALL_X=");
-            serial_hex((return_value >> 8) & 0xFF);
-            serial_hex(return_value & 0xFF);
-            serial_print("]\n");
+            __asm__ volatile("sti");  // Re-enable interrupts
             break;
             
         case SYSCALL_MOUSE_GET_Y:
-            // Return current mouse Y position
+            // Return current mouse Y position (atomic read - disable IRQs to prevent race with IRQ12)
+            __asm__ volatile("cli");  // Disable interrupts
             return_value = (unsigned int)mouse_get_y();
-            serial_print("[SYSCALL_Y=");
-            serial_hex((return_value >> 8) & 0xFF);
-            serial_hex(return_value & 0xFF);
-            serial_print("]\n");
+            __asm__ volatile("sti");  // Re-enable interrupts
             break;
             
         case SYSCALL_MOUSE_GET_BUTTONS:
-            // Return button state bitmap
+            // Return button state bitmap (atomic read - disable IRQs)
+            __asm__ volatile("cli");  // Disable interrupts
             return_value = (unsigned int)mouse_get_buttons();
+            __asm__ volatile("sti");  // Re-enable interrupts
             break;
             
         case SYSCALL_YIELD:
@@ -452,9 +450,11 @@ unsigned int syscall_dispatcher(unsigned int syscall_num,
             break;
             
         case SYSCALL_MOUSE_GET_IRQ_TOTAL:
-            // Return total IRQ12 count for debugging
+            // Return total IRQ12 count for debugging (atomic read)
             extern int mouse_get_irq_total(void);
+            __asm__ volatile("cli");  // Disable interrupts
             return_value = (unsigned int)mouse_get_irq_total();
+            __asm__ volatile("sti");  // Re-enable interrupts
             break;
             
         case SYSCALL_GET_PIC_MASK:

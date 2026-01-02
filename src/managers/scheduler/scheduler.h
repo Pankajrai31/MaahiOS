@@ -25,6 +25,16 @@ void scheduler_disable(void);
 int scheduler_get_current_pid(void);
 
 /**
+ * Check if scheduler wants to switch processes
+ */
+int scheduler_should_switch(void);
+
+/**
+ * Get the PID to switch to
+ */
+int scheduler_get_next_pid(void);
+
+/**
  * Add a new process to the ready queue
  * Process will be started on next scheduler tick
  */

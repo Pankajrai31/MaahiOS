@@ -8,75 +8,19 @@
  * Simple button-based interface with mouse support
  */
 
-// Helper function to convert integer to string
-static void int_to_str(int num, char *buf) {
-    int i = 0, j = 0;
-    char temp[16];
-    
-    if (num == 0) {
-        buf[0] = '0';
-        buf[1] = '\0';
-        return;
-    }
-    
-    if (num < 0) {
-        buf[j++] = '-';
-        num = -num;
-    }
-    
-    while (num > 0) {
-        temp[i++] = '0' + (num % 10);
-        num /= 10;
-    }
-    
-    while (i > 0) {
-        buf[j++] = temp[--i];
-    }
-    buf[j] = '\0';
-}
-
 void orbit_main_c(void) {
+    // FIRST: Print debug message to see if we get here
+    syscall_puts("[ORBIT] Entry!\n");
+    
     // Initialize cursor compositor
+    syscall_puts("[ORBIT] Cursor init...\n");
     orbit_cursor_init();
-    
-    // Simplest possible test
-    syscall_puts("[ORBIT_ENTRY] orbit_main_c started!\n");
-    
-    // FIRST THING: Check PIC masks in Ring 3 IMMEDIATELY
-    unsigned int pic_mask = syscall_get_pic_mask();
-    unsigned char master = pic_mask & 0xFF;
-    unsigned char slave = (pic_mask >> 8) & 0xFF;
-    
-    syscall_puts("[ORBIT_START] master=0x");
-    char hex_str[3];
-    const char hex_chars[] = "0123456789ABCDEF";
-    hex_str[0] = hex_chars[(master >> 4) & 0xF];
-    hex_str[1] = hex_chars[master & 0xF];
-    hex_str[2] = '\0';
-    syscall_puts(hex_str);
-    syscall_puts(" slave=0x");
-    hex_str[0] = hex_chars[(slave >> 4) & 0xF];
-    hex_str[1] = hex_chars[slave & 0xF];
-    hex_str[2] = '\0';
-    syscall_puts(hex_str);
-    
-    // Check if IRQ2 (cascade) is masked
-    if (master & (1 << 2)) {
-        syscall_puts(" IRQ2_MASKED!");
-    } else {
-        syscall_puts(" IRQ2_OK");
-    }
-    
-    // Check if IRQ12 is masked
-    if (slave & (1 << 4)) {
-        syscall_puts(" IRQ12_MASKED!");
-    } else {
-        syscall_puts(" IRQ12_OK");
-    }
-    syscall_puts("\n");
+    syscall_puts("[ORBIT] Cursor OK\n");
     
     // Clear screen to dark blue background
+    syscall_puts("[ORBIT] Clearing screen...\n");
     gui_clear_screen(0x001020);
+    syscall_puts("[ORBIT] Screen cleared\n");
     
     // Draw buttons
     gui_button("Process Manager", 20, 20);
@@ -86,35 +30,29 @@ void orbit_main_c(void) {
     
     gui_draw_text(300, 40, "MaahiOS Desktop - Move your mouse!", 0xFFFF00, 0);
     
-    // Test: Draw file icon - check if icon data is valid
-    // Read first two bytes to verify BMP signature
-    uint8_t byte0 = icon_file_bmp[0];
-    uint8_t byte1 = icon_file_bmp[1];
-    
-    if (byte0 == 0x42 && byte1 == 0x4D) {
-        syscall_puts("Icon signature OK in Ring3!\n");
-    } else {
-        syscall_puts("Icon signature INVALID in Ring3!\n");
-    }
-    
+    // Draw file icon
     syscall_draw_bmp(200, 165, (unsigned int)icon_file_bmp);
-    syscall_puts("Icon syscall complete\n");
     
-    // Main event loop - clean and silent
+    // Mouse event detection state
     static int last_irq_count = 0;
     static int polls_since_irq = 0;
+    static unsigned int last_buttons = 0;
+    static int last_click_time = 0;
+    static int click_x = 0, click_y = 0;
+    
+    // Event status display areas
+    char hover_text[64];
+    char click_text[32] = "Click: None";
+    char dblclick_text[32] = "Double Click: None";
     
     while(1) {
-        // Small delay for responsive polling
-        for (volatile int i = 0; i < 1000; i++);
-        
-        // Get current mouse position
+        // Get current mouse position and buttons (atomic reads)
         int x = syscall_mouse_get_x();
         int y = syscall_mouse_get_y();
+        unsigned int buttons = syscall_mouse_get_buttons();
         int irq = syscall_mouse_get_irq_total();
         
-        // WORKAROUND: If IRQ12 stopped firing, manually poll 8042
-        // QEMU bug: IRQ12 stops firing randomly even though 8042 has data
+        // Poll mouse if IRQ stopped
         if (irq == last_irq_count) {
             polls_since_irq++;
             if (polls_since_irq > 2) {
@@ -125,7 +63,101 @@ void orbit_main_c(void) {
             last_irq_count = irq;
         }
         
-        // Update cursor position (with built-in change detection)
+        // Detect button press (transition from 0 to pressed)
+        if (buttons != last_buttons) {
+            if ((buttons & 0x01) && !(last_buttons & 0x01)) {
+                // Left button pressed
+                int current_time = irq;  // Use IRQ count as simple timer
+                int time_diff = current_time - last_click_time;
+                
+                // Check for double click (within ~10 IRQs and near same position)
+                int dx = x - click_x;
+                int dy = y - click_y;
+                if (dx < 0) dx = -dx;
+                if (dy < 0) dy = -dy;
+                
+                if (time_diff < 10 && dx < 5 && dy < 5) {
+                    // Double click detected
+                    dblclick_text[0] = 'D'; dblclick_text[1] = 'o'; dblclick_text[2] = 'u';
+                    dblclick_text[3] = 'b'; dblclick_text[4] = 'l'; dblclick_text[5] = 'e';
+                    dblclick_text[6] = ' '; dblclick_text[7] = 'C'; dblclick_text[8] = 'l';
+                    dblclick_text[9] = 'i'; dblclick_text[10] = 'c'; dblclick_text[11] = 'k';
+                    dblclick_text[12] = ':'; dblclick_text[13] = ' '; dblclick_text[14] = 'Y';
+                    dblclick_text[15] = 'E'; dblclick_text[16] = 'S'; dblclick_text[17] = '\0';
+                } else {
+                    // Single click
+                    click_text[0] = 'C'; click_text[1] = 'l'; click_text[2] = 'i';
+                    click_text[3] = 'c'; click_text[4] = 'k'; click_text[5] = ':';
+                    click_text[6] = ' '; click_text[7] = 'Y'; click_text[8] = 'E';
+                    click_text[9] = 'S'; click_text[10] = '\0';
+                    
+                    // Reset double click
+                    dblclick_text[0] = 'D'; dblclick_text[1] = 'o'; dblclick_text[2] = 'u';
+                    dblclick_text[3] = 'b'; dblclick_text[4] = 'l'; dblclick_text[5] = 'e';
+                    dblclick_text[6] = ' '; dblclick_text[7] = 'C'; dblclick_text[8] = 'l';
+                    dblclick_text[9] = 'i'; dblclick_text[10] = 'c'; dblclick_text[11] = 'k';
+                    dblclick_text[12] = ':'; dblclick_text[13] = ' '; dblclick_text[14] = 'N';
+                    dblclick_text[15] = 'o'; dblclick_text[16] = 'n'; dblclick_text[17] = 'e';
+                    dblclick_text[18] = '\0';
+                }
+                
+                last_click_time = current_time;
+                click_x = x;
+                click_y = y;
+            }
+            
+            last_buttons = buttons;
+        }
+        
+        // Build hover text with coordinates
+        hover_text[0] = 'H'; hover_text[1] = 'o'; hover_text[2] = 'v';
+        hover_text[3] = 'e'; hover_text[4] = 'r'; hover_text[5] = ':';
+        hover_text[6] = ' '; hover_text[7] = 'x'; hover_text[8] = '=';
+        
+        // Convert x to string
+        int pos = 9;
+        int temp_x = x;
+        int divisor = 100;
+        int started = 0;
+        while (divisor > 0) {
+            int digit = temp_x / divisor;
+            if (digit > 0 || started || divisor == 1) {
+                hover_text[pos++] = '0' + digit;
+                started = 1;
+            }
+            temp_x %= divisor;
+            divisor /= 10;
+        }
+        
+        hover_text[pos++] = ' ';
+        hover_text[pos++] = 'y';
+        hover_text[pos++] = '=';
+        
+        // Convert y to string
+        int temp_y = y;
+        divisor = 100;
+        started = 0;
+        while (divisor > 0) {
+            int digit = temp_y / divisor;
+            if (digit > 0 || started || divisor == 1) {
+                hover_text[pos++] = '0' + digit;
+                started = 1;
+            }
+            temp_y %= divisor;
+            divisor /= 10;
+        }
+        hover_text[pos] = '\0';
+        
+        // Display event status (clear background first)
+        syscall_fill_rect(300, 80, 400, 20, 0x001020);  // Clear click text area
+        syscall_fill_rect(300, 110, 400, 20, 0x001020); // Clear double click area
+        syscall_fill_rect(300, 140, 400, 20, 0x001020); // Clear hover area
+        
+        gui_draw_text(300, 80, click_text, 0x00FF00, 0);
+        gui_draw_text(300, 110, dblclick_text, 0xFF8800, 0);
+        gui_draw_text(300, 140, hover_text, 0x00FFFF, 0);
+        
+        // Update cursor
         orbit_draw_cursor(x, y);
     }
 }

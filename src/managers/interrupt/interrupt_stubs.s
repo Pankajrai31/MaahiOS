@@ -183,6 +183,21 @@ syscall_int:
 /* ============================================================ */
 .align 4
 irq0_stub:
+    /* ULTRA EARLY DEBUG - raw serial write */
+    push %eax
+    mov $0x3F8, %dx
+    mov $'I', %al
+    out %al, %dx
+    mov $'R', %al
+    out %al, %dx
+    mov $'Q', %al
+    out %al, %dx
+    mov $'0', %al
+    out %al, %dx
+    mov $'\n', %al
+    out %al, %dx
+    pop %eax
+    
     /* Save all general purpose registers */
     pusha
     
@@ -190,19 +205,34 @@ irq0_stub:
     push %esp
     
     /* Call PIT handler with context switching support */
+    /* It returns new ESP in EAX (might be same or different process) */
     call pit_handler_with_context
     
-    /* EAX now contains new ESP (might be different process) */
+    /* EAX now contains ESP to use (current or different process) */
+    /* DON'T pop the argument - just set ESP directly */
+    /* The handler already accounted for the pushed ESP argument */
     mov %eax, %esp
     
     /* Send EOI to PIC (End of Interrupt) */
     movb $0x20, %al
     outb %al, $0x20
     
-    /* Restore registers (might be from different process now) */
+    /* CRITICAL: Set Ring 3 data segments before returning to Ring 3 */
+    /* We must do this BEFORE popa so we don't clobber restored registers */
+    /* Load Ring 3 data segment (0x23) into DS/ES/FS/GS */
+    push $0x23
+    pop %ds
+    push $0x23
+    pop %es
+    push $0x23
+    pop %fs
+    push $0x23
+    pop %gs
+    
+    /* Restore registers (from potentially different process now) */
     popa
     
-    /* Return from interrupt (might return to different process) */
+    /* Return from interrupt (to potentially different process) */
     iret
 
 /* IRQ 14 handler removed - now using AHCI instead of IDE */

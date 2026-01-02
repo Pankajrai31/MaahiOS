@@ -22,6 +22,15 @@ static void serial_hex(unsigned char byte) {
     *(volatile unsigned char*)0x3F8 = hex[byte & 0xF];
 }
 
+static void serial_hex32(uint32_t value) {
+    const char hex[] = "0123456789ABCDEF";
+    for (int i = 7; i >= 0; i--) {
+        unsigned char byte = (value >> (i * 4)) & 0xF;
+        while (!(*(volatile unsigned char*)0x3FD & 0x20));
+        *(volatile unsigned char*)0x3F8 = hex[byte];
+    }
+}
+
 /* External process manager functions */
 extern process_t* process_get_by_pid(int pid);
 
@@ -66,18 +75,86 @@ static int running_processes[MAX_QUEUED_PROCESSES];
 static int running_count = 0;
 static int current_index = -1;
 
+/* Context switching control */
+static int should_switch = 0;
+static int next_switch_pid = 0;
+
+/**
+ * Check if scheduler wants to switch processes
+ */
+int scheduler_should_switch(void) {
+    return should_switch;
+}
+
+/**
+ * Get the PID to switch to
+ */
+int scheduler_get_next_pid(void) {
+    should_switch = 0;  /* Clear flag after reading */
+    return next_switch_pid;
+}
+
 /**
  * Called by timer interrupt - switches between processes
  * Starts queued processes and switches between running ones
  */
 void scheduler_tick(void) {
+    /* ABSOLUTE FIRST LINE - inline asm output */
+    __asm__ volatile(
+        "pushl %%eax\n"
+        "pushl %%edx\n"
+        "movl $0x3F8, %%edx\n"
+        "movb $'S', %%al\n" "outb %%al, %%dx\n"
+        "movb $'T', %%al\n" "outb %%al, %%dx\n"
+        "movb $'I', %%al\n" "outb %%al, %%dx\n"
+        "movb $'C', %%al\n" "outb %%al, %%dx\n"
+        "movb $'K', %%al\n" "outb %%al, %%dx\n"
+        "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+        "popl %%edx\n"
+        "popl %%eax\n"
+        ::: "memory"
+    );
+    
+    static int tick_count = 0;
+    if (++tick_count % 100 == 0) {
+        serial_print("[SCHED_TICK] Called, enabled=");
+        serial_hex(scheduling_enabled);
+        serial_print("\n");
+    }
+    
     if (!scheduling_enabled) {
         return;
     }
     
     /* Check if there's a queued process to start */
     if (queue_count > 0) {
+        __asm__ volatile(
+            "pushl %%eax\n"
+            "pushl %%edx\n"
+            "movl $0x3F8, %%edx\n"
+            "movb $'Q', %%al\n" "outb %%al, %%dx\n"
+            "movb $'>', %%al\n" "outb %%al, %%dx\n"
+            "movb $'0', %%al\n" "outb %%al, %%dx\n"
+            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+            "popl %%edx\n"
+            "popl %%eax\n"
+            ::: "memory"
+        );
+        
         queued_process_t *proc = &process_queue[queue_head];
+        
+        __asm__ volatile(
+            "pushl %%eax\n"
+            "pushl %%edx\n"
+            "movl $0x3F8, %%edx\n"
+            "movb $'P', %%al\n" "outb %%al, %%dx\n"
+            "movb $'R', %%al\n" "outb %%al, %%dx\n"
+            "movb $'C', %%al\n" "outb %%al, %%dx\n"
+            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+            "popl %%edx\n"
+            "popl %%eax\n"
+            ::: "memory"
+        );
         
         serial_print("[SCHEDULER] Starting PID ");
         serial_hex(proc->pid);
@@ -96,29 +173,86 @@ void scheduler_tick(void) {
         /* Add to running processes list */
         if (running_count < MAX_QUEUED_PROCESSES) {
             running_processes[running_count++] = proc->pid;
+            /* Update current_index to point to this process */
+            current_index = running_count - 1;
         }
         
-        /* Mark process as running */
+        /* Mark process as running and build initial interrupt frame */
         process_t *pcb = process_get_by_pid(proc->pid);
+        
+        __asm__ volatile(
+            "pushl %%eax\n"
+            "pushl %%edx\n"
+            "movl $0x3F8, %%edx\n"
+            "movb $'P', %%al\n" "outb %%al, %%dx\n"
+            "movb $'C', %%al\n" "outb %%al, %%dx\n"
+            "movb $'B', %%al\n" "outb %%al, %%dx\n"
+            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+            "popl %%edx\n"
+            "popl %%eax\n"
+            ::: "memory"
+        );
+        
+        serial_print("[SCHED_PCB_CHECK] PID=");
+        serial_hex(proc->pid);
+        serial_print(" pcb=0x");
+        serial_hex32((uint32_t)pcb);
+        serial_print("\n");
+        
         if (pcb) {
             pcb->state = PROCESS_STATE_RUNNING;
-            /* Initialize context for first run */
-            pcb->eip = proc->entry_point;
-            pcb->esp = proc->user_stack;
-            pcb->cs = 0x1B;  /* Ring 3 code segment */
-            pcb->ds = 0x23;  /* Ring 3 data segment */
-            pcb->ss = 0x23;  /* Ring 3 stack segment */
-            pcb->eflags = 0x202;  /* IF=1 (interrupts enabled) */
+            
+            serial_print("[SCHEDULER] Signaling switch to PID ");
+            serial_hex(proc->pid);
+            serial_print(" ESP=0x");
+            serial_hex32(pcb->esp);
+            serial_print("\n");
+            
+            /* Signal context switch to this process */
+            /* PCB already has prepared interrupt frame from process_create() */
+            should_switch = 1;
+            next_switch_pid = proc->pid;
+        } else {
+            serial_print("[SCHEDULER] ERROR: PCB not found for PID ");
+            serial_hex(proc->pid);
+            serial_print("\n");
         }
         
-        /* Jump to the new process in Ring 3 - DOES NOT RETURN */
-        extern void ring3_switch_with_stack(uint32_t entry_point, uint32_t stack_top);
-        ring3_switch_with_stack(proc->entry_point, proc->user_stack);
+        return;  /* Process started, timer will continue */
     }
     
-    /* Context switch between running processes */
-    if (running_count > 1) {
+    /* Context switch between running processes (round-robin) */
+    /* Debug every 100 ticks to avoid spam */
+    static int debug_counter = 0;
+    if (++debug_counter >= 100) {
+        debug_counter = 0;
+        serial_print("[SCHED_DEBUG] running=");
+        serial_hex(running_count);
+        serial_print(" queue=");
+        serial_hex(queue_count);
+        serial_print(" curr_pid=");
+        serial_hex(current_pid);
+        serial_print(" curr_idx=");
+        serial_hex(current_index);
+        serial_print("\n");
+    }
+    
+    if (running_count > 1 && queue_count == 0) {  /* Only switch when all processes started */
+        __asm__ volatile(
+            "pushl %%eax\n"
+            "pushl %%edx\n"
+            "movl $0x3F8, %%edx\n"
+            "movb $'R', %%al\n" "outb %%al, %%dx\n"
+            "movb $'R', %%al\n" "outb %%al, %%dx\n"
+            "movb $'!', %%al\n" "outb %%al, %%dx\n"
+            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+            "popl %%edx\n"
+            "popl %%eax\n"
+            ::: "memory"
+        );
+        
         /* Round-robin: switch to next process */
+        int old_index = current_index;
         current_index = (current_index + 1) % running_count;
         int next_pid = running_processes[current_index];
         
@@ -129,9 +263,10 @@ void scheduler_tick(void) {
             serial_hex(next_pid);
             serial_print("\n");
             
+            /* Signal context switch to pit_handler */
+            should_switch = 1;
+            next_switch_pid = next_pid;
             current_pid = next_pid;
-            
-            /* Context switch will happen in pit_handler_with_context */
         }
     }
 }
@@ -157,7 +292,28 @@ void scheduler_disable() {
  * It will be started on the next scheduler tick
  */
 void scheduler_add_process(int pid, uint32_t entry_point, uint32_t user_stack, uint32_t kernel_stack) {
+    /* ABSOLUTE FIRST - inline asm */
+    __asm__ volatile(
+        "pushl %%eax\n"
+        "pushl %%edx\n"
+        "movl $0x3F8, %%edx\n"
+        "movb $'A', %%al\n" "outb %%al, %%dx\n"
+        "movb $'D', %%al\n" "outb %%al, %%dx\n"
+        "movb $'D', %%al\n" "outb %%al, %%dx\n"
+        "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+        "popl %%edx\n"
+        "popl %%eax\n"
+        ::: "memory"
+    );
+    
+    serial_print("[SCHED_ADD] PID=");
+    serial_hex(pid);
+    serial_print(" queue_count=");
+    serial_hex(queue_count);
+    serial_print("\n");
+    
     if (queue_count >= MAX_QUEUED_PROCESSES) {
+        serial_print("[SCHED_ADD] ERROR: Queue full!\n");
         return;  /* Queue full */
     }
     
@@ -168,4 +324,8 @@ void scheduler_add_process(int pid, uint32_t entry_point, uint32_t user_stack, u
     
     queue_tail = (queue_tail + 1) % MAX_QUEUED_PROCESSES;
     queue_count++;
+    
+    serial_print("[SCHED_ADD] Added! New queue_count=");
+    serial_hex(queue_count);
+    serial_print("\n");
 }

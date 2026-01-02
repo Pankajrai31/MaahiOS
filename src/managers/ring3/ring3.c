@@ -21,11 +21,23 @@ static void serial_print(const char *str) {
     }
 }
 
+static void serial_hex32(unsigned int value) {
+    char hex[] = "0123456789ABCDEF";
+    for (int i = 28; i >= 0; i -= 4) {
+        serial_putc(hex[(value >> i) & 0xF]);
+    }
+}
+
 /* Switch to Ring 3 with specified entry point and stack - NEVER RETURNS */
 void ring3_switch_with_stack(unsigned int entry_point, unsigned int stack_top) __attribute__((noreturn));
 
 void ring3_switch_with_stack(unsigned int entry_point, unsigned int stack_top) {
-    serial_print("\n[RING3_SWITCH] Switching to Ring 3 now!\n");
+    serial_print("\n[RING3_SWITCH] EP=0x");
+    serial_hex32(entry_point);
+    serial_print(" STK=0x");
+    serial_hex32(stack_top);
+    serial_print("\n");
+    serial_print("[RING3_SWITCH] Switching to Ring 3 now!\n");
     
     __asm__ __volatile__(
         /* Keep DS/ES/FS/GS as kernel segments (0x10) during transition */
@@ -36,7 +48,7 @@ void ring3_switch_with_stack(unsigned int entry_point, unsigned int stack_top) {
         "pushl %0\n\t"              /* User stack pointer */
         "pushf\n\t"                 /* Current EFLAGS */
         "popl %%eax\n\t"
-        "orl $0x00000200, %%eax\n\t"  /* Set IF bit (interrupts enabled in Ring 3) */
+        "orl $0x00003200, %%eax\n\t"  /* Set IF (0x200) and IOPL=3 (0x3000) */
         "pushl %%eax\n\t"           /* Push modified EFLAGS */
         "pushl $0x1B\n\t"           /* User code segment (Ring 3) */
         "pushl %1\n\t"              /* Entry point */

@@ -67,17 +67,35 @@ static const char* get_exception_description(unsigned int num) {
     }
 }
 
-/* Handle user mode exception - restart sysman */
+/* Handle user mode exception - FOR NOW: just halt, don't restart */
 static void handle_user_exception(unsigned int exception_num, unsigned int error_code) {
+    /* Print to serial for debugging */
+    volatile unsigned char *serial = (volatile unsigned char *)0x3F8;
+    const char msg[] = "\n[EXCEPTION] Ring3 Exception #";
+    for (int i = 0; msg[i]; i++) *serial = msg[i];
+    
+    const char hex[] = "0123456789ABCDEF";
+    *serial = hex[(exception_num >> 4) & 0xF];
+    *serial = hex[exception_num & 0xF];
+    
+    const char msg2[] = " ErrorCode=0x";
+    for (int i = 0; msg2[i]; i++) *serial = msg2[i];
+    
+    for (int i = 7; i >= 0; i--) {
+        *serial = hex[(error_code >> (i * 4)) & 0xF];
+    }
+    *serial = '\n';
+    
     vga_print("\n[RING3 EXCEPTION #");
     print_hex(exception_num);
     vga_print("] ");
     vga_print(get_exception_name(exception_num));
     vga_print(" - Error Code: ");
     print_hex(error_code);
-    vga_print("\n[RING3 EXCEPTION] Restarting sysman...\n");
+    vga_print("\n[EXCEPTION] HALTING - Fix multitasking first!\n");
     
-    ring3_switch(sysman_entry_point);
+    /* HALT instead of trying to restart - prevents infinite loop */
+    while(1) { asm volatile("cli; hlt"); }
 }
 
 /* Handle kernel mode exception - fatal BLACKHOLE */

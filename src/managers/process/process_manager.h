@@ -29,13 +29,7 @@ typedef struct {
 void process_manager_init(void);
 
 /**
- * Create sysman process (PID 1)
- * Returns: Process ID or -1 on failure
- */
-int process_create_sysman(uint32_t sysman_address);
-
-/**
- * Create a generic process
+ * Create a generic process (queues to scheduler)
  * Returns: Process ID or -1 on failure
  */
 int process_create(uint32_t entry_point);

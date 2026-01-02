@@ -184,15 +184,13 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
     extern void scheduler_init(void);
     scheduler_init();
     
-    // Initialize PIT timer (1000Hz = 1ms ticks for faster scheduling)
+    // Initialize PIT timer (50Hz = 20ms ticks for responsive but not aggressive preemption)
+    // Lower frequency allows graphics operations to complete without constant interruption
     extern void pit_init(unsigned int frequency);
-    pit_init(1000);
+    pit_init(50);
     
-    // Enable interrupts NOW - kernel does this ONCE
-    __asm__ volatile("sti");
-    
-    // NOTE: Don't enable timer IRQ yet - wait until after process creation
-    // Otherwise scheduler_tick() will fire before processes exist!
+    // DON'T enable interrupts yet - wait until after process creation
+    // NOTE: Interrupts will be enabled after process_create() is called
     
     // Initialize BGA (switch to graphics mode)
     if (!bga_init(1024, 768, 32)) {
@@ -258,8 +256,12 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
         
         struct multiboot_module *modules = (struct multiboot_module *)mbi->mods_addr;
         serial_print("[KERNEL] Getting sysman address...\n");
-        uint32_t sysman_addr = modules[0].mod_start;
-        serial_print("[KERNEL] sysman at 0x");
+        
+        // WORKAROUND: GRUB's mod_start has a 0x33 byte offset for some reason
+        // Subtract it to get the actual module start
+        volatile uint32_t sysman_addr = (modules[0].mod_start & 0xFFFFF000);
+        
+        serial_print("[KERNEL] sysman module at 0x");
         serial_hex((sysman_addr >> 24) & 0xFF);
         serial_hex((sysman_addr >> 16) & 0xFF);
         serial_hex((sysman_addr >> 8) & 0xFF);
@@ -294,45 +296,33 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
         extern unsigned int orbit_module_address;
         orbit_module_address = 0x00300000;  // Use the copied location
         
-        // Disable interrupts before process creation to prevent timer from firing
+        // Disable interrupts before process creation
         serial_print("[KERNEL] Disabling interrupts for process creation...\n");
         __asm__ volatile("cli");
         
-        // Enable scheduler (doesn't need interrupts enabled)
+        // Enable scheduler
         serial_print("[KERNEL] Enabling scheduler...\n");
         extern void scheduler_enable(void);
         scheduler_enable();
         
-        // Enable timer IRQ in PIC (but interrupts are disabled so it won't fire yet)
-        serial_print("[KERNEL] Enabling timer IRQ in PIC...\n");
-        extern void irq_enable_timer(void);
-        irq_enable_timer();
-        
-        // Check BOTH PIC masks after timer enable
-        unsigned char m2 = inb(0x21);
-        unsigned char s2 = inb(0xA1);
-        serial_print("[KERNEL] After timer enable: master=");
-        serial_hex(m2);
-        serial_print(" slave=");
-        serial_hex(s2);
-        serial_print("\n");
-        
         serial_print("[KERNEL] Creating sysman process (PID 1)...\n");
+        
         extern int process_create(uint32_t entry_point);
-        int sysman_pid = process_create(sysman_addr);
+        int sysman_pid = process_create(sysman_addr);  // sysman at masked address
+        
+        serial_print("[KERNEL] process_create() returned PID: ");
+        serial_hex(sysman_pid);
+        serial_print("\n");
         
         if (sysman_pid < 0) {
             serial_print("[KERNEL] ERROR: Failed to create sysman!\n");
             while(1) asm volatile("hlt");
         }
         
-        serial_print("[KERNEL] Sysman created with PID: ");
-        serial_hex(sysman_pid);
-        serial_print("\n");
-        
-        serial_print("[KERNEL] Enabling scheduler...\n");
-        extern void scheduler_enable(void);
-        scheduler_enable();
+        // NOW enable timer IRQ after process is created
+        serial_print("[KERNEL] Enabling timer IRQ in PIC...\n");
+        extern void irq_enable_timer(void);
+        irq_enable_timer();
         
         serial_print("[KERNEL] Enabling interrupts (timer will start multitasking)...\n");
         __asm__ volatile("sti");

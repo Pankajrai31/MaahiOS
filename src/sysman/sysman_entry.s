@@ -11,6 +11,25 @@
  * Ring 3 code MUST set them to user segments (0x23) immediately
  */
 sysman_main:
+    /* DEBUG: Print immediately on entry */
+    pushl %eax
+    pushl %edx
+    movl $0x3F8, %edx
+    movb $'[', %al
+    outb %al, %dx
+    movb $'S', %al
+    outb %al, %dx
+    movb $'Y', %al
+    outb %al, %dx
+    movb $'S', %al
+    outb %al, %dx
+    movb $']', %al
+    outb %al, %dx
+    movb $'\n', %al
+    outb %al, %dx
+    popl %edx
+    popl %eax
+    
     /* Set up Ring 3 data segments */
     movw $0x23, %ax
     movw %ax, %ds

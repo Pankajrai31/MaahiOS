@@ -5,6 +5,31 @@
 .global _start
 
 _start:
+    # DEBUG: Print marker IMMEDIATELY on entry
+    pushl %eax
+    pushl %edx
+    movl $0x3F8, %edx
+    movb $'[', %al
+    outb %al, %dx
+    movb $'_', %al
+    outb %al, %dx
+    movb $'S', %al
+    outb %al, %dx
+    movb $'T', %al
+    outb %al, %dx
+    movb $'A', %al
+    outb %al, %dx
+    movb $'R', %al
+    outb %al, %dx
+    movb $'T', %al
+    outb %al, %dx
+    movb $']', %al
+    outb %al, %dx
+    movb $'\n', %al
+    outb %al, %dx
+    popl %edx
+    popl %eax
+    
     # CRITICAL: Set up Ring 3 data segments immediately
     # The ring3_switch() function leaves DS/ES/FS/GS as kernel (0x10)
     # Ring 3 code MUST use Ring 3 segments (0x23) to access memory
