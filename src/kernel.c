@@ -116,6 +116,201 @@ static void serial_hex(unsigned char value) {
     outb(0x3F8, hex[value & 0xF]);
 }
 
+// ===== KERNEL-SIDE UI MANAGER STATE =====
+// This is the single source of truth for all UI elements
+// Both Orbit and UIManager access this through syscalls
+
+#define MAX_WINDOWS 32
+#define MAX_CONTROLS 256
+#define MAX_PROCESSES 64
+#define EVENT_QUEUE_SIZE 32
+
+// Control types
+#define UIMAN_CONTROL_BUTTON  1
+#define UIMAN_CONTROL_LABEL   2
+#define UIMAN_CONTROL_TEXTBOX 3
+#define UIMAN_CONTROL_TABLE   4
+#define UIMAN_CONTROL_RADIO   5
+
+// Control states
+#define UIMAN_STATE_NORMAL    0
+#define UIMAN_STATE_HOVER     1
+#define UIMAN_STATE_PRESSED   2
+
+// Event types
+#define UIMAN_EVENT_NONE      0
+#define UIMAN_EVENT_CLICK     1
+#define UIMAN_EVENT_DBLCLICK  2
+#define UIMAN_EVENT_HOVER     3
+
+typedef struct {
+    int type;
+    int control_id;
+    int x, y;
+} uiman_event_t;
+
+typedef struct {
+    int active;
+    int id;
+    int parent_id;
+    int owner_pid;
+    int x, y, width, height;
+    int z_order;
+    int visible;
+    int focused;
+    char title[64];
+} UIWindow;
+
+typedef struct {
+    int active;
+    int id;
+    int window_id;
+    int owner_pid;
+    int type;
+    int x, y, width, height;
+    int state;
+    char text[128];
+} UIControl;
+
+typedef struct {
+    uiman_event_t events[EVENT_QUEUE_SIZE];
+    volatile int head;
+    volatile int tail;
+    volatile int count;
+} EventQueue;
+
+// Global UI state in kernel
+static UIWindow g_kernel_windows[MAX_WINDOWS] = {0};
+static UIControl g_kernel_controls[MAX_CONTROLS] = {0};
+static EventQueue g_kernel_event_queues[MAX_PROCESSES] = {0};
+static volatile int g_next_window_id = 1;
+static volatile int g_next_control_id = 1;
+
+// Kernel-side UI functions (called by syscalls)
+static int find_free_window(void) {
+    for (int i = 0; i < MAX_WINDOWS; i++) {
+        if (!g_kernel_windows[i].active) return i;
+    }
+    return -1;
+}
+
+static int find_free_control(void) {
+    for (int i = 0; i < MAX_CONTROLS; i++) {
+        if (!g_kernel_controls[i].active) return i;
+    }
+    return -1;
+}
+
+static void strcpy_safe(char *dest, const char *src, int max_len) {
+    int i = 0;
+    while (i < max_len - 1 && src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0';
+}
+
+int uiman_create_window_kernel(int x, int y, int w, int h, const char *title, int parent, int owner_pid) {
+    int slot = find_free_window();
+    if (slot < 0) return -1;
+    
+    int window_id = g_next_window_id++;
+    
+    g_kernel_windows[slot].active = 1;
+    g_kernel_windows[slot].id = window_id;
+    g_kernel_windows[slot].parent_id = parent;
+    g_kernel_windows[slot].owner_pid = owner_pid;
+    g_kernel_windows[slot].x = x;
+    g_kernel_windows[slot].y = y;
+    g_kernel_windows[slot].width = w;
+    g_kernel_windows[slot].height = h;
+    g_kernel_windows[slot].z_order = 0;
+    g_kernel_windows[slot].visible = 1;
+    g_kernel_windows[slot].focused = 0;
+    strcpy_safe(g_kernel_windows[slot].title, title, 64);
+    
+    return window_id;
+}
+
+int uiman_create_button_kernel(int window_id, int x, int y, int w, int h, const char *text, int owner_pid) {
+    int slot = find_free_control();
+    if (slot < 0) return -1;
+    
+    int control_id = g_next_control_id++;
+    
+    g_kernel_controls[slot].active = 1;
+    g_kernel_controls[slot].id = control_id;
+    g_kernel_controls[slot].window_id = window_id;
+    g_kernel_controls[slot].owner_pid = owner_pid;
+    g_kernel_controls[slot].type = UIMAN_CONTROL_BUTTON;
+    g_kernel_controls[slot].x = x;
+    g_kernel_controls[slot].y = y;
+    g_kernel_controls[slot].width = w;
+    g_kernel_controls[slot].height = h;
+    g_kernel_controls[slot].state = UIMAN_STATE_NORMAL;
+    strcpy_safe(g_kernel_controls[slot].text, text, 128);
+    
+    // DEBUG: Print what text was stored
+    serial_print("[KERNEL] Button created: text='");
+    serial_print(text);
+    serial_print("' stored='");
+    serial_print(g_kernel_controls[slot].text);
+    serial_print("'\n");
+    
+    return control_id;
+}
+
+int uiman_create_label_kernel(int window_id, int x, int y, const char *text, int owner_pid) {
+    int slot = find_free_control();
+    if (slot < 0) return -1;
+    
+    int control_id = g_next_control_id++;
+    
+    g_kernel_controls[slot].active = 1;
+    g_kernel_controls[slot].id = control_id;
+    g_kernel_controls[slot].window_id = window_id;
+    g_kernel_controls[slot].owner_pid = owner_pid;
+    g_kernel_controls[slot].type = UIMAN_CONTROL_LABEL;
+    g_kernel_controls[slot].x = x;
+    g_kernel_controls[slot].y = y;
+    g_kernel_controls[slot].width = 0;  // Auto-size
+    g_kernel_controls[slot].height = 0;
+    g_kernel_controls[slot].state = UIMAN_STATE_NORMAL;
+    strcpy_safe(g_kernel_controls[slot].text, text, 128);
+    
+    return control_id;
+}
+
+int uiman_poll_event_kernel(void *event_ptr, int calling_pid) {
+    if (calling_pid < 0 || calling_pid >= MAX_PROCESSES) return 0;
+    
+    EventQueue *queue = &g_kernel_event_queues[calling_pid];
+    if (queue->count == 0) return 0;
+    
+    // Copy event to user space
+    uiman_event_t *dest = (uiman_event_t*)event_ptr;
+    *dest = queue->events[queue->head];
+    
+    queue->head = (queue->head + 1) % EVENT_QUEUE_SIZE;
+    queue->count--;
+    
+    return 1;
+}
+
+UIWindow* uiman_get_kernel_windows(void) {
+    return g_kernel_windows;
+}
+
+UIControl* uiman_get_kernel_controls(void) {
+    return g_kernel_controls;
+}
+
+EventQueue* uiman_get_kernel_event_queues(void) {
+    return g_kernel_event_queues;
+}
+
+// ===== END KERNEL UI MANAGER =====
+
 void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
     // Print startup message via VGA
     extern void vga_print(const char *str);
@@ -245,7 +440,7 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
     serial_hex(mbi->mods_count);
     serial_print("\n");
     
-    if (mbi->mods_count >= 2) {
+    if (mbi->mods_count >= 3) {
         serial_print("[KERNEL] Loading modules...\n");
         serial_print("[KERNEL] mods_addr: 0x");
         serial_hex((mbi->mods_addr >> 24) & 0xFF);
@@ -268,9 +463,37 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
         serial_hex(sysman_addr & 0xFF);
         serial_print("\n");
         
+        serial_print("[KERNEL] Getting uimanager address...\n");
+        uint32_t uimanager_addr = modules[1].mod_start;
+        uint32_t uimanager_end = modules[1].mod_end;
+        uint32_t uimanager_size = uimanager_end - uimanager_addr;
+        serial_print("[KERNEL] uimanager at 0x");
+        serial_hex((uimanager_addr >> 24) & 0xFF);
+        serial_hex((uimanager_addr >> 16) & 0xFF);
+        serial_hex((uimanager_addr >> 8) & 0xFF);
+        serial_hex(uimanager_addr & 0xFF);
+        serial_print(" size=");
+        serial_hex((uimanager_size >> 24) & 0xFF);
+        serial_hex((uimanager_size >> 16) & 0xFF);
+        serial_hex((uimanager_size >> 8) & 0xFF);
+        serial_hex(uimanager_size & 0xFF);
+        serial_print("\n");
+        
+        // Copy uimanager to its linked address (0x00280000)
+        serial_print("[KERNEL] Copying uimanager to 0x00280000...\n");
+        uint8_t *src_ui = (uint8_t *)uimanager_addr;
+        uint8_t *dst_ui = (uint8_t *)0x00280000;
+        for (uint32_t i = 0; i < uimanager_size; i++) {
+            dst_ui[i] = src_ui[i];
+        }
+        serial_print("[KERNEL] UIManager copied\n");
+        
+        extern unsigned int uimanager_module_address;
+        uimanager_module_address = 0x00280000;  // Use the copied location
+        
         serial_print("[KERNEL] Getting orbit address...\n");
-        uint32_t orbit_addr = modules[1].mod_start;
-        uint32_t orbit_end = modules[1].mod_end;
+        uint32_t orbit_addr = modules[2].mod_start;
+        uint32_t orbit_end = modules[2].mod_end;
         uint32_t orbit_size = orbit_end - orbit_addr;
         serial_print("[KERNEL] orbit at 0x");
         serial_hex((orbit_addr >> 24) & 0xFF);

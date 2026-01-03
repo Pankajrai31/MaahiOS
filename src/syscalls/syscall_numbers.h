@@ -52,6 +52,15 @@
 // UIManager syscalls
 #define SYSCALL_UI_REGISTER_BUTTON  37  // ui_register_button(owner_pid, x, y, w, h, label) - Register button with UIManager
 #define SYSCALL_GET_UIMANAGER_ADDR  38  // get_uimanager_address() - Get UIManager module address
+#define SYSCALL_GET_CURRENT_PID     39  // get_current_pid() - Get current process ID
+#define SYSCALL_UI_CREATE_WINDOW    40  // ui_create_window(x, y, w, h, title, parent) - Create window
+#define SYSCALL_UI_CREATE_BUTTON    41  // ui_create_button(window_id, x, y, w, h, text) - Create button
+#define SYSCALL_UI_CREATE_LABEL     42  // ui_create_label(window_id, x, y, text) - Create label
+#define SYSCALL_UI_POLL_EVENT       43  // ui_poll_event(event_out) - Poll for UI events
+#define SYSCALL_UI_RENDER_ALL       44  // ui_render_all() - Request render (will be called by UIManager anyway)
+#define SYSCALL_UI_GET_WINDOWS_PTR  45  // get_windows_pointer() - Get pointer to kernel windows array
+#define SYSCALL_UI_GET_CONTROLS_PTR 46  // get_controls_pointer() - Get pointer to kernel controls array
+#define SYSCALL_UI_GET_EVENTS_PTR   47  // get_events_pointer() - Get pointer to kernel event queues
 
 // VGA Color constants (for reference)
 // Foreground/Background colors: 0-15

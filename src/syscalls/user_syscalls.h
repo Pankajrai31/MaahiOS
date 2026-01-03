@@ -38,6 +38,12 @@ void syscall_exit(int code);
 void *syscall_alloc_page();
 
 /**
+ * syscall_allocate_memory - Allocate multiple pages for large buffer
+ * Returns: Address of allocated memory, or 0 if failed
+ */
+void *syscall_allocate_memory(unsigned int size);
+
+/**
  * syscall_free_page - Free a previously allocated page
  */
 void syscall_free_page(void *addr);
@@ -76,6 +82,12 @@ int syscall_get_orbit_address(void);
  * Returns: Address of uimanager.bin loaded by GRUB
  */
 int syscall_get_uimanager_address(void);
+
+/**
+ * syscall_get_current_pid - Get current process ID
+ * Returns: Current process PID
+ */
+int syscall_get_current_pid(void);
 
 /**
  * syscall_ui_register_button - Register a button with UIManager

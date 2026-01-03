@@ -188,10 +188,10 @@ unsigned int syscall_dispatcher(unsigned int syscall_num,
                                 unsigned int arg3,
                                 unsigned int arg4_esi,
                                 unsigned int user_esp) {
-    // Unused parameters
-    (void)arg2;
-    (void)arg3;
-    (void)arg4_esi;
+    // Get additional arguments from user stack if needed
+    unsigned int *user_stack = (unsigned int*)user_esp;
+    unsigned int arg5 = (user_esp > 0) ? user_stack[0] : 0;  // First arg on stack
+    unsigned int arg6 = (user_esp > 0) ? user_stack[1] : 0;  // Second arg on stack
     
     // CRITICAL: Re-enable interrupts during syscall handling
     // INT 0x80 clears IF, but we need timer/mouse IRQs to work
@@ -504,6 +504,73 @@ unsigned int syscall_dispatcher(unsigned int syscall_num,
             // Returns pixel color at (x, y)
             extern uint32_t bga_get_pixel(int x, int y);
             return_value = bga_get_pixel((int)arg1, (int)arg2);
+            break;
+        
+        case SYSCALL_GET_CURRENT_PID:
+            // Returns current process PID
+            extern int scheduler_get_current_pid(void);
+            return_value = (unsigned int)scheduler_get_current_pid();
+            break;
+        
+        case SYSCALL_UI_CREATE_WINDOW:
+            // arg1=x, arg2=y, arg3=width, arg4_esi=height, arg5=title, arg6=parent
+            extern int uiman_create_window_kernel(int x, int y, int w, int h, const char *title, int parent, int owner_pid);
+            return_value = (unsigned int)uiman_create_window_kernel(
+                (int)arg1, (int)arg2, (int)arg3, (int)arg4_esi,
+                (const char*)arg5, (int)arg6, scheduler_get_current_pid());
+            break;
+        
+        case SYSCALL_UI_CREATE_BUTTON:
+            // arg1=window_id, arg2=x, arg3=y, arg4_esi=width, arg5=height, arg6=text
+            extern int uiman_create_button_kernel(int window_id, int x, int y, int w, int h, const char *text, int owner_pid);
+            
+            // DEBUG: Print what we received
+            serial_print("[SYSCALL] Button: arg5=");
+            serial_hex((unsigned char)((arg5 >> 24) & 0xFF));
+            serial_hex((unsigned char)((arg5 >> 16) & 0xFF));
+            serial_hex((unsigned char)((arg5 >> 8) & 0xFF));
+            serial_hex((unsigned char)(arg5 & 0xFF));
+            serial_print(" arg6=");
+            serial_hex((unsigned char)((arg6 >> 24) & 0xFF));
+            serial_hex((unsigned char)((arg6 >> 16) & 0xFF));
+            serial_hex((unsigned char)((arg6 >> 8) & 0xFF));
+            serial_hex((unsigned char)(arg6 & 0xFF));
+            serial_print("\n");
+            
+            return_value = (unsigned int)uiman_create_button_kernel(
+                (int)arg1, (int)arg2, (int)arg3, (int)arg4_esi, (int)arg5,
+                (const char*)arg6, scheduler_get_current_pid());
+            break;
+        
+        case SYSCALL_UI_CREATE_LABEL:
+            // arg1=window_id, arg2=x, arg3=y, arg4_esi=text
+            extern int uiman_create_label_kernel(int window_id, int x, int y, const char *text, int owner_pid);
+            return_value = (unsigned int)uiman_create_label_kernel(
+                (int)arg1, (int)arg2, (int)arg3, (const char*)arg4_esi, scheduler_get_current_pid());
+            break;
+        
+        case SYSCALL_UI_POLL_EVENT:
+            // arg1=pointer to uiman_event_t structure
+            extern int uiman_poll_event_kernel(void *event_ptr, int calling_pid);
+            return_value = (unsigned int)uiman_poll_event_kernel((void*)arg1, scheduler_get_current_pid());
+            break;
+        
+        case SYSCALL_UI_GET_WINDOWS_PTR:
+            // Returns pointer to kernel windows array
+            extern void* uiman_get_kernel_windows(void);
+            return_value = (unsigned int)uiman_get_kernel_windows();
+            break;
+        
+        case SYSCALL_UI_GET_CONTROLS_PTR:
+            // Returns pointer to kernel controls array
+            extern void* uiman_get_kernel_controls(void);
+            return_value = (unsigned int)uiman_get_kernel_controls();
+            break;
+        
+        case SYSCALL_UI_GET_EVENTS_PTR:
+            // Returns pointer to kernel event queues
+            extern void* uiman_get_kernel_event_queues(void);
+            return_value = (unsigned int)uiman_get_kernel_event_queues();
             break;
             
         default:

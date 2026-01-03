@@ -152,10 +152,20 @@ syscall_int:
     /* Call dispatcher: syscall_dispatcher(eax, ebx, ecx, edx, esi, user_esp)
      * In cdecl, we need to push args right-to-left */
     
-    /* Calculate user ESP (before interrupt pushed EFLAGS, CS, EIP) */
-    mov %ebp, %edi              /* EBP points to saved EBP */
-    add $20, %edi               /* Skip saved regs (EBP+EBX+EDI+ESI=16) + saved EBP(4) = 20 */
-    add $12, %edi               /* Skip interrupt frame (EIP+CS+EFLAGS = 12) */
+    /* Get user ESP from interrupt frame
+     * When Ring 3 calls INT 0x80, CPU pushes (on kernel stack):
+     * [high addresses]
+     * SS      <- ESP+20 from current EBP
+     * ESP     <- ESP+16 from current EBP  **THIS IS WHAT WE WANT**
+     * EFLAGS  <- ESP+12
+     * CS      <- ESP+8
+     * EIP     <- ESP+4
+     * [EBP]   <- saved EBP (our push)
+     * [low addresses]
+     * 
+     * So user ESP value is at [EBP + 16]
+     */
+    mov 16(%ebp), %edi          /* Load user's ESP from interrupt frame */
     
     push %edi                   /* user_esp -> 5th parameter */
     push %esi                   /* arg4 (ESI) -> 4th parameter */

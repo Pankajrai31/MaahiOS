@@ -174,12 +174,39 @@ echo -e "${GREEN}✓ sysman.elf created (with libgui)${NC}"
 i686-elf-objcopy -O binary "$BUILD_DIR/sysman.elf" "$BUILD_DIR/sysman.bin"
 echo -e "${GREEN}✓ sysman.bin created${NC}"
 
-echo -e "\n${YELLOW}[4b/7] Building orbit (Ring 3 Shell)...${NC}"
+echo -e "\n${YELLOW}[4b/7] Building libuiman (UI Manager Library)...${NC}"
+# Compile libuiman library (needed by orbit and uimanager)
+i686-elf-gcc -c "$SRC_DIR/libuiman/uiman.c" -o "$BINARIES_DIR/uiman.o" \
+    -ffreestanding -fno-stack-protector -fPIC -m32
+echo -e "${GREEN}✓ uiman.o created${NC}"
+
+i686-elf-gcc -c "$SRC_DIR/libuiman/uiman_render.c" -o "$BINARIES_DIR/uiman_render.o" \
+    -ffreestanding -fno-stack-protector -fPIC -m32
+echo -e "${GREEN}✓ uiman_render.o created${NC}"
+
+echo -e "\n${YELLOW}[4c/7] Building orbit (Ring 3 Shell)...${NC}"
 # Assemble orbit entry
 i686-elf-as "$SRC_DIR/orbit/orbit_entry.s" -o "$BINARIES_DIR/orbit_entry.o"
 echo -e "${GREEN}✓ orbit_entry.o created${NC}"
 
-# Compile LibGUI (position-independent)
+# Compile orbit C code (position-independent)
+i686-elf-gcc -c "$SRC_DIR/orbit/orbit.c" -o "$BINARIES_DIR/orbit.o" \
+    -ffreestanding -fno-stack-protector -fPIC -m32
+echo -e "${GREEN}✓ orbit.o created (position-independent)${NC}"
+
+# Link orbit with libuiman
+i686-elf-ld -T "$SRC_DIR/orbit/orbit_linker.ld" -o "$BUILD_DIR/orbit.elf" \
+    "$BINARIES_DIR/orbit_entry.o" "$BINARIES_DIR/orbit.o" \
+    "$BINARIES_DIR/uiman.o" \
+    "$BINARIES_DIR/user_syscalls.o"
+echo -e "${GREEN}✓ orbit.elf created (with UIMan)${NC}"
+
+# Convert ELF to flat binary
+i686-elf-objcopy -O binary "$BUILD_DIR/orbit.elf" "$BUILD_DIR/orbit.bin"
+echo -e "${GREEN}✓ orbit.bin created${NC}"
+
+echo -e "\n${YELLOW}[4d/7] Building UIManager (Window Server)...${NC}"
+# Compile LibGUI (needed by UIManager for rendering)
 i686-elf-gcc -c "$SRC_DIR/libgui/draw.c" -o "$BINARIES_DIR/gui_draw.o" \
     -ffreestanding -fno-stack-protector -fPIC -m32
 echo -e "${GREEN}✓ gui_draw.o created${NC}"
@@ -200,24 +227,28 @@ echo -e "${GREEN}✓ gui_cursor.o created${NC}"
 i686-elf-gcc -c "$SRC_DIR/libgui/cursor_compositor.c" -o "$BINARIES_DIR/cursor_compositor.o" \
     -ffreestanding -fno-stack-protector -fPIC -m32
 echo -e "${GREEN}✓ cursor_compositor.o created${NC}"
+# Assemble UIManager entry
+i686-elf-as "$SRC_DIR/uimanager/uimanager_entry.s" -o "$BINARIES_DIR/uimanager_entry.o" --32
+echo -e "${GREEN}✓ uimanager_entry.o created${NC}"
 
-# Compile orbit C code (position-independent)
-i686-elf-gcc -c "$SRC_DIR/orbit/orbit.c" -o "$BINARIES_DIR/orbit.o" \
+# Compile UIManager C code (position-independent)
+i686-elf-gcc -c "$SRC_DIR/uimanager/uimanager.c" -o "$BINARIES_DIR/uimanager.o" \
     -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ orbit.o created (position-independent)${NC}"
+echo -e "${GREEN}✓ uimanager.o created (position-independent)${NC}"
 
-# Link orbit with LibGUI (uses syscalls only)
-i686-elf-ld -T "$SRC_DIR/orbit/orbit_linker.ld" -o "$BUILD_DIR/orbit.elf" \
-    "$BINARIES_DIR/orbit_entry.o" "$BINARIES_DIR/orbit.o" \
+# Link UIManager with libuiman and libgui
+i686-elf-ld -T "$SRC_DIR/uimanager/uimanager_linker.ld" -o "$BUILD_DIR/uimanager.elf" \
+    "$BINARIES_DIR/uimanager_entry.o" "$BINARIES_DIR/uimanager.o" \
+    "$BINARIES_DIR/uiman.o" "$BINARIES_DIR/uiman_render.o" \
     "$BINARIES_DIR/gui_draw.o" "$BINARIES_DIR/gui_window.o" \
     "$BINARIES_DIR/gui_controls.o" "$BINARIES_DIR/gui_cursor.o" \
     "$BINARIES_DIR/cursor_compositor.o" \
     "$BINARIES_DIR/user_syscalls.o"
-echo -e "${GREEN}✓ orbit.elf created (with mouse support)${NC}"
+echo -e "${GREEN}✓ uimanager.elf created (with libuiman + libgui)${NC}"
 
 # Convert ELF to flat binary
-i686-elf-objcopy -O binary "$BUILD_DIR/orbit.elf" "$BUILD_DIR/orbit.bin"
-echo -e "${GREEN}✓ orbit.bin created${NC}"
+i686-elf-objcopy -O binary "$BUILD_DIR/uimanager.elf" "$BUILD_DIR/uimanager.bin"
+echo -e "${GREEN}✓ uimanager.bin created${NC}"
 
 echo -e "\n${YELLOW}[5/7] Copying files to ISO directory...${NC}"
 cp "$BUILD_DIR/kernel.bin" "$ISODIR/boot/kernel.bin"
@@ -225,6 +256,9 @@ echo -e "${GREEN}✓ kernel.bin copied${NC}"
 
 cp "$BUILD_DIR/sysman.bin" "$ISODIR/boot/sysman.bin"
 echo -e "${GREEN}✓ sysman.bin copied${NC}"
+
+cp "$BUILD_DIR/uimanager.bin" "$ISODIR/boot/uimanager.bin"
+echo -e "${GREEN}✓ uimanager.bin copied${NC}"
 
 cp "$BUILD_DIR/orbit.bin" "$ISODIR/boot/orbit.bin"
 echo -e "${GREEN}✓ orbit.bin copied${NC}"
@@ -237,10 +271,11 @@ set timeout=0
 menuentry "MaahiOS" {
     multiboot /boot/kernel.bin
     module /boot/sysman.bin
+    module /boot/uimanager.bin
     module /boot/orbit.bin
 }
 EOF
-echo -e "${GREEN}✓ grub.cfg created (kernel + sysman + orbit)${NC}"
+echo -e "${GREEN}✓ grub.cfg created (kernel + sysman + uimanager + orbit)${NC}"
 
 echo -e "\n${YELLOW}[7/7] Creating ISO image...${NC}"
 
