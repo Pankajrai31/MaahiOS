@@ -32,33 +32,7 @@ void pit_handler(void) {
  * Returns new ESP (same process or switched process)
  */
 uint32_t pit_handler_with_context(uint32_t current_esp) {
-    /* ABSOLUTE FIRST THING - inline assembly to avoid any C overhead */
-    __asm__ volatile(
-        "mov $0x3F8, %%dx\n"
-        "mov $'P', %%al\n"
-        "out %%al, %%dx\n"
-        "mov $'H', %%al\n"
-        "out %%al, %%dx\n"
-        "mov $'\\n', %%al\n"
-        "out %%al, %%dx\n"
-        ::: "%eax", "%edx"
-    );
-    
     pit_ticks++;
-    
-    /* Debug: Print every 100 ticks to see if timer is working */
-    static int debug_ticks = 0;
-    if (++debug_ticks >= 100) {
-        debug_ticks = 0;
-        volatile unsigned char *serial = (volatile unsigned char *)0x3F8;
-        serial[0] = '[';
-        serial[0] = 'T';
-        serial[0] = 'I';
-        serial[0] = 'C';
-        serial[0] = 'K';
-        serial[0] = ']';
-        serial[0] = '\n';
-    }
     
     extern int scheduler_get_current_pid(void);
     extern int scheduler_should_switch(void);
@@ -87,19 +61,6 @@ uint32_t pit_handler_with_context(uint32_t current_esp) {
     
     /* Check if scheduler wants to switch processes */
     if (scheduler_should_switch()) {
-        __asm__ volatile(
-            "pushl %%eax\n"
-            "pushl %%edx\n"
-            "movl $0x3F8, %%edx\n"
-            "movb $'C', %%al\n" "outb %%al, %%dx\n"
-            "movb $'S', %%al\n" "outb %%al, %%dx\n"
-            "movb $'!', %%al\n" "outb %%al, %%dx\n"
-            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-            "popl %%edx\n"
-            "popl %%eax\n"
-            ::: "memory"
-        );
-        
         int next_pid = scheduler_get_next_pid();
         
         if (next_pid > 0 && next_pid != current_pid) {

@@ -158,3 +158,39 @@ int process_manager_get_count(void) {
     }
     return count;
 }
+
+/**
+ * Terminate a process and free its resources
+ * Returns: 0 on success, -1 on failure
+ */
+int process_terminate(int pid) {
+    serial_print("[PROCESS_TERMINATE] PID=");
+    serial_hex(pid);
+    serial_print("\n");
+    
+    if (pid < 1 || pid > MAX_PROCESSES) {
+        serial_print("[PROCESS_TERMINATE] ERROR: Invalid PID\n");
+        return -1;
+    }
+    
+    process_t *pcb = process_table[pid - 1];
+    if (!pcb) {
+        serial_print("[PROCESS_TERMINATE] ERROR: Process not found\n");
+        return -1;
+    }
+    
+    serial_print("[PROCESS_TERMINATE] Calling scheduler_remove_process\n");
+    
+    /* Remove from scheduler */
+    extern void scheduler_remove_process(int pid);
+    scheduler_remove_process(pid);
+    
+    serial_print("[PROCESS_TERMINATE] Freeing PCB\n");
+    
+    /* Free PCB */
+    kfree(pcb);
+    process_table[pid - 1] = 0;
+    
+    serial_print("[PROCESS_TERMINATE] Process terminated successfully\n");
+    return 0;
+}

@@ -186,6 +186,26 @@ void *vmm_alloc_page() {
     return page;
 }
 
+void *vmm_alloc_size(uint32_t size_bytes) {
+    extern uint32_t *kernel_page_directory;
+    
+    // 1. Allocate physical pages from PMM
+    void *mem = pmm_alloc_size(size_bytes);
+    
+    if (!mem) {
+        return 0;
+    }
+    
+    // 2. Identity map the allocated region so it's accessible from ring 3
+    uint32_t start_addr = (uint32_t)mem;
+    uint32_t end_addr = start_addr + size_bytes;
+    
+    identity_map_region(kernel_page_directory, start_addr, end_addr);
+    
+    // 3. Return the address (now mapped and accessible)
+    return mem;
+}
+
 void vmm_free_page(void *addr) {
     // For now, just call PMM directly
     pmm_free_page(addr);

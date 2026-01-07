@@ -146,7 +146,7 @@ static void push_packet(int8_t dx, int8_t dy, uint8_t btn) {
     ring[head] = p;
     head = (head + 1) % MOUSE_BUF_SIZE;
 
-    // Update cursor position (2x sensitivity for responsiveness)
+    // Update cursor position (2x sensitivity)
     mouse_x += dx * 2;
     mouse_y += dy * 2;
     if (mouse_x < 0) mouse_x = 0;

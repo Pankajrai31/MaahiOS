@@ -44,4 +44,9 @@ process_t* process_get_by_pid(int pid);
  */
 int process_manager_get_count(void);
 
+/**
+ * Terminate a process and free its resources
+ */
+int process_terminate(int pid);
+
 #endif // PROCESS_MANAGER_H

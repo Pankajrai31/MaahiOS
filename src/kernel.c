@@ -1,5 +1,14 @@
 #include <stdint.h>
 
+/* Simple string compare helper */
+static int strcmp_simple(const char *s1, const char *s2) {
+    while (*s1 && *s2 && *s1 == *s2) {
+        s1++;
+        s2++;
+    }
+    return (*s1 == *s2) ? 0 : (*s1 < *s2 ? -1 : 1);
+}
+
 /* Multiboot header - Complete structure for module support */
 struct multiboot_module {
     unsigned int mod_start;
@@ -90,6 +99,8 @@ void vmm_free_page(void *addr);
 unsigned int sysman_entry_point = 0;
 unsigned int uimanager_module_address = 0;
 unsigned int orbit_module_address = 0;
+unsigned int file_manager_module_address = 0;
+unsigned int file_manager_module_size = 0;
 
 static inline void outb(unsigned short port, unsigned char val) {
     asm volatile("outb %0, %1" : : "a"(val), "Nd"(port));
@@ -149,6 +160,12 @@ typedef struct {
     int x, y;
 } uiman_event_t;
 
+// Window states
+#define WINDOW_STATE_NORMAL     0
+#define WINDOW_STATE_MINIMIZED  1
+#define WINDOW_STATE_MAXIMIZED  2
+#define WINDOW_STATE_PENDING_CLOSE  3  // Marked for cleanup
+
 typedef struct {
     int active;
     int id;
@@ -159,6 +176,8 @@ typedef struct {
     int visible;
     int focused;
     char title[64];
+    int state;  // WINDOW_STATE_NORMAL, MINIMIZED, MAXIMIZED, PENDING_CLOSE
+    int saved_x, saved_y, saved_width, saved_height;  // For restore from min/max
 } UIWindow;
 
 typedef struct {
@@ -208,6 +227,80 @@ static void strcpy_safe(char *dest, const char *src, int max_len) {
         i++;
     }
     dest[i] = '\0';
+}
+
+/**
+ * Launch file_manager.bin as a new process
+ * Copies the module to its linked address (0x00400000) and starts it
+ */
+int launch_file_manager(void) {
+    serial_print("[KERNEL] Launching file_manager...\n");
+    
+    if (file_manager_module_address == 0 || file_manager_module_size == 0) {
+        serial_print("[KERNEL] ERROR: file_manager module not loaded!\n");
+        return -1;
+    }
+    
+    // Check if File Manager is already running or pending cleanup
+    for (int i = 0; i < MAX_WINDOWS; i++) {
+        if (g_kernel_windows[i].active && 
+            strcmp_simple(g_kernel_windows[i].title, "File Manager") == 0) {
+            // Window state 3 = WINDOW_STATE_PENDING_CLOSE
+            if (g_kernel_windows[i].state == 3) {
+                serial_print("[KERNEL] File Manager pending cleanup, please wait...\n");
+                return -2;  // Try again later
+            }
+            if (g_kernel_windows[i].visible) {
+                serial_print("[KERNEL] File Manager already visible\n");
+                return -2;  // Already open and visible
+            }
+            // Window state 1 = WINDOW_STATE_MINIMIZED
+            if (g_kernel_windows[i].state == 1) {
+                serial_print("[KERNEL] File Manager minimized, restoring...\n");
+                // Restore the window (UIManager will handle via taskbar or we just make it visible)
+                g_kernel_windows[i].x = g_kernel_windows[i].saved_x;
+                g_kernel_windows[i].y = g_kernel_windows[i].saved_y;
+                g_kernel_windows[i].width = g_kernel_windows[i].saved_width;
+                g_kernel_windows[i].height = g_kernel_windows[i].saved_height;
+                g_kernel_windows[i].visible = 1;
+                g_kernel_windows[i].state = 0;  // WINDOW_STATE_NORMAL
+                
+                // Restore all child controls
+                int window_id = g_kernel_windows[i].id;
+                for (int k = 0; k < MAX_CONTROLS; k++) {
+                    if (g_kernel_controls[k].window_id == window_id && g_kernel_controls[k].id != 0) {
+                        g_kernel_controls[k].active = 1;
+                    }
+                }
+                
+                return g_kernel_windows[i].owner_pid;  // Return existing PID
+            }
+        }
+    }
+    
+    // Copy file_manager to its linked address (0x00400000)
+    serial_print("[KERNEL] Copying file_manager to 0x00400000...\n");
+    uint8_t *src = (uint8_t *)file_manager_module_address;
+    uint8_t *dst = (uint8_t *)0x00400000;
+    for (uint32_t i = 0; i < file_manager_module_size; i++) {
+        dst[i] = src[i];
+    }
+    serial_print("[KERNEL] file_manager copied\n");
+    
+    // Create process at the linked address
+    extern int process_create(uint32_t entry_point);
+    int pid = process_create(0x00400000);
+    
+    if (pid < 0) {
+        serial_print("[KERNEL] ERROR: Failed to create file_manager process!\n");
+        return -1;
+    }
+    
+    serial_print("[KERNEL] file_manager launched with PID: ");
+    serial_hex(pid);
+    serial_print("\n");
+    
+    return pid;
 }
 
 int uiman_create_window_kernel(int x, int y, int w, int h, const char *title, int parent, int owner_pid) {
@@ -518,6 +611,32 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
         
         extern unsigned int orbit_module_address;
         orbit_module_address = 0x00300000;  // Use the copied location
+        
+        // Load file_manager module (module 3) if present
+        if (mbi->mods_count >= 4) {
+            serial_print("[KERNEL] Loading file_manager module...\n");
+            uint32_t fm_addr = modules[3].mod_start;
+            uint32_t fm_end = modules[3].mod_end;
+            uint32_t fm_size = fm_end - fm_addr;
+            serial_print("[KERNEL] file_manager at 0x");
+            serial_hex((fm_addr >> 24) & 0xFF);
+            serial_hex((fm_addr >> 16) & 0xFF);
+            serial_hex((fm_addr >> 8) & 0xFF);
+            serial_hex(fm_addr & 0xFF);
+            serial_print(" size=");
+            serial_hex((fm_size >> 24) & 0xFF);
+            serial_hex((fm_size >> 16) & 0xFF);
+            serial_hex((fm_size >> 8) & 0xFF);
+            serial_hex(fm_size & 0xFF);
+            serial_print("\n");
+            
+            // Store module info for later on-demand loading
+            extern unsigned int file_manager_module_address;
+            extern unsigned int file_manager_module_size;
+            file_manager_module_address = fm_addr;
+            file_manager_module_size = fm_size;
+            serial_print("[KERNEL] file_manager module info stored\n");
+        }
         
         // Disable interrupts before process creation
         serial_print("[KERNEL] Disabling interrupts for process creation...\n");

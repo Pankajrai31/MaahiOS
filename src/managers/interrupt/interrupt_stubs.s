@@ -193,21 +193,6 @@ syscall_int:
 /* ============================================================ */
 .align 4
 irq0_stub:
-    /* ULTRA EARLY DEBUG - raw serial write */
-    push %eax
-    mov $0x3F8, %dx
-    mov $'I', %al
-    out %al, %dx
-    mov $'R', %al
-    out %al, %dx
-    mov $'Q', %al
-    out %al, %dx
-    mov $'0', %al
-    out %al, %dx
-    mov $'\n', %al
-    out %al, %dx
-    pop %eax
-    
     /* Save all general purpose registers */
     pusha
     

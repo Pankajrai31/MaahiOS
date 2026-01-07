@@ -476,19 +476,6 @@ unsigned int syscall_dispatcher(unsigned int syscall_num,
             // This is a workaround for when IRQ12 stops firing
             extern void mouse_handler(void);
             uint8_t status = inb(0x64);
-            uint8_t slave_pic = inb(0xA1);  // Check slave PIC mask
-            
-            // DEBUG: Log if IRQ12 is masked on slave PIC
-            static int poll_count = 0;
-            if (++poll_count % 100 == 0) {  // Log every 100 polls
-                serial_print("[POLL] status=");
-                serial_hex(status);
-                serial_print(" slave_pic=");
-                serial_hex(slave_pic);
-                serial_print(" IRQ12_masked=");
-                serial_hex((slave_pic & 0x10) ? 1 : 0);
-                serial_print("\n");
-            }
             
             if ((status & 0x01) && (status & 0x20)) {  // Data available AND it's from mouse (bit 5 set)
                 mouse_handler();  // Call handler directly
@@ -572,6 +559,46 @@ unsigned int syscall_dispatcher(unsigned int syscall_num,
             extern void* uiman_get_kernel_event_queues(void);
             return_value = (unsigned int)uiman_get_kernel_event_queues();
             break;
+        
+        case 50:  // SYSCALL_ALLOC_MEMORY
+            // Allocate memory using vmm_alloc_size
+            extern void* vmm_alloc_size(unsigned int size_bytes);
+            return_value = (unsigned int)vmm_alloc_size(arg1);
+            break;
+        
+        case 51: {  // SYSCALL_ATOMIC_MEMCPY - Interrupt-safe memory copy
+            // arg1 = dest, arg2 = src, arg3 = size (in bytes)
+            uint32_t *dest = (uint32_t*)arg1;
+            uint32_t *src = (uint32_t*)arg2;
+            uint32_t count = arg3 / 4;  // Convert bytes to dwords
+            
+            // Disable interrupts for atomic copy
+            __asm__ volatile("cli");
+            
+            // Copy memory
+            for (uint32_t i = 0; i < count; i++) {
+                dest[i] = src[i];
+            }
+            
+            // Re-enable interrupts
+            __asm__ volatile("sti");
+            
+            return_value = 0;  // Success
+            break;
+        }
+        
+        case 52: {  // SYSCALL_LAUNCH_FILE_MANAGER - Launch file_manager.bin
+            extern int launch_file_manager(void);
+            return_value = launch_file_manager();
+            break;
+        }
+        
+        case 53: {  // SYSCALL_KILL_PROCESS - Terminate process
+            extern int process_terminate(int pid);
+            int pid = arg1;  // First argument is the PID
+            return_value = process_terminate(pid);
+            break;
+        }
             
         default:
             // Unknown syscall - print error

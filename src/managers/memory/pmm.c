@@ -142,6 +142,41 @@ void *pmm_alloc_page() {
     return 0;
 }
 
+void *pmm_alloc_size(uint32_t size_bytes) {
+    // Calculate number of pages needed (round up)
+    uint32_t pages_needed = (size_bytes + PAGE_SIZE - 1) / PAGE_SIZE;
+    
+    if (pages_needed == 0) {
+        return 0;
+    }
+    
+    // Try to find contiguous free pages
+    for (uint32_t start_page = 0; start_page <= total_pages - pages_needed; start_page++) {
+        // Check if we have enough contiguous free pages
+        uint32_t found = 1;
+        for (uint32_t i = 0; i < pages_needed; i++) {
+            if (bitmap_test(start_page + i)) {
+                found = 0;
+                start_page += i;  // Skip ahead
+                break;
+            }
+        }
+        
+        if (found) {
+            // Mark all pages as used
+            for (uint32_t i = 0; i < pages_needed; i++) {
+                bitmap_set(start_page + i);
+                used_pages++;
+            }
+            
+            return (void *)page_to_addr(start_page);
+        }
+    }
+    
+    // No contiguous block found
+    return 0;
+}
+
 void pmm_free_page(void *addr) {
     uint32_t page = addr_to_page((uint32_t)addr);
     

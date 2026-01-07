@@ -29,6 +29,7 @@ void paging_map_mmio_region(uint32_t phys_start, uint32_t size);
 
 // VMM wrapper functions (simple wrappers for now, full VMM in Phase 3)
 void *vmm_alloc_page();
+void *vmm_alloc_size(uint32_t size_bytes);
 void vmm_free_page(void *addr);
 
 #endif

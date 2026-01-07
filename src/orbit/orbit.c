@@ -89,50 +89,38 @@ static inline int ui_poll_event(uiman_event_t *event) {
 }
 
 void orbit_main_c(void) {
-    syscall_puts("[ORBIT] Entry!\n");
+    syscall_puts("[ORBIT] Starting desktop shell...\n");
     
-    // NOTE: Sysman should clear screen before starting Orbit
-    // Orbit doesn't touch framebuffer directly - only through UIManager syscalls
-    
-    // Create desktop window (fullscreen, no parent)
-    syscall_puts("[ORBIT] Creating desktop window...\n");
-    int desktop = ui_create_window(0, 0, 800, 600, "Desktop", 0);
-    if (desktop < 0) {
-        syscall_puts("[ORBIT] ERROR: Failed to create desktop window\n");
-        while(1) __asm__ volatile("hlt");
-    }
-    syscall_puts("[ORBIT] Desktop window created, ID=");
-    syscall_putchar('0' + desktop);
+    // Create desktop controls (window_id = 0 means desktop-level, no window)
+    int btn1 = ui_create_button(0, 20, 20, 180, 50, "Process Manager");
+    syscall_puts("[ORBIT] btn1 (Process Manager) ID=");
+    syscall_putchar('0' + btn1);
     syscall_puts("\n");
     
-    // Create buttons using UIManager syscalls
-    syscall_puts("[ORBIT] Creating buttons...\n");
-    int btn1 = ui_create_button(desktop, 20, 20, 180, 50, "Process Manager");
-    int btn2 = ui_create_button(desktop, 20, 90, 180, 50, "Disk Manager");
-    int btn3 = ui_create_button(desktop, 20, 160, 180, 50, "File Explorer");
-    int btn4 = ui_create_button(desktop, 20, 230, 180, 50, "Notebook");
+    int btn2 = ui_create_button(0, 20, 90, 180, 50, "Disk Manager");
+    syscall_puts("[ORBIT] btn2 (Disk Manager) ID=");
+    syscall_putchar('0' + btn2);
+    syscall_puts("\n");
     
-    if (btn1 < 0 || btn2 < 0 || btn3 < 0 || btn4 < 0) {
-        syscall_puts("[ORBIT] ERROR: Failed to create buttons\n");
-    } else {
-        syscall_puts("[ORBIT] Buttons created successfully\n");
-        syscall_puts("[ORBIT] btn1="); syscall_putchar('0' + btn1); syscall_puts("\n");
-        syscall_puts("[ORBIT] btn2="); syscall_putchar('0' + btn2); syscall_puts("\n");
-        syscall_puts("[ORBIT] btn3="); syscall_putchar('0' + btn3); syscall_puts("\n");
-        syscall_puts("[ORBIT] btn4="); syscall_putchar('0' + btn4); syscall_puts("\n");
-    }
+    int btn3 = ui_create_button(0, 20, 160, 180, 50, "File Explorer");
+    syscall_puts("[ORBIT] btn3 (File Explorer) ID=");
+    syscall_putchar('0' + btn3);
+    syscall_puts("\n");
     
-    // Create a label
-    int label = ui_create_label(desktop, 300, 40, "MaahiOS Desktop - UIManager Active!");
-    if (label < 0) {
-        syscall_puts("[ORBIT] ERROR: Failed to create label\n");
-    } else {
-        syscall_puts("[ORBIT] Label created, ID=");
-        syscall_putchar('0' + label);
-        syscall_puts("\n");
-    }
+    int btn4 = ui_create_button(0, 20, 230, 180, 50, "Notebook");
+    syscall_puts("[ORBIT] btn4 (Notebook) ID=");
+    syscall_putchar('0' + btn4);
+    syscall_puts("\n");
     
-    syscall_puts("[ORBIT] Entering event loop...\n");
+    int btn5 = ui_create_button(0, 20, 300, 180, 50, "File Manager");
+    syscall_puts("[ORBIT] btn5 (File Manager) ID=");
+    syscall_putchar('0' + btn5);
+    syscall_puts("\n");
+    
+    // Create a desktop label
+    int label = ui_create_label(0, 300, 40, "MaahiOS Desktop - UIManager Active!");
+    
+    syscall_puts("[ORBIT] Desktop controls created\n");
     
     // Event loop - process UI events from UIManager
     while(1) {
@@ -155,6 +143,24 @@ void orbit_main_c(void) {
                         syscall_puts("[ORBIT] File Explorer clicked!\n");
                     } else if (event.control_id == btn4) {
                         syscall_puts("[ORBIT] Notebook clicked!\n");
+                    } else if (event.control_id == btn5) {
+                        syscall_puts("[ORBIT] File Manager clicked - launching...\n");
+                        // Launch file_manager.bin as new process
+                        int result;
+                        __asm__ volatile(
+                            "mov $52, %%eax\n"
+                            "int $0x80\n"
+                            : "=a"(result)
+                            :
+                            : "memory"
+                        );
+                        if (result >= 0) {
+                            syscall_puts("[ORBIT] File Manager launched successfully, PID=");
+                            syscall_putchar('0' + result);
+                            syscall_puts("\n");
+                        } else {
+                            syscall_puts("[ORBIT] Failed to launch File Manager\n");
+                        }
                     }
                     break;
                     

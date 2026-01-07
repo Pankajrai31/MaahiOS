@@ -62,6 +62,12 @@
 #define SYSCALL_UI_GET_CONTROLS_PTR 46  // get_controls_pointer() - Get pointer to kernel controls array
 #define SYSCALL_UI_GET_EVENTS_PTR   47  // get_events_pointer() - Get pointer to kernel event queues
 
+// Memory management
+#define SYSCALL_ALLOC_MEMORY        50  // alloc_memory(size_bytes) - Allocate contiguous memory block
+#define SYSCALL_ATOMIC_MEMCPY       51  // atomic_memcpy(dest, src, size) - Interrupt-safe memory copy
+#define SYSCALL_LAUNCH_FILE_MANAGER 52  // launch_file_manager() - Launch file_manager.bin as new process
+#define SYSCALL_KILL_PROCESS        53  // kill_process(pid) - Terminate a process and free resources
+
 // VGA Color constants (for reference)
 // Foreground/Background colors: 0-15
 // 0=Black, 1=Blue, 2=Green, 3=Cyan, 4=Red, 5=Magenta, 6=Brown, 7=Light Gray

@@ -40,4 +40,9 @@ int scheduler_get_next_pid(void);
  */
 void scheduler_add_process(int pid, uint32_t entry_point, uint32_t user_stack, uint32_t kernel_stack);
 
+/**
+ * Remove a process from the scheduler
+ */
+void scheduler_remove_process(int pid);
+
 #endif // SCHEDULER_H

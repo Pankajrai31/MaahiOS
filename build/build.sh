@@ -174,17 +174,7 @@ echo -e "${GREEN}✓ sysman.elf created (with libgui)${NC}"
 i686-elf-objcopy -O binary "$BUILD_DIR/sysman.elf" "$BUILD_DIR/sysman.bin"
 echo -e "${GREEN}✓ sysman.bin created${NC}"
 
-echo -e "\n${YELLOW}[4b/7] Building libuiman (UI Manager Library)...${NC}"
-# Compile libuiman library (needed by orbit and uimanager)
-i686-elf-gcc -c "$SRC_DIR/libuiman/uiman.c" -o "$BINARIES_DIR/uiman.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ uiman.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/libuiman/uiman_render.c" -o "$BINARIES_DIR/uiman_render.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ uiman_render.o created${NC}"
-
-echo -e "\n${YELLOW}[4c/7] Building orbit (Ring 3 Shell)...${NC}"
+echo -e "\n${YELLOW}[4b/7] Building orbit (Ring 3 Shell)...${NC}"
 # Assemble orbit entry
 i686-elf-as "$SRC_DIR/orbit/orbit_entry.s" -o "$BINARIES_DIR/orbit_entry.o"
 echo -e "${GREEN}✓ orbit_entry.o created${NC}"
@@ -194,18 +184,17 @@ i686-elf-gcc -c "$SRC_DIR/orbit/orbit.c" -o "$BINARIES_DIR/orbit.o" \
     -ffreestanding -fno-stack-protector -fPIC -m32
 echo -e "${GREEN}✓ orbit.o created (position-independent)${NC}"
 
-# Link orbit with libuiman
+# Link orbit (no libuiman needed)
 i686-elf-ld -T "$SRC_DIR/orbit/orbit_linker.ld" -o "$BUILD_DIR/orbit.elf" \
     "$BINARIES_DIR/orbit_entry.o" "$BINARIES_DIR/orbit.o" \
-    "$BINARIES_DIR/uiman.o" \
     "$BINARIES_DIR/user_syscalls.o"
-echo -e "${GREEN}✓ orbit.elf created (with UIMan)${NC}"
+echo -e "${GREEN}✓ orbit.elf created${NC}"
 
 # Convert ELF to flat binary
 i686-elf-objcopy -O binary "$BUILD_DIR/orbit.elf" "$BUILD_DIR/orbit.bin"
 echo -e "${GREEN}✓ orbit.bin created${NC}"
 
-echo -e "\n${YELLOW}[4d/7] Building UIManager (Window Server)...${NC}"
+echo -e "\n${YELLOW}[4c/7] Building UIManager (Window Server)...${NC}"
 # Compile LibGUI (needed by UIManager for rendering)
 i686-elf-gcc -c "$SRC_DIR/libgui/draw.c" -o "$BINARIES_DIR/gui_draw.o" \
     -ffreestanding -fno-stack-protector -fPIC -m32
@@ -236,19 +225,38 @@ i686-elf-gcc -c "$SRC_DIR/uimanager/uimanager.c" -o "$BINARIES_DIR/uimanager.o" 
     -ffreestanding -fno-stack-protector -fPIC -m32
 echo -e "${GREEN}✓ uimanager.o created (position-independent)${NC}"
 
-# Link UIManager with libuiman and libgui
+# Link UIManager with libgui (no libuiman needed)
 i686-elf-ld -T "$SRC_DIR/uimanager/uimanager_linker.ld" -o "$BUILD_DIR/uimanager.elf" \
     "$BINARIES_DIR/uimanager_entry.o" "$BINARIES_DIR/uimanager.o" \
-    "$BINARIES_DIR/uiman.o" "$BINARIES_DIR/uiman_render.o" \
     "$BINARIES_DIR/gui_draw.o" "$BINARIES_DIR/gui_window.o" \
     "$BINARIES_DIR/gui_controls.o" "$BINARIES_DIR/gui_cursor.o" \
     "$BINARIES_DIR/cursor_compositor.o" \
     "$BINARIES_DIR/user_syscalls.o"
-echo -e "${GREEN}✓ uimanager.elf created (with libuiman + libgui)${NC}"
+echo -e "${GREEN}✓ uimanager.elf created (with libgui)${NC}"
 
 # Convert ELF to flat binary
 i686-elf-objcopy -O binary "$BUILD_DIR/uimanager.elf" "$BUILD_DIR/uimanager.bin"
 echo -e "${GREEN}✓ uimanager.bin created${NC}"
+
+echo -e "\n${YELLOW}[4d/7] Building File Manager (Application)...${NC}"
+# Assemble file_manager entry
+i686-elf-as "$SRC_DIR/apps/file_manager/file_manager_entry.s" -o "$BINARIES_DIR/file_manager_entry.o"
+echo -e "${GREEN}✓ file_manager_entry.o created${NC}"
+
+# Compile file_manager C code (position-independent)
+i686-elf-gcc -c "$SRC_DIR/apps/file_manager/file_manager.c" -o "$BINARIES_DIR/file_manager.o" \
+    -ffreestanding -fno-stack-protector -fPIC -m32
+echo -e "${GREEN}✓ file_manager.o created (position-independent)${NC}"
+
+# Link file_manager (reuse user_syscalls.o)
+i686-elf-ld -T "$SRC_DIR/apps/file_manager/file_manager_linker.ld" -o "$BUILD_DIR/file_manager.elf" \
+    "$BINARIES_DIR/file_manager_entry.o" "$BINARIES_DIR/file_manager.o" \
+    "$BINARIES_DIR/user_syscalls.o"
+echo -e "${GREEN}✓ file_manager.elf created${NC}"
+
+# Convert ELF to flat binary
+i686-elf-objcopy -O binary "$BUILD_DIR/file_manager.elf" "$BUILD_DIR/file_manager.bin"
+echo -e "${GREEN}✓ file_manager.bin created${NC}"
 
 echo -e "\n${YELLOW}[5/7] Copying files to ISO directory...${NC}"
 cp "$BUILD_DIR/kernel.bin" "$ISODIR/boot/kernel.bin"
@@ -263,6 +271,12 @@ echo -e "${GREEN}✓ uimanager.bin copied${NC}"
 cp "$BUILD_DIR/orbit.bin" "$ISODIR/boot/orbit.bin"
 echo -e "${GREEN}✓ orbit.bin copied${NC}"
 
+cp "$BUILD_DIR/file_manager.bin" "$ISODIR/boot/file_manager.bin"
+echo -e "${GREEN}✓ file_manager.bin copied${NC}"
+
+cp "$BUILD_DIR/orbit.bin" "$ISODIR/boot/orbit.bin"
+echo -e "${GREEN}✓ orbit.bin copied${NC}"
+
 echo -e "\n${YELLOW}[6/7] Creating grub.cfg...${NC}"
 cat > "$ISODIR/boot/grub/grub.cfg" << 'EOF'
 set default=0
@@ -273,9 +287,10 @@ menuentry "MaahiOS" {
     module /boot/sysman.bin
     module /boot/uimanager.bin
     module /boot/orbit.bin
+    module /boot/file_manager.bin
 }
 EOF
-echo -e "${GREEN}✓ grub.cfg created (kernel + sysman + uimanager + orbit)${NC}"
+echo -e "${GREEN}✓ grub.cfg created (kernel + sysman + uimanager + orbit + file_manager)${NC}"
 
 echo -e "\n${YELLOW}[7/7] Creating ISO image...${NC}"
 

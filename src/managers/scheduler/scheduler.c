@@ -40,6 +40,9 @@ static int current_pid = 0;
 /* Flag to enable/disable scheduling */
 static int scheduling_enabled = 0;
 
+/* Flag to force immediate context switch (when current process dies) */
+static int force_switch = 0;
+
 /* Process queue for starting new processes */
 #define MAX_QUEUED_PROCESSES 16
 typedef struct {
@@ -99,31 +102,15 @@ int scheduler_get_next_pid(void) {
  * Starts queued processes and switches between running ones
  */
 void scheduler_tick(void) {
-    /* ABSOLUTE FIRST LINE - inline asm output */
-    __asm__ volatile(
-        "pushl %%eax\n"
-        "pushl %%edx\n"
-        "movl $0x3F8, %%edx\n"
-        "movb $'S', %%al\n" "outb %%al, %%dx\n"
-        "movb $'T', %%al\n" "outb %%al, %%dx\n"
-        "movb $'I', %%al\n" "outb %%al, %%dx\n"
-        "movb $'C', %%al\n" "outb %%al, %%dx\n"
-        "movb $'K', %%al\n" "outb %%al, %%dx\n"
-        "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-        "popl %%edx\n"
-        "popl %%eax\n"
-        ::: "memory"
-    );
-    
-    static int tick_count = 0;
-    if (++tick_count % 100 == 0) {
-        serial_print("[SCHED_TICK] Called, enabled=");
-        serial_hex(scheduling_enabled);
-        serial_print("\n");
-    }
     
     if (!scheduling_enabled) {
         return;
+    }
+    
+    /* If current process was killed, switch immediately */
+    if (force_switch || current_pid == 0) {
+        force_switch = 0;
+        /* Fall through to switch logic */
     }
     
     /* Check if there's a queued process to start */
@@ -238,19 +225,6 @@ void scheduler_tick(void) {
     }
     
     if (running_count > 1 && queue_count == 0) {  /* Only switch when all processes started */
-        __asm__ volatile(
-            "pushl %%eax\n"
-            "pushl %%edx\n"
-            "movl $0x3F8, %%edx\n"
-            "movb $'R', %%al\n" "outb %%al, %%dx\n"
-            "movb $'R', %%al\n" "outb %%al, %%dx\n"
-            "movb $'!', %%al\n" "outb %%al, %%dx\n"
-            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-            "popl %%edx\n"
-            "popl %%eax\n"
-            ::: "memory"
-        );
-        
         /* Round-robin: switch to next process */
         int old_index = current_index;
         current_index = (current_index + 1) % running_count;
@@ -328,4 +302,84 @@ void scheduler_add_process(int pid, uint32_t entry_point, uint32_t user_stack, u
     serial_print("[SCHED_ADD] Added! New queue_count=");
     serial_hex(queue_count);
     serial_print("\n");
+}
+
+/**
+ * Remove a process from the scheduler
+ */
+void scheduler_remove_process(int pid) {
+    serial_print("[SCHED_REMOVE] PID=");
+    serial_hex(pid);
+    serial_print("\n");
+    
+    int was_current = 0;
+    
+    // If it's the current process, mark it for removal
+    if (current_pid == pid) {
+        serial_print("[SCHED_REMOVE] Removing CURRENT process\n");
+        current_pid = 0;  // Mark as no current process
+        was_current = 1;
+    }
+    
+    // Remove from process queue (if queued but not running yet)
+    for (int i = 0; i < queue_count; i++) {
+        int idx = (queue_head + i) % MAX_QUEUED_PROCESSES;
+        if (process_queue[idx].pid == pid) {
+            // Shift remaining items
+            for (int j = i; j < queue_count - 1; j++) {
+                int curr_idx = (queue_head + j) % MAX_QUEUED_PROCESSES;
+                int next_idx = (queue_head + j + 1) % MAX_QUEUED_PROCESSES;
+                process_queue[curr_idx] = process_queue[next_idx];
+            }
+            queue_count--;
+            queue_tail = (queue_tail - 1 + MAX_QUEUED_PROCESSES) % MAX_QUEUED_PROCESSES;
+            serial_print("[SCHED_REMOVE] Removed from queue\n");
+            break;
+        }
+    }
+    
+    // CRITICAL: Remove from running_processes array
+    for (int i = 0; i < running_count; i++) {
+        if (running_processes[i] == pid) {
+            serial_print("[SCHED_REMOVE] Removing from running_processes at index=");
+            serial_hex(i);
+            serial_print("\n");
+            
+            // Shift remaining items
+            for (int j = i; j < running_count - 1; j++) {
+                running_processes[j] = running_processes[j + 1];
+            }
+            running_count--;
+            
+            // Adjust current_index if needed
+            if (current_index >= i) {
+                if (current_index > 0) {
+                    current_index--;
+                } else {
+                    current_index = 0;
+                }
+            }
+            
+            // Ensure current_index stays in bounds
+            if (current_index >= running_count && running_count > 0) {
+                current_index = 0;
+            }
+            
+            serial_print("[SCHED_REMOVE] Removed from running list, new running_count=");
+            serial_hex(running_count);
+            serial_print(" current_index=");
+            serial_hex(current_index);
+            serial_print("\n");
+            break;
+        }
+    }
+    
+    serial_print("[SCHED_REMOVE] Done\n");
+    
+    // If we just killed the current process, set flag for immediate switch
+    if (was_current) {
+        serial_print("[SCHED_REMOVE] Setting force_switch flag\n");
+        force_switch = 1;
+        // Will switch on next timer tick (within 10ms)
+    }
 }
