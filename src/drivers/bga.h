@@ -50,10 +50,9 @@
 #define BGA_PCI_VENDOR_ID               0x1234
 #define BGA_PCI_DEVICE_ID               0x1111
 
-/* BGA Functions */
+/* BGA Functions - Used by gfx.c abstraction layer */
 int bga_is_available(void);
 int bga_init(uint16_t width, uint16_t height, uint16_t bpp);
-void bga_set_video_mode(uint16_t width, uint16_t height, uint16_t bpp);
 uint32_t bga_get_framebuffer_addr(void);
 uint32_t bga_get_framebuffer_size(void);
 uint16_t bga_get_width(void);
@@ -61,19 +60,10 @@ uint16_t bga_get_height(void);
 
 /* Drawing primitives */
 void bga_clear(uint32_t color);
-void bga_putpixel(int x, int y, uint32_t color);
 void bga_fill_rect(int x, int y, int width, int height, uint32_t color);
 void bga_draw_rect(int x, int y, int width, int height, uint32_t color);
-void bga_draw_bmp(int x, int y, const uint8_t *bmp_data);
-
-/* Text output - kernel manages cursor position */
-void bga_print(const char *str, uint32_t fg, uint32_t bg);
 void bga_print_at(int x, int y, const char *str, uint32_t fg, uint32_t bg);
-void bga_set_cursor(int x, int y);
-void bga_get_cursor(int *x, int *y);
-
-/* Internal helper functions */
-void bga_write_register(uint16_t index, uint16_t value);
-uint16_t bga_read_register(uint16_t index);
+void bga_put_pixel(int x, int y, uint32_t color);
+void bga_put_pixel_alpha(int x, int y, uint32_t color, uint8_t alpha);
 
 #endif /* BGA_H */

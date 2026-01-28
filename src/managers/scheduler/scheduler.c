@@ -73,6 +73,13 @@ int scheduler_get_current_pid(void) {
     return current_pid;
 }
 
+/**
+ * Set current process PID (called by PIT handler after context switch)
+ */
+void scheduler_set_current_pid(int pid) {
+    current_pid = pid;
+}
+
 /* List of all running processes for round-robin */
 static int running_processes[MAX_QUEUED_PROCESSES];
 static int running_count = 0;
@@ -155,7 +162,7 @@ void scheduler_tick(void) {
         queue_head = (queue_head + 1) % MAX_QUEUED_PROCESSES;
         queue_count--;
         
-        current_pid = proc->pid;
+        /* DO NOT set current_pid here - PIT handler will set it after successful switch */
         
         /* Add to running processes list */
         if (running_count < MAX_QUEUED_PROCESSES) {
@@ -186,26 +193,194 @@ void scheduler_tick(void) {
         serial_hex32((uint32_t)pcb);
         serial_print("\n");
         
+        __asm__ volatile(
+            "pushl %%eax\n"
+            "pushl %%edx\n"
+            "movl $0x3F8, %%edx\n"
+            "movb $'C', %%al\n" "outb %%al, %%dx\n"
+            "movb $'H', %%al\n" "outb %%al, %%dx\n"
+            "movb $'K', %%al\n" "outb %%al, %%dx\n"
+            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+            "popl %%edx\n"
+            "popl %%eax\n"
+            ::: "memory"
+        );
+        
+        if (!pcb) {
+            __asm__ volatile(
+                "pushl %%eax\n"
+                "pushl %%edx\n"
+                "movl $0x3F8, %%edx\n"
+                "movb $'N', %%al\n" "outb %%al, %%dx\n"
+                "movb $'U', %%al\n" "outb %%al, %%dx\n"
+                "movb $'L', %%al\n" "outb %%al, %%dx\n"
+                "movb $'L', %%al\n" "outb %%al, %%dx\n"
+                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                "popl %%edx\n"
+                "popl %%eax\n"
+                ::: "memory"
+            );
+            while(1) __asm__ volatile("hlt");
+        }
+        
+        __asm__ volatile(
+            "pushl %%eax\n"
+            "pushl %%edx\n"
+            "movl $0x3F8, %%edx\n"
+            "movb $'O', %%al\n" "outb %%al, %%dx\n"
+            "movb $'K', %%al\n" "outb %%al, %%dx\n"
+            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+            "popl %%edx\n"
+            "popl %%eax\n"
+            ::: "memory"
+        );
+        
         if (pcb) {
+            __asm__ volatile(
+                "pushl %%eax\n"
+                "pushl %%edx\n"
+                "movl $0x3F8, %%edx\n"
+                "movb $'S', %%al\n" "outb %%al, %%dx\n"
+                "movb $'T', %%al\n" "outb %%al, %%dx\n"
+                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                "popl %%edx\n"
+                "popl %%eax\n"
+                ::: "memory"
+            );
             pcb->state = PROCESS_STATE_RUNNING;
-            
-            serial_print("[SCHEDULER] Signaling switch to PID ");
-            serial_hex(proc->pid);
-            serial_print(" ESP=0x");
-            serial_hex32(pcb->esp);
-            serial_print("\n");
+            __asm__ volatile(
+                "pushl %%eax\n"
+                "pushl %%edx\n"
+                "movl $0x3F8, %%edx\n"
+                "movb $'S', %%al\n" "outb %%al, %%dx\n"
+                "movb $'T', %%al\n" "outb %%al, %%dx\n"
+                "movb $'2', %%al\n" "outb %%al, %%dx\n"
+                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                "popl %%edx\n"
+                "popl %%eax\n"
+                ::: "memory"
+            );
             
             /* Signal context switch to this process */
             /* PCB already has prepared interrupt frame from process_create() */
             should_switch = 1;
             next_switch_pid = proc->pid;
+            
+            __asm__ volatile(
+                "pushl %%eax\n"
+                "pushl %%edx\n"
+                "movl $0x3F8, %%edx\n"
+                "movb $'S', %%al\n" "outb %%al, %%dx\n"
+                "movb $'W', %%al\n" "outb %%al, %%dx\n"
+                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                "popl %%edx\n"
+                "popl %%eax\n"
+                ::: "memory"
+            );
+            
+            /* Add to running processes list */
+            if (running_count < MAX_QUEUED_PROCESSES) {
+                __asm__ volatile(
+                    "pushl %%eax\n"
+                    "pushl %%edx\n"
+                    "movl $0x3F8, %%edx\n"
+                    "movb $'R', %%al\n" "outb %%al, %%dx\n"
+                    "movb $'1', %%al\n" "outb %%al, %%dx\n"
+                    "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                    "popl %%edx\n"
+                    "popl %%eax\n"
+                    ::: "memory"
+                );
+                running_processes[running_count++] = proc->pid;
+                __asm__ volatile(
+                    "pushl %%eax\n"
+                    "pushl %%edx\n"
+                    "movl $0x3F8, %%edx\n"
+                    "movb $'R', %%al\n" "outb %%al, %%dx\n"
+                    "movb $'2', %%al\n" "outb %%al, %%dx\n"
+                    "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                    "popl %%edx\n"
+                    "popl %%eax\n"
+                    ::: "memory"
+                );
+                /* Update current_index to point to this process */
+                current_index = running_count - 1;
+                __asm__ volatile(
+                    "pushl %%eax\n"
+                    "pushl %%edx\n"
+                    "movl $0x3F8, %%edx\n"
+                    "movb $'R', %%al\n" "outb %%al, %%dx\n"
+                    "movb $'3', %%al\n" "outb %%al, %%dx\n"
+                    "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                    "popl %%edx\n"
+                    "popl %%eax\n"
+                    ::: "memory"
+                );
+            }
+            
+            __asm__ volatile(
+                "pushl %%eax\n"
+                "pushl %%edx\n"
+                "movl $0x3F8, %%edx\n"
+                "movb $'D', %%al\n" "outb %%al, %%dx\n"
+                "movb $'N', %%al\n" "outb %%al, %%dx\n"
+                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                "popl %%edx\n"
+                "popl %%eax\n"
+                ::: "memory"
+            );
+            
+            return;  /* Process started, timer will continue */
         } else {
-            serial_print("[SCHEDULER] ERROR: PCB not found for PID ");
-            serial_hex(proc->pid);
-            serial_print("\n");
+            /* CRITICAL ERROR: PCB is NULL - bulletproof error output */
+            __asm__ volatile(
+                "pushl %%eax\n"
+                "pushl %%edx\n"
+                "movl $0x3F8, %%edx\n"
+                "movb $'E', %%al\n" "outb %%al, %%dx\n"
+                "movb $'R', %%al\n" "outb %%al, %%dx\n"
+                "movb $'R', %%al\n" "outb %%al, %%dx\n"
+                "movb $'!', %%al\n" "outb %%al, %%dx\n"
+                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                "popl %%edx\n"
+                "popl %%eax\n"
+                ::: "memory"
+            );
+            
+            /* Skip this broken process - queue_head already advanced */
+            /* Check if more processes in queue */
+            if (queue_count > 0) {
+                /* Try next process immediately */
+                __asm__ volatile(
+                    "pushl %%eax\n"
+                    "pushl %%edx\n"
+                    "movl $0x3F8, %%edx\n"
+                    "movb $'N', %%al\n" "outb %%al, %%dx\n"
+                    "movb $'X', %%al\n" "outb %%al, %%dx\n"
+                    "movb $'T', %%al\n" "outb %%al, %%dx\n"
+                    "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                    "popl %%edx\n"
+                    "popl %%eax\n"
+                    ::: "memory"
+                );
+                scheduler_tick();
+                return;
+            }
+            
+            /* No more queued processes */
+            __asm__ volatile(
+                "pushl %%eax\n"
+                "pushl %%edx\n"
+                "movl $0x3F8, %%edx\n"
+                "movb $'E', %%al\n" "outb %%al, %%dx\n"
+                "movb $'N', %%al\n" "outb %%al, %%dx\n"
+                "movb $'D', %%al\n" "outb %%al, %%dx\n"
+                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                "popl %%edx\n"
+                "popl %%eax\n"
+                ::: "memory"
+            );
         }
-        
-        return;  /* Process started, timer will continue */
     }
     
     /* Context switch between running processes (round-robin) */
@@ -240,7 +415,7 @@ void scheduler_tick(void) {
             /* Signal context switch to pit_handler */
             should_switch = 1;
             next_switch_pid = next_pid;
-            current_pid = next_pid;
+            /* DO NOT set current_pid here - PIT handler will set it */
         }
     }
 }

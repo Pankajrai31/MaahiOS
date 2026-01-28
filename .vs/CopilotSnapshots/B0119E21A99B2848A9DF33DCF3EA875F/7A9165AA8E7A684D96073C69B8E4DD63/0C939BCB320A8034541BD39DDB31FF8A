@@ -1,0 +1,412 @@
+﻿#include "../../syscalls/user_syscalls.h"
+#include <stdint.h>
+
+/**
+ * File Manager - MaahiOS File Browser Application
+ * Full navigation support: double-click folders, go up, path display
+ */
+
+// ISO file entry structure (must match kernel's iso_file_entry_t)
+typedef struct {
+    char     name[64];
+    uint32_t size;
+    uint32_t lba;
+    uint8_t  is_directory;
+} iso_file_entry_t;
+
+// UI Event structure (must match kernel's uiman_event_t)
+typedef struct {
+    int      type;
+    int      control_id;
+    int      x;
+    int      y;
+    int      data;  // Extra data (e.g., selected list item index)
+} uiman_event_t;
+
+// Event types
+#define EVENT_NONE          0
+#define EVENT_BUTTON_CLICK  1
+#define EVENT_LIST_SELECT   5
+#define EVENT_LIST_DBLCLICK 6
+
+// Navigation stack for going back up
+#define MAX_PATH_DEPTH 8
+static uint32_t g_path_lba[MAX_PATH_DEPTH];
+static uint32_t g_path_size[MAX_PATH_DEPTH];
+static char g_path_names[MAX_PATH_DEPTH][32];
+static int g_path_depth = 0;
+
+// Current directory info
+static uint32_t g_current_lba = 0;
+static uint32_t g_current_size = 0;
+static char g_current_path[128] = "/";
+
+// File entries cache
+static iso_file_entry_t g_entries[16];
+static int g_entry_count = 0;
+
+// UI element IDs
+static int g_window_id = -1;
+static int g_path_label_id = -1;
+static int g_up_button_id = -1;
+static int g_refresh_button_id = -1;
+static int g_list_id = -1;
+static int g_status_label_id = -1;
+
+// ============== Syscall Wrappers ==============
+
+static int ui_create_window(int x, int y, int w, int h, const char *title, int parent) {
+    int result;
+    register int _x __asm__("ebx") = x;
+    register int _y __asm__("ecx") = y;
+    register int _w __asm__("edx") = w;
+    register int _h __asm__("esi") = h;
+    
+    __asm__ volatile(
+        "push %6\n"
+        "push %5\n"
+        "mov $40, %%eax\n"
+        "int $0x80\n"
+        "add $8, %%esp\n"
+        : "=a"(result)
+        : "b"(_x), "c"(_y), "d"(_w), "S"(_h), "r"(title), "r"(parent)
+        : "memory"
+    );
+    return result;
+}
+
+static int ui_create_button(int window_id, int x, int y, int w, int h, const char *text) {
+    int result;
+    register int _wid __asm__("ebx") = window_id;
+    register int _x __asm__("ecx") = x;
+    register int _y __asm__("edx") = y;
+    register int _w __asm__("esi") = w;
+    
+    __asm__ volatile(
+        "push %6\n"
+        "push %5\n"
+        "mov $41, %%eax\n"
+        "int $0x80\n"
+        "add $8, %%esp\n"
+        : "=a"(result)
+        : "b"(_wid), "c"(_x), "d"(_y), "S"(_w), "r"(h), "r"(text)
+        : "memory"
+    );
+    return result;
+}
+
+static int ui_create_label(int window_id, int x, int y, const char *text) {
+    int result;
+    register int _wid __asm__("ebx") = window_id;
+    register int _x __asm__("ecx") = x;
+    register int _y __asm__("edx") = y;
+    
+    __asm__ volatile(
+        "push %4\n"
+        "mov $42, %%eax\n"
+        "int $0x80\n"
+        "add $4, %%esp\n"
+        : "=a"(result)
+        : "b"(_wid), "c"(_x), "d"(_y), "r"(text)
+        : "memory"
+    );
+    return result;
+}
+
+static int ui_create_list(int window_id, int x, int y, int w, int h, const char *items) {
+    int result;
+    register int _wid __asm__("ebx") = window_id;
+    register int _x __asm__("ecx") = x;
+    register int _y __asm__("edx") = y;
+    register int _w __asm__("esi") = w;
+    
+    __asm__ volatile(
+        "push %6\n"
+        "push %5\n"
+        "mov $76, %%eax\n"
+        "int $0x80\n"
+        "add $8, %%esp\n"
+        : "=a"(result)
+        : "b"(_wid), "c"(_x), "d"(_y), "S"(_w), "r"(h), "r"(items)
+        : "memory"
+    );
+    return result;
+}
+
+static int ui_poll_event(uiman_event_t *event) {
+    int result;
+    register void *_evt __asm__("ebx") = event;
+    
+    __asm__ volatile(
+        "mov $44, %%eax\n"
+        "int $0x80\n"
+        : "=a"(result)
+        : "b"(_evt)
+        : "memory"
+    );
+    return result;
+}
+
+// Update control text - syscall 63 (SYSCALL_CONTROL_SET_TEXT)
+static int ui_update_control_text(int control_id, const char *text) {
+    int result;
+    register int _id __asm__("ebx") = control_id;
+    register const char *_text __asm__("ecx") = text;
+    
+    __asm__ volatile(
+        "mov $63, %%eax\n"
+        "int $0x80\n"
+        : "=a"(result)
+        : "b"(_id), "c"(_text)
+        : "memory"
+    );
+    return result;
+}
+
+// List directory by LBA - syscall 78
+static int iso_list_dir(uint32_t lba, uint32_t size, iso_file_entry_t *entries, int max_entries) {
+    int result;
+    register uint32_t _lba __asm__("ebx") = lba;
+    register uint32_t _size __asm__("ecx") = size;
+    register void *_buf __asm__("edx") = entries;
+    register int _max __asm__("esi") = max_entries;
+    
+    __asm__ volatile(
+        "mov $78, %%eax\n"
+        "int $0x80\n"
+        : "=a"(result)
+        : "b"(_lba), "c"(_size), "d"(_buf), "S"(_max)
+        : "memory"
+    );
+    return result;
+}
+
+// Get root directory info - syscall 79
+static void iso_get_root_info(uint32_t *lba, uint32_t *size) {
+    register uint32_t *_lba __asm__("ebx") = lba;
+    register uint32_t *_size __asm__("ecx") = size;
+    
+    __asm__ volatile(
+        "mov $79, %%eax\n"
+        "int $0x80\n"
+        :
+        : "b"(_lba), "c"(_size)
+        : "memory"
+    );
+}
+
+// ============== Helper Functions ==============
+
+static int my_strlen(const char *s) {
+    int len = 0;
+    while (s[len]) len++;
+    return len;
+}
+
+static void my_strcpy(char *dst, const char *src) {
+    while (*src) *dst++ = *src++;
+    *dst = '\0';
+}
+
+static void my_strcat(char *dst, const char *src) {
+    while (*dst) dst++;
+    while (*src) *dst++ = *src++;
+    *dst = '\0';
+}
+
+// Build file list string for display
+static void build_file_list(char *buffer, int max_len) {
+    int pos = 0;
+    for (int i = 0; i < g_entry_count && pos < max_len - 2; i++) {
+        // Add directory marker
+        if (g_entries[i].is_directory) {
+            buffer[pos++] = '[';
+            buffer[pos++] = 'D';
+            buffer[pos++] = ']';
+            buffer[pos++] = ' ';
+        } else {
+            buffer[pos++] = ' ';
+            buffer[pos++] = ' ';
+            buffer[pos++] = ' ';
+            buffer[pos++] = ' ';
+        }
+        
+        // Copy filename
+        const char *name = g_entries[i].name;
+        while (*name && pos < max_len - 3) {
+            buffer[pos++] = *name++;
+        }
+        
+        // Add newline
+        if (i < g_entry_count - 1) {
+            buffer[pos++] = '\n';
+        }
+    }
+    buffer[pos] = '\0';
+}
+
+// Load current directory contents
+static void load_directory(void) {
+    syscall_puts("[FM] Loading dir LBA=");
+    
+    g_entry_count = iso_list_dir(g_current_lba, g_current_size, g_entries, 16);
+    
+    if (g_entry_count < 0) {
+        syscall_puts("FAILED\n");
+        g_entry_count = 0;
+    } else {
+        syscall_puts("OK\n");
+    }
+}
+
+// Refresh UI after navigation
+static void refresh_ui(void) {
+    // Build new file list string
+    static char new_list_buffer[512];
+    build_file_list(new_list_buffer, sizeof(new_list_buffer));
+    
+    // Update list control text
+    if (g_list_id >= 0) {
+        ui_update_control_text(g_list_id, new_list_buffer);
+    }
+    
+    // Update path label
+    if (g_path_label_id >= 0) {
+        ui_update_control_text(g_path_label_id, g_current_path);
+    }
+    
+    syscall_puts("[FM] UI refreshed\n");
+}
+
+// Navigate into a subdirectory
+static void navigate_into(int entry_index) {
+    if (entry_index < 0 || entry_index >= g_entry_count) return;
+    if (!g_entries[entry_index].is_directory) return;
+    
+    // Push current location to stack
+    if (g_path_depth < MAX_PATH_DEPTH) {
+        g_path_lba[g_path_depth] = g_current_lba;
+        g_path_size[g_path_depth] = g_current_size;
+        // Copy last path component
+        int len = my_strlen(g_entries[entry_index].name);
+        if (len > 31) len = 31;
+        for (int i = 0; i < len; i++) {
+            g_path_names[g_path_depth][i] = g_entries[entry_index].name[i];
+        }
+        g_path_names[g_path_depth][len] = '\0';
+        g_path_depth++;
+    }
+    
+    // Update current directory
+    g_current_lba = g_entries[entry_index].lba;
+    g_current_size = g_entries[entry_index].size;
+    
+    // Update path string
+    my_strcat(g_current_path, g_entries[entry_index].name);
+    my_strcat(g_current_path, "/");
+    
+    // Load new directory
+    load_directory();
+}
+
+// Navigate up to parent directory
+static void navigate_up(void) {
+    if (g_path_depth <= 0) return;
+    
+    g_path_depth--;
+    g_current_lba = g_path_lba[g_path_depth];
+    g_current_size = g_path_size[g_path_depth];
+    
+    // Rebuild path string
+    g_current_path[0] = '/';
+    g_current_path[1] = '\0';
+    for (int i = 0; i < g_path_depth; i++) {
+        my_strcat(g_current_path, g_path_names[i]);
+        my_strcat(g_current_path, "/");
+    }
+    
+    // Load parent directory
+    load_directory();
+}
+
+/**
+ * File Manager main entry point
+ */
+void file_manager_main_c() {
+    syscall_puts("[FILE_MANAGER] Starting with navigation...\n");
+    
+    // Get root directory info
+    iso_get_root_info(&g_current_lba, &g_current_size);
+    syscall_puts("[FM] Root LBA obtained\n");
+    
+    // Load root directory
+    load_directory();
+    
+    // Create main window
+    g_window_id = ui_create_window(150, 80, 520, 380, "File Manager", 0);
+    if (g_window_id < 0) {
+        syscall_puts("[FILE_MANAGER] Failed to create window\n");
+        while(1);
+    }
+    
+    // Path label at top
+    g_path_label_id = ui_create_label(g_window_id, 20, 10, g_current_path);
+    
+    // Navigation buttons
+    g_up_button_id = ui_create_button(g_window_id, 20, 35, 60, 28, "Up");
+    g_refresh_button_id = ui_create_button(g_window_id, 90, 35, 80, 28, "Refresh");
+    
+    // Build file list string
+    static char file_list_buffer[512];
+    build_file_list(file_list_buffer, sizeof(file_list_buffer));
+    
+    // Create file list
+    g_list_id = ui_create_list(g_window_id, 20, 70, 470, 250, file_list_buffer);
+    
+    // Status bar
+    static char status_buf[64];
+    int cnt = g_entry_count;
+    status_buf[0] = '0' + (cnt / 10) % 10;
+    status_buf[1] = '0' + cnt % 10;
+    status_buf[2] = ' ';
+    status_buf[3] = 'i'; status_buf[4] = 't'; status_buf[5] = 'e';
+    status_buf[6] = 'm'; status_buf[7] = 's';
+    status_buf[8] = '\0';
+    g_status_label_id = ui_create_label(g_window_id, 20, 330, status_buf);
+    
+    syscall_puts("[FILE_MANAGER] UI created, entering event loop\n");
+    
+    // Event loop
+    uiman_event_t event;
+    while (1) {
+        if (ui_poll_event(&event)) {
+            if (event.type == EVENT_BUTTON_CLICK) {
+                if (event.control_id == g_up_button_id) {
+                    syscall_puts("[FM] Up button clicked\n");
+                    navigate_up();
+                    refresh_ui();  // Refresh display after navigation
+                } else if (event.control_id == g_refresh_button_id) {
+                    syscall_puts("[FM] Refresh clicked\n");
+                    load_directory();
+                    refresh_ui();  // Refresh display after reload
+                }
+            } else if (event.type == EVENT_LIST_DBLCLICK) {
+                // Double-clicked on list item
+                int selected_index = event.data;
+                syscall_puts("[FM] List double-click index=");
+                if (selected_index >= 0 && selected_index < g_entry_count) {
+                    if (g_entries[selected_index].is_directory) {
+                        syscall_puts("(folder)\n");
+                        navigate_into(selected_index);
+                        refresh_ui();  // Refresh display after entering folder
+                    } else {
+                        syscall_puts("(file)\n");
+                    }
+                }
+            }
+        }
+        
+        // Yield CPU
+        __asm__ volatile("int $0x80" : : "a"(31) : "memory");
+    }
+}

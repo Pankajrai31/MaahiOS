@@ -50,6 +50,11 @@ void paging_map_page(uint32_t *page_dir, uint32_t virt, uint32_t phys, uint32_t 
     
     // Map page in page table
     page_table[page_table_idx] = (phys & 0xFFFFF000) | flags;
+    
+    // Flush TLB for this specific page (industry-standard practice)
+    // CRITICAL: TLB must be invalidated after modifying page tables
+    // Without this, CPU uses stale TLB entries → page faults/freezes
+    asm volatile("invlpg (%0)" :: "r"(virt) : "memory");
 }
 
 // Identity map a region of memory

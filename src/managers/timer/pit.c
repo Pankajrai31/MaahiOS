@@ -39,21 +39,83 @@ uint32_t pit_handler_with_context(uint32_t current_esp) {
     extern process_t* process_get_by_pid(int pid);
     extern int scheduler_get_next_pid(void);
     extern void gdt_set_kernel_stack(unsigned int esp0_value);
+    extern void scheduler_set_current_pid(int pid);
     
     int current_pid = scheduler_get_current_pid();
+    
+    /* Debug: Print current PID on every timer tick (reduce spam with counter) */
+    static int debug_counter = 0;
+    if (++debug_counter >= 1000) {
+        debug_counter = 0;
+        __asm__ volatile(
+            "pushl %%eax\n"
+            "pushl %%edx\n"
+            "movl $0x3F8, %%edx\n"
+            "movb $'P', %%al\n" "outb %%al, %%dx\n"
+            "movb $'I', %%al\n" "outb %%al, %%dx\n"
+            "movb $'D', %%al\n" "outb %%al, %%dx\n"
+            "movb $'=', %%al\n" "outb %%al, %%dx\n"
+            "popl %%edx\n"
+            "popl %%eax\n"
+            ::: "memory"
+        );
+        // Print PID as hex digit (0-9, A-F)
+        char pid_char = (current_pid < 10) ? ('0' + current_pid) : ('A' + current_pid - 10);
+        __asm__ volatile(
+            "pushl %%eax\n"
+            "pushl %%edx\n"
+            "movl $0x3F8, %%edx\n"
+            "movb %0, %%al\n"
+            "outb %%al, %%dx\n"
+            "movb $'\\n', %%al\n"
+            "outb %%al, %%dx\n"
+            "popl %%edx\n"
+            "popl %%eax\n"
+            :
+            : "r"(pid_char)
+            : "memory"
+        );
+    }
     
     /* Call scheduler to check if we should switch */
     scheduler_tick();
     
     /* If current_pid is 0 (kernel idle), check if scheduler wants to start a process */
     if (current_pid == 0) {
-        int next_pid = scheduler_get_current_pid();
-        if (next_pid > 0) {
-            /* Scheduler started a new process, switch to it */
-            process_t *next_pcb = process_get_by_pid(next_pid);
-            if (next_pcb && next_pcb->esp != 0) {
-                gdt_set_kernel_stack(next_pcb->kernel_stack_top);
-                return next_pcb->esp;
+        if (scheduler_should_switch()) {
+            __asm__ volatile(
+                "pushl %%eax\n"
+                "pushl %%edx\n"
+                "movl $0x3F8, %%edx\n"
+                "movb $'P', %%al\n" "outb %%al, %%dx\n"
+                "movb $'I', %%al\n" "outb %%al, %%dx\n"
+                "movb $'T', %%al\n" "outb %%al, %%dx\n"
+                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                "popl %%edx\n"
+                "popl %%eax\n"
+                ::: "memory"
+            );
+            int next_pid = scheduler_get_next_pid();
+            if (next_pid > 0) {
+                /* Scheduler started a new process, switch to it */
+                process_t *next_pcb = process_get_by_pid(next_pid);
+                if (next_pcb && next_pcb->esp != 0) {
+                    __asm__ volatile(
+                        "pushl %%eax\n"
+                        "pushl %%edx\n"
+                        "movl $0x3F8, %%edx\n"
+                        "movb $'G', %%al\n" "outb %%al, %%dx\n"
+                        "movb $'O', %%al\n" "outb %%al, %%dx\n"
+                        "movb $'!', %%al\n" "outb %%al, %%dx\n"
+                        "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
+                        "popl %%edx\n"
+                        "popl %%eax\n"
+                        ::: "memory"
+                    );
+                    gdt_set_kernel_stack(next_pcb->kernel_stack_top);
+                    scheduler_set_current_pid(next_pid);
+                    return next_pcb->esp;
+                }
             }
         }
         return current_esp;
@@ -74,6 +136,7 @@ uint32_t pit_handler_with_context(uint32_t current_esp) {
             process_t *next_pcb = process_get_by_pid(next_pid);
             if (next_pcb) {
                 gdt_set_kernel_stack(next_pcb->kernel_stack_top);
+                scheduler_set_current_pid(next_pid);
                 return next_pcb->esp;
             }
         }

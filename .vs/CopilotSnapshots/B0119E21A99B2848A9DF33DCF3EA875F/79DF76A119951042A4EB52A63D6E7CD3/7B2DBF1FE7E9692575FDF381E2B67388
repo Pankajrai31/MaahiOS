@@ -1,0 +1,223 @@
+﻿#include "../../syscalls/user_syscalls.h"
+#include <stdint.h>
+
+/**
+ * File Manager - MaahiOS File Browser Application
+ * Displays actual files from the ISO filesystem
+ */
+
+// ISO file entry structure (must match kernel's iso_file_entry_t)
+typedef struct {
+    char     name[64];
+    uint32_t size;
+    uint32_t lba;
+    uint8_t  is_directory;
+} iso_file_entry_t;
+
+// Syscall wrappers for UI operations
+static int ui_create_window(int x, int y, int w, int h, const char *title, int parent) {
+    int result;
+    register int _x __asm__("ebx") = x;
+    register int _y __asm__("ecx") = y;
+    register int _w __asm__("edx") = w;
+    register int _h __asm__("esi") = h;
+    
+    __asm__ volatile(
+        "push %6\n"
+        "push %5\n"
+        "mov $40, %%eax\n"
+        "int $0x80\n"
+        "add $8, %%esp\n"
+        : "=a"(result)
+        : "b"(_x), "c"(_y), "d"(_w), "S"(_h), "r"(title), "r"(parent)
+        : "memory"
+    );
+    return result;
+}
+
+static int ui_create_button(int window_id, int x, int y, int w, int h, const char *text) {
+    int result;
+    register int _wid __asm__("ebx") = window_id;
+    register int _x __asm__("ecx") = x;
+    register int _y __asm__("edx") = y;
+    register int _w __asm__("esi") = w;
+    
+    __asm__ volatile(
+        "push %6\n"
+        "push %5\n"
+        "mov $41, %%eax\n"
+        "int $0x80\n"
+        "add $8, %%esp\n"
+        : "=a"(result)
+        : "b"(_wid), "c"(_x), "d"(_y), "S"(_w), "r"(h), "r"(text)
+        : "memory"
+    );
+    return result;
+}
+
+static int ui_create_label(int window_id, int x, int y, const char *text) {
+    int result;
+    register int _wid __asm__("ebx") = window_id;
+    register int _x __asm__("ecx") = x;
+    register int _y __asm__("edx") = y;
+    
+    __asm__ volatile(
+        "push %4\n"
+        "mov $42, %%eax\n"
+        "int $0x80\n"
+        "add $4, %%esp\n"
+        : "=a"(result)
+        : "b"(_wid), "c"(_x), "d"(_y), "r"(text)
+        : "memory"
+    );
+    return result;
+}
+
+// Create a list control - syscall 76
+static int ui_create_list(int window_id, int x, int y, int w, int h, const char *items) {
+    int result;
+    register int _wid __asm__("ebx") = window_id;
+    register int _x __asm__("ecx") = x;
+    register int _y __asm__("edx") = y;
+    register int _w __asm__("esi") = w;
+    
+    __asm__ volatile(
+        "push %6\n"
+        "push %5\n"
+        "mov $76, %%eax\n"
+        "int $0x80\n"
+        "add $8, %%esp\n"
+        : "=a"(result)
+        : "b"(_wid), "c"(_x), "d"(_y), "S"(_w), "r"(h), "r"(items)
+        : "memory"
+    );
+    return result;
+}
+
+// Get ISO file count - syscall 74
+static int iso_get_file_count(void) {
+    int result;
+    __asm__ volatile(
+        "mov $74, %%eax\n"
+        "int $0x80\n"
+        : "=a"(result)
+        :
+        : "memory"
+    );
+    return result;
+}
+
+// List ISO files - syscall 75
+static int iso_list_files(iso_file_entry_t *entries, int max_entries) {
+    int result;
+    register void *_buf __asm__("ebx") = entries;
+    register int _max __asm__("ecx") = max_entries;
+    
+    __asm__ volatile(
+        "mov $75, %%eax\n"
+        "int $0x80\n"
+        : "=a"(result)
+        : "b"(_buf), "c"(_max)
+        : "memory"
+    );
+    return result;
+}
+
+// Simple string length
+static int my_strlen(const char *s) {
+    int len = 0;
+    while (s[len]) len++;
+    return len;
+}
+
+// Simple string copy
+static void my_strcpy(char *dst, const char *src) {
+    while (*src) *dst++ = *src++;
+    *dst = '\0';
+}
+
+// Build a newline-separated list of filenames
+static void build_file_list(char *buffer, int max_len, iso_file_entry_t *entries, int count) {
+    int pos = 0;
+    for (int i = 0; i < count && pos < max_len - 2; i++) {
+        // Add directory marker
+        if (entries[i].is_directory) {
+            buffer[pos++] = '[';
+        }
+        
+        // Copy filename
+        const char *name = entries[i].name;
+        while (*name && pos < max_len - 3) {
+            buffer[pos++] = *name++;
+        }
+        
+        if (entries[i].is_directory) {
+            buffer[pos++] = ']';
+        }
+        
+        // Add newline
+        if (i < count - 1) {
+            buffer[pos++] = '\n';
+        }
+    }
+    buffer[pos] = '\0';
+}
+
+/**
+ * File Manager main entry point
+ */
+void file_manager_main_c() {
+    syscall_puts("[FILE_MANAGER] Starting...\n");
+    
+    // Create main window
+    int window_id = ui_create_window(200, 100, 500, 350, "File Manager", 0);
+    if (window_id < 0) {
+        syscall_puts("[FILE_MANAGER] Failed to create window\n");
+        while(1);
+    }
+    
+    syscall_puts("[FILE_MANAGER] Window created\n");
+    
+    // Add title label
+    ui_create_label(window_id, 20, 10, "ISO 9660 Filesystem - /boot");
+    
+    // Navigation buttons
+    ui_create_button(window_id, 20, 35, 80, 30, "Refresh");
+    
+    // Get file list from ISO
+    iso_file_entry_t entries[16];
+    int file_count = iso_list_files(entries, 16);
+    
+    syscall_puts("[FILE_MANAGER] Got ");
+    // Print file count
+    syscall_puts(file_count > 0 ? "files\n" : "no files\n");
+    
+    // Build the file list string
+    static char file_list_buffer[512];
+    
+    if (file_count > 0) {
+        build_file_list(file_list_buffer, sizeof(file_list_buffer), entries, file_count);
+    } else {
+        // Fallback if ISO reading fails
+        my_strcpy(file_list_buffer, "kernel.bin\nsysman.bin\nuimanager.bin\norbit.bin\nfile_manager.bin\ndisk_manager.bin");
+    }
+    
+    // Create the file list control
+    ui_create_list(window_id, 20, 75, 450, 220, file_list_buffer);
+    
+    // Status bar at bottom
+    static char status_buf[64];
+    status_buf[0] = '0' + (file_count % 10);
+    status_buf[1] = ' ';
+    status_buf[2] = 'i'; status_buf[3] = 't'; status_buf[4] = 'e'; 
+    status_buf[5] = 'm'; status_buf[6] = 's';
+    status_buf[7] = '\0';
+    ui_create_label(window_id, 20, 300, status_buf);
+    
+    syscall_puts("[FILE_MANAGER] UI created\n");
+    
+    // Event loop
+    while (1) {
+        __asm__ volatile("int $0x80" : : "a"(31) : "memory");  // yield
+    }
+}

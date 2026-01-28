@@ -26,10 +26,10 @@ def bmp_to_c_array(bmp_filename, array_name):
     return output
 
 def main():
-    # Icons are now in tools directory
-    icons_dir = '.'
-    # Output C header to libraries/icons
-    output_dir = '../libraries/icons'
+    # Icons are now in src/images/icons directory
+    icons_dir = '../src/images/icons'
+    # Output C header to src/libgui
+    output_dir = '../src/libgui'
     os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, 'embedded_icons.h')
     
@@ -40,7 +40,7 @@ def main():
 
 /**
  * Embedded BMP icon data for MaahiOS desktop
- * Generated from tools/*.bmp files
+ * Generated from src/images/icons/*.bmp files
  */
 
 """

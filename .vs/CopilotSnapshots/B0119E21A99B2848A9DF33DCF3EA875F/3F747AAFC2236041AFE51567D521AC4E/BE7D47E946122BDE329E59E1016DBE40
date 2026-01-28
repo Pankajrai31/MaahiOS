@@ -1,0 +1,53 @@
+﻿#ifndef SCHEDULER_H
+#define SCHEDULER_H
+
+#include <stdint.h>
+
+/**
+ * Initialize the scheduler
+ */
+void scheduler_init(void);
+
+/**
+ * Called by timer interrupt - switches between processes
+ */
+void scheduler_tick(void);
+
+/**
+ * Enable/disable scheduler
+ */
+void scheduler_enable(void);
+void scheduler_disable(void);
+
+/**
+ * Get current process PID
+ */
+int scheduler_get_current_pid(void);
+
+/**
+ * Set current process PID (called by pit_handler after context switch)
+ */
+void scheduler_set_current_pid(int pid);
+
+/**
+ * Check if scheduler wants to switch processes
+ */
+int scheduler_should_switch(void);
+
+/**
+ * Get the PID to switch to
+ */
+int scheduler_get_next_pid(void);
+
+/**
+ * Add a new process to the ready queue
+ * Process will be started on next scheduler tick
+ */
+void scheduler_add_process(int pid, uint32_t entry_point, uint32_t user_stack, uint32_t kernel_stack);
+
+/**
+ * Remove a process from the scheduler
+ */
+void scheduler_remove_process(int pid);
+
+#endif // SCHEDULER_H

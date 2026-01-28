@@ -4,6 +4,7 @@
  */
 
 #include "mouse.h"
+#include "bga_mouse.h"
 #include <stdint.h>
 
 #define PS2_DATA    0x60
@@ -34,6 +35,7 @@ static uint8_t pkt_i = 0;
 volatile int mouse_x = 320;
 volatile int mouse_y = 240;
 volatile int irq_total = 0;
+volatile uint8_t mouse_buttons = 0;  // Current button state (updated each packet)
 
 // Port I/O helpers
 static inline uint8_t inb(uint16_t p) {
@@ -146,13 +148,19 @@ static void push_packet(int8_t dx, int8_t dy, uint8_t btn) {
     ring[head] = p;
     head = (head + 1) % MOUSE_BUF_SIZE;
 
-    // Update cursor position (2x sensitivity)
-    mouse_x += dx * 2;
-    mouse_y += dy * 2;
+    // Update current button state globally
+    mouse_buttons = btn;
+
+    // Update cursor position (1:1 movement, no acceleration)
+    mouse_x += dx;
+    mouse_y += dy;
     if (mouse_x < 0) mouse_x = 0;
     if (mouse_y < 0) mouse_y = 0;
     if (mouse_x > 1023) mouse_x = 1023;
     if (mouse_y > 767)  mouse_y = 767;
+
+    // Update hardware cursor position
+    bga_cursor_set_position(mouse_x, mouse_y);
 }
 
 /**
@@ -182,8 +190,11 @@ void mouse_handler() {
     uint8_t b = inb(PS2_DATA);
 
     // Packet sync: first byte must have bit3=1
-    if (pkt_i == 0 && !(b & 0x08))
-        return; // ignore until proper sync
+    if (pkt_i == 0 && !(b & 0x08)) {
+        // Out of sync - flush and wait for next valid packet start
+        flush_output();
+        return;
+    }
 
     pkt[pkt_i++] = b;
 
@@ -240,9 +251,9 @@ int mouse_get_irq_total() {
 }
 
 uint8_t mouse_get_buttons() { 
-    mouse_packet_t p;
-    if (!mouse_read(&p)) return 0;
-    return p.buttons;
+    // Return current global button state (updated each IRQ)
+    __asm__ volatile("" ::: "memory");
+    return mouse_buttons;
 }
 
 // Additional compatibility functions

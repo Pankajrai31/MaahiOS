@@ -1,0 +1,185 @@
+﻿/**
+ * Disk Manager Application
+ * Simple view: shows Disk Drives count and CD/DVD drives with bus,drive position
+ */
+
+#include <stdint.h>
+#include "../../syscalls/user_syscalls.h"
+
+// Drive types from ATA driver
+#define DRIVE_TYPE_UNKNOWN 0
+#define DRIVE_TYPE_ATA     1  // HDD
+#define DRIVE_TYPE_ATAPI   2  // CD/DVD
+
+// Disk info structure (must match kernel's disk_info_t)
+typedef struct {
+    uint8_t active;           // 1 if disk exists
+    uint8_t disk_type;        // DISK_TYPE_*
+    uint8_t fs_type;          // FS_TYPE_*
+    uint8_t drive_letter;     // 'A', 'B', 'C', etc.
+    uint8_t ata_drive_id;     // ATA drive ID (0-3)
+    uint8_t padding[3];       // Alignment padding
+    uint32_t size_mb;         // Size in MB
+    char label[32];           // Volume label
+    char type_str[16];        // "Hard Disk", "CD-ROM", etc.
+    char fs_str[16];          // "ISO 9660", "FAT32", etc.
+} disk_info_t;
+
+// UI syscall wrappers (matching orbit.c exactly)
+static int ui_create_window(int x, int y, int w, int h, const char *title, int parent) {
+    int result;
+    register int _x __asm__("ebx") = x;
+    register int _y __asm__("ecx") = y;
+    register int _w __asm__("edx") = w;
+    register int _h __asm__("esi") = h;
+    
+    __asm__ volatile(
+        "push %6\n"
+        "push %5\n"
+        "mov $40, %%eax\n"
+        "int $0x80\n"
+        "add $8, %%esp\n"
+        : "=a"(result)
+        : "b"(_x), "c"(_y), "d"(_w), "S"(_h), "r"(title), "r"(parent)
+        : "memory"
+    );
+    return result;
+}
+
+static int ui_create_button(int window_id, int x, int y, int w, int h, const char *text) {
+    int result;
+    register int _wid __asm__("ebx") = window_id;
+    register int _x __asm__("ecx") = x;
+    register int _y __asm__("edx") = y;
+    register int _w __asm__("esi") = w;
+    
+    __asm__ volatile(
+        "push %6\n"
+        "push %5\n"
+        "mov $41, %%eax\n"
+        "int $0x80\n"
+        "add $8, %%esp\n"
+        : "=a"(result)
+        : "b"(_wid), "c"(_x), "d"(_y), "S"(_w), "r"(h), "r"(text)
+        : "memory"
+    );
+    return result;
+}
+
+static int ui_create_label(int window_id, int x, int y, const char *text) {
+    int result;
+    register int _wid __asm__("ebx") = window_id;
+    register int _x __asm__("ecx") = x;
+    register int _y __asm__("edx") = y;
+    register const char *_text __asm__("esi") = text;
+    
+    __asm__ volatile(
+        "mov $42, %%eax\n"
+        "int $0x80\n"
+        : "=a"(result)
+        : "b"(_wid), "c"(_x), "d"(_y), "S"(_text)
+        : "memory"
+    );
+    return result;
+}
+
+// Get disk count from kernel
+static int get_disk_count(void) {
+    int result;
+    __asm__ volatile(
+        "mov $56, %%eax\n"
+        "int $0x80\n"
+        : "=a"(result)
+        :
+        : "memory"
+    );
+    return result;
+}
+
+// Get disk info for a specific index
+// Returns: 0 on success, -1 on error
+static int get_disk_info(int index, disk_info_t *info) {
+    int result;
+    __asm__ volatile(
+        "mov $57, %%eax\n"
+        "mov %1, %%ebx\n"
+        "mov %2, %%ecx\n"
+        "int $0x80\n"
+        : "=a"(result)
+        : "r"(index), "r"(info)
+        : "ebx", "ecx", "memory"
+    );
+    return result;
+}
+
+// Global window ID for refresh
+static int g_window_id = -1;
+
+// Scan drives and create labels
+static void scan_and_display_drives(void) {
+    int hdd_count = 0;
+    int y_pos = 80;
+    disk_info_t info;
+    
+    int disk_count = get_disk_count();
+    
+    // First pass: count HDDs
+    for (int i = 0; i < disk_count; i++) {
+        if (get_disk_info(i, &info) == 0) {
+            if (info.disk_type == DRIVE_TYPE_ATA) {
+                hdd_count++;
+            }
+        }
+    }
+    
+    // Display HDD count
+    char disk_str[] = "Disk Drives: 0";
+    disk_str[13] = '0' + hdd_count;
+    ui_create_label(g_window_id, 20, y_pos, disk_str);
+    y_pos += 30;
+    
+    // Second pass: show CD/DVD drives with bus,drive position
+    for (int i = 0; i < disk_count; i++) {
+        if (get_disk_info(i, &info) == 0) {
+            if (info.disk_type == DRIVE_TYPE_ATAPI) {
+                // ata_drive_id: 0=Pri Master, 1=Pri Slave, 2=Sec Master, 3=Sec Slave
+                int bus = info.ata_drive_id / 2;    // 0 or 1
+                int drive = info.ata_drive_id % 2;  // 0 or 1
+                
+                char cdrom_str[] = "CD/DVD: 0, 0";
+                cdrom_str[8] = '0' + bus;
+                cdrom_str[11] = '0' + drive;
+                ui_create_label(g_window_id, 20, y_pos, cdrom_str);
+                y_pos += 30;
+            }
+        }
+    }
+}
+
+/**
+ * Disk Manager main entry point
+ */
+void disk_manager_main_c(void) {
+    syscall_puts("[DISK_MANAGER] Starting...\n");
+    
+    // Create main window
+    g_window_id = ui_create_window(200, 150, 300, 200, "Disk Manager", 0);
+    if (g_window_id < 0) {
+        syscall_puts("[DISK_MANAGER] Failed to create window\n");
+        while(1);
+    }
+    
+    // Refresh button
+    ui_create_button(g_window_id, 20, 30, 80, 25, "Refresh");
+    
+    // Scan and display drives
+    scan_and_display_drives();
+    
+    syscall_puts("[DISK_MANAGER] Ready\n");
+    
+    // Event loop
+    while(1) {
+        // Yield to other processes
+        __asm__ volatile("int $0x80" : : "a"(10) : "memory");
+    }
+}

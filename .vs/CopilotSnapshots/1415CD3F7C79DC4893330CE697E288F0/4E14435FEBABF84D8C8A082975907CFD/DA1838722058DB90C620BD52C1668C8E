@@ -1,0 +1,161 @@
+﻿/**
+ * Disk Manager Application
+ * Uses old UI system (labels and buttons)
+ */
+
+#include <stdint.h>
+#include "../../syscalls/user_syscalls.h"
+
+// Disk info structure (matches kernel)
+typedef struct {
+    uint8_t active;
+    uint8_t disk_type;
+    uint8_t fs_type;
+    char drive_letter;
+    uint8_t ata_drive_id;
+    uint32_t size_mb;
+    char label[32];
+    char type_str[16];
+    char fs_str[16];
+} disk_info_t;
+
+// Disk syscalls
+static int disk_get_count(void) {
+    int result;
+    __asm__ volatile(
+        "mov $56, %%eax\n"
+        "int $0x80\n"
+        : "=a"(result)
+        :
+        : "memory"
+    );
+    return result;
+}
+
+// UI syscall wrappers (matching orbit.c exactly)
+static int ui_create_window(int x, int y, int w, int h, const char *title, int parent) {
+    int result;
+    register int _x __asm__("ebx") = x;
+    register int _y __asm__("ecx") = y;
+    register int _w __asm__("edx") = w;
+    register int _h __asm__("esi") = h;
+    
+    __asm__ volatile(
+        "push %6\n"
+        "push %5\n"
+        "mov $40, %%eax\n"
+        "int $0x80\n"
+        "add $8, %%esp\n"
+        : "=a"(result)
+        : "b"(_x), "c"(_y), "d"(_w), "S"(_h), "r"(title), "r"(parent)
+        : "memory"
+    );
+    return result;
+}
+
+static int ui_create_button(int window_id, int x, int y, int w, int h, const char *text) {
+    int result;
+    register int _wid __asm__("ebx") = window_id;
+    register int _x __asm__("ecx") = x;
+    register int _y __asm__("edx") = y;
+    register int _w __asm__("esi") = w;
+    
+    __asm__ volatile(
+        "push %6\n"
+        "push %5\n"
+        "mov $41, %%eax\n"
+        "int $0x80\n"
+        "add $8, %%esp\n"
+        : "=a"(result)
+        : "b"(_wid), "c"(_x), "d"(_y), "S"(_w), "r"(h), "r"(text)
+        : "memory"
+    );
+    return result;
+}
+
+static int ui_create_label(int window_id, int x, int y, const char *text) {
+    int result;
+    register int _wid __asm__("ebx") = window_id;
+    register int _x __asm__("ecx") = x;
+    register int _y __asm__("edx") = y;
+    register const char *_text __asm__("esi") = text;
+    
+    __asm__ volatile(
+        "mov $42, %%eax\n"
+        "int $0x80\n"
+        : "=a"(result)
+        : "b"(_wid), "c"(_x), "d"(_y), "S"(_text)
+        : "memory"
+    );
+    return result;
+}
+
+/**
+ * Disk Manager main entry point
+ */
+void disk_manager_main_c() {
+    syscall_puts("[DISK_MANAGER] Starting...\n");
+    
+    // Create main window
+    int window_id = ui_create_window(150, 80, 500, 350, "Disk Manager", 0);
+    if (window_id < 0) {
+        syscall_puts("[DISK_MANAGER] Failed to create window\n");
+        while(1);  // Spin instead of hlt
+    }
+    
+    syscall_puts("[DISK_MANAGER] Window created\n");
+    
+    // Buttons
+    ui_create_button(window_id, 20, 30, 100, 30, "Refresh");
+    ui_create_button(window_id, 130, 30, 100, 30, "Format");
+    
+    syscall_puts("[DISK_MANAGER] Buttons created\n");
+    
+    // Get disk count
+    int disk_count = disk_get_count();
+    syscall_puts("[DISK_MANAGER] Disk count: ");
+    syscall_putchar('0' + disk_count);
+    syscall_puts("\n");
+    
+    // Add label
+    syscall_puts("[DISK_MANAGER] Creating label...\n");
+    ui_create_label(window_id, 20, 80, "Storage Devices:");
+    syscall_puts("[DISK_MANAGER] Label done\n");
+    
+    // List disks
+    int y = 110;
+    for (int i = 0; i < disk_count && i < 4; i++) {
+        // Get disk info via syscall 57
+        disk_info_t info;
+        __asm__ volatile(
+            "mov $57, %%eax\n"
+            "mov %0, %%ebx\n"
+            "mov %1, %%ecx\n"
+            "int $0x80\n"
+            :
+            : "r"(i), "r"(&info)
+            : "eax", "ebx", "ecx", "memory"
+        );
+        
+        // Format string: "CD-ROM (D:) - 700 MB"
+        // Since we don't have sprintf, checking types manually
+        if (info.disk_type == 2) { // CD-ROM
+             ui_create_label(window_id, 30, y, "CD-ROM Drive");
+             ui_create_button(window_id, 150, y-5, 80, 25, "Read ISO");
+        } else if (info.disk_type == 1) { // HDD
+             ui_create_label(window_id, 30, y, "Hard Disk");
+             ui_create_button(window_id, 150, y-5, 80, 25, "Explore");
+        } else {
+             ui_create_label(window_id, 30, y, "Unknown Device");
+        }
+        y += 40;
+    }
+    
+    syscall_puts("[DISK_MANAGER] Done, entering event loop\n");
+    
+    // Event loop - use yield syscall (no hlt in Ring 3!)
+    while(1) {
+        // Yield to other processes - let scheduler run
+        __asm__ volatile("int $0x80" : : "a"(10) : "memory");
+    }
+}

@@ -1,1 +1,0 @@
-objdump: 'kernel.elf': No such file

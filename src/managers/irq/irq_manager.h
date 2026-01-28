@@ -27,6 +27,11 @@ void irq_disable(int irq_number);
 void irq_enable_timer(void);
 
 /**
+ * Enable keyboard IRQ (IRQ 1)
+ */
+void irq_enable_keyboard(void);
+
+/**
  * Enable mouse IRQ (IRQ 12)
  */
 void irq_enable_mouse(void);

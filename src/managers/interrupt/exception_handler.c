@@ -1,3 +1,11 @@
+/* MaahiOS Exception Handler
+ * Handles CPU exceptions for both Ring 0 (kernel) and Ring 3 (user) modes
+ * Ring 0 exceptions: BLACKHOLE screen, system halt
+ * Ring 3 exceptions: Terminate faulting process, continue running
+ */
+
+#include "../klog/klog.h"
+
 /* External functions */
 extern void vga_print(const char *s);
 extern void vga_clear(void);
@@ -5,6 +13,29 @@ extern void vga_set_color(unsigned char fg, unsigned char bg);
 extern void vga_print_at(int x, int y, const char *s);
 extern void ring3_switch(unsigned int entry_point);
 extern unsigned int sysman_entry_point;
+
+/* Process management */
+extern int scheduler_get_current_pid(void);
+extern int process_terminate(int pid);
+extern void scheduler_remove_process(int pid);
+
+/* Serial output helpers */
+static void serial_putc(char c) {
+    while ((*(volatile unsigned char*)0x3FD & 0x20) == 0);
+    *(volatile unsigned char*)0x3F8 = c;
+}
+
+static void serial_puts(const char *s) {
+    while (*s) serial_putc(*s++);
+}
+
+static void serial_hex(unsigned int val) {
+    const char hex[] = "0123456789ABCDEF";
+    serial_puts("0x");
+    for (int i = 7; i >= 0; i--) {
+        serial_putc(hex[(val >> (i * 4)) & 0xF]);
+    }
+}
 
 static void print_hex(unsigned int val) {
     const char hex[] = "0123456789ABCDEF";
@@ -67,35 +98,94 @@ static const char* get_exception_description(unsigned int num) {
     }
 }
 
-/* Handle user mode exception - FOR NOW: just halt, don't restart */
-static void handle_user_exception(unsigned int exception_num, unsigned int error_code) {
-    /* Print to serial for debugging */
-    volatile unsigned char *serial = (volatile unsigned char *)0x3F8;
-    const char msg[] = "\n[EXCEPTION] Ring3 Exception #";
-    for (int i = 0; msg[i]; i++) *serial = msg[i];
+/* Handle user mode exception - TERMINATE PROCESS, CONTINUE RUNNING */
+static void handle_user_exception(unsigned int exception_num, unsigned int error_code,
+                                   unsigned int eip, unsigned int cr2) {
+    /* Get faulting process info */
+    int pid = scheduler_get_current_pid();
     
-    const char hex[] = "0123456789ABCDEF";
-    *serial = hex[(exception_num >> 4) & 0xF];
-    *serial = hex[exception_num & 0xF];
+    /* Log the exception using klog */
+    serial_puts("\n");
+    serial_puts("======================================================================\n");
+    serial_puts("          USER MODE EXCEPTION - PROCESS TERMINATED                   \n");
+    serial_puts("======================================================================\n");
     
-    const char msg2[] = " ErrorCode=0x";
-    for (int i = 0; msg2[i]; i++) *serial = msg2[i];
+    serial_puts("  Exception: ");
+    serial_puts(get_exception_name(exception_num));
+    serial_puts(" (#");
+    serial_hex(exception_num);
+    serial_puts(")\n");
     
-    for (int i = 7; i >= 0; i--) {
-        *serial = hex[(error_code >> (i * 4)) & 0xF];
+    serial_puts("  Process:   PID ");
+    serial_hex(pid);
+    serial_puts("\n");
+    
+    serial_puts("  EIP:       ");
+    serial_hex(eip);
+    serial_puts("\n");
+    
+    serial_puts("  Error:     ");
+    serial_hex(error_code);
+    serial_puts("\n");
+    
+    if (exception_num == 14) {
+        /* Page fault - show CR2 (faulting address) */
+        serial_puts("  CR2:       ");
+        serial_hex(cr2);
+        serial_puts(" (Faulting Address)\n");
+        
+        /* Decode error code */
+        serial_puts("  Cause:     ");
+        if (error_code & 0x1) {
+            serial_puts("Protection violation");
+        } else {
+            serial_puts("Page not present");
+        }
+        if (error_code & 0x2) {
+            serial_puts(", Write access");
+        } else {
+            serial_puts(", Read access");
+        }
+        if (error_code & 0x4) {
+            serial_puts(", User mode");
+        }
+        serial_puts("\n");
     }
-    *serial = '\n';
     
-    vga_print("\n[RING3 EXCEPTION #");
-    print_hex(exception_num);
-    vga_print("] ");
-    vga_print(get_exception_name(exception_num));
-    vga_print(" - Error Code: ");
-    print_hex(error_code);
-    vga_print("\n[EXCEPTION] HALTING - Fix multitasking first!\n");
+    serial_puts("======================================================================\n\n");
     
-    /* HALT instead of trying to restart - prevents infinite loop */
-    while(1) { asm volatile("cli; hlt"); }
+    /* Log via klog for ring buffer storage */
+    klog(LOG_ERROR, "EXCEPT", "User process crashed");
+    klog_hex(LOG_ERROR, "EXCEPT", "  Exception #", exception_num);
+    klog_hex(LOG_ERROR, "EXCEPT", "  PID: ", pid);
+    klog_hex(LOG_ERROR, "EXCEPT", "  EIP: ", eip);
+    if (exception_num == 14) {
+        klog_hex(LOG_ERROR, "EXCEPT", "  CR2: ", cr2);
+    }
+    
+    /* Terminate the faulting process */
+    klog(LOG_INFO, "EXCEPT", "Terminating faulting process...");
+    
+    /* Remove from scheduler first */
+    scheduler_remove_process(pid);
+    klog(LOG_INFO, "EXCEPT", "Process removed from scheduler");
+    
+    /* Now terminate (free resources) */
+    int result = process_terminate(pid);
+    
+    if (result == 0) {
+        klog(LOG_INFO, "EXCEPT", "Process terminated successfully");
+    } else {
+        klog_hex(LOG_ERROR, "EXCEPT", "process_terminate returned: ", result);
+    }
+    
+    /* Re-enable interrupts and wait for timer to schedule next process */
+    klog(LOG_INFO, "EXCEPT", "Waiting for scheduler to pick next process...");
+    
+    /* Enable interrupts and halt - timer IRQ will wake us and schedule next process */
+    while(1) {
+        __asm__ volatile("sti; hlt");
+    }
 }
 
 /* Handle kernel mode exception - fatal BLACKHOLE */
@@ -119,10 +209,6 @@ static void handle_kernel_exception(unsigned int exception_num, unsigned int err
     __asm__ volatile("mov %%cr0, %0" : "=r"(cr0));
     __asm__ volatile("mov %%cr2, %0" : "=r"(cr2));
     __asm__ volatile("mov %%cr3, %0" : "=r"(cr3));
-    
-    /* CRITICAL: Switch back to VGA text mode for panic screen */
-    extern void vbe_emergency_text_mode(void);
-    vbe_emergency_text_mode();
     
     /* Clear screen and setup BLACKHOLE display */
     vga_clear();
@@ -211,6 +297,12 @@ static void handle_kernel_exception(unsigned int exception_num, unsigned int err
     vga_print_at(2, 20, "The system has been halted to prevent data corruption.");
     vga_print_at(2, 21, "Please reboot your system.");
     
+    /* *** DUMP KLOG BEFORE HALTING *** */
+    serial_puts("\n\n[EXCEPTION] Dumping kernel log before halt...\n");
+    extern void klog_dump(void);
+    klog_dump();  /* Dumps entire log buffer to serial */
+    serial_puts("[EXCEPTION] Log dump complete. System halted.\n\n");
+    
     /* Halt system */
     while(1) {
         __asm__ volatile("cli; hlt");
@@ -231,18 +323,19 @@ void exception_handler(unsigned int exception_num, unsigned int error_code) {
      * ESP+40 = CS (pushed by CPU) <- We need this!
      */
     
-    unsigned int cs, eip;
+    unsigned int cs, eip, cr2;
     
     __asm__ volatile(
         "movl 36(%%esp), %0\n"
-        "movl 40(%%esp), %1"
-        : "=r"(eip), "=r"(cs)
+        "movl 40(%%esp), %1\n"
+        "movl %%cr2, %2"
+        : "=r"(eip), "=r"(cs), "=r"(cr2)
     );
     
     /* Check CS lowest 2 bits for privilege level */
     if (cs & 0x3) {
         /* Ring 3 - user mode exception */
-        handle_user_exception(exception_num, error_code);
+        handle_user_exception(exception_num, error_code, eip, cr2);
     } else {
         /* Ring 0 - kernel mode exception */
         handle_kernel_exception(exception_num, error_code, eip);

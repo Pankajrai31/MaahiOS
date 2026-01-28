@@ -19,7 +19,7 @@ static int next_pid = 1;
 #define USER_STACK_SIZE 0x00010000
 static uint32_t next_stack_top = USER_STACK_BASE;
 
-#define KERNEL_INT_STACK_BASE 0x00280000
+#define KERNEL_INT_STACK_BASE 0x00600000
 #define KERNEL_INT_STACK_SIZE 0x00004000
 static uint32_t next_kernel_stack_top = KERNEL_INT_STACK_BASE;
 
@@ -46,6 +46,9 @@ static void serial_hex32(uint32_t value) {
     serial_hex(value);
 }
 
+/* External PMM function to reserve memory */
+extern void pmm_mark_region_used(uint32_t start, uint32_t end);
+
 /**
  * Initialize process manager
  */
@@ -54,6 +57,29 @@ void process_manager_init(void) {
         process_table[i] = 0;
     }
     next_pid = 1;
+    
+    /* CRITICAL: Reserve kernel interrupt stack region in PMM
+     * This prevents PMM from allocating this memory for other uses.
+     * We reserve space for MAX_PROCESSES kernel stacks (16KB each).
+     */
+    uint32_t kernel_stack_region_end = KERNEL_INT_STACK_BASE + (MAX_PROCESSES * KERNEL_INT_STACK_SIZE);
+    pmm_mark_region_used(KERNEL_INT_STACK_BASE, kernel_stack_region_end);
+    
+    serial_print("[PROCESS_MGR] Reserved kernel stacks: 0x");
+    serial_hex32(KERNEL_INT_STACK_BASE);
+    serial_print(" - 0x");
+    serial_hex32(kernel_stack_region_end);
+    serial_print("\n");
+    
+    /* Also reserve user stack region */
+    uint32_t user_stack_region_end = USER_STACK_BASE + (MAX_PROCESSES * USER_STACK_SIZE);
+    pmm_mark_region_used(USER_STACK_BASE, user_stack_region_end);
+    
+    serial_print("[PROCESS_MGR] Reserved user stacks: 0x");
+    serial_hex32(USER_STACK_BASE);
+    serial_print(" - 0x");
+    serial_hex32(user_stack_region_end);
+    serial_print("\n");
 }
 
 /**
@@ -84,13 +110,15 @@ int process_create(uint32_t entry_point) {
     pcb->state = PROCESS_STATE_READY;
     
     /* Allocate user stack */
-    uint32_t stack_top = next_stack_top;
+    uint32_t stack_base = next_stack_top;
     next_stack_top += USER_STACK_SIZE;
-    pcb->user_stack_top = stack_top;
+    uint32_t user_stack_top = stack_base + USER_STACK_SIZE - 4;  // Top of stack (stacks grow down)
+    pcb->user_stack_top = user_stack_top;
     
     /* Allocate kernel interrupt stack */
-    uint32_t kernel_stack_top = next_kernel_stack_top;
+    uint32_t kernel_stack_base = next_kernel_stack_top;
     next_kernel_stack_top += KERNEL_INT_STACK_SIZE;
+    uint32_t kernel_stack_top = kernel_stack_base + KERNEL_INT_STACK_SIZE;  // Top of kernel stack
     pcb->kernel_stack_top = kernel_stack_top;
     
     /* Build initial interrupt frame on kernel stack */
@@ -100,7 +128,7 @@ int process_create(uint32_t entry_point) {
     
     /* IRET frame (pushed by CPU on interrupt) */
     *(--stack) = 0x23;                   /* SS (user data segment with RPL=3) */
-    *(--stack) = stack_top;              /* ESP (user stack) */
+    *(--stack) = user_stack_top;         /* ESP (user stack - at TOP of allocated region) */
     *(--stack) = 0x00003202;             /* EFLAGS (IF=1, IOPL=3) */
     *(--stack) = 0x1B;                   /* CS (user code segment with RPL=3) */
     *(--stack) = entry_point;            /* EIP (entry point) */
@@ -127,7 +155,7 @@ int process_create(uint32_t entry_point) {
     
     /* Add to scheduler queue */
     extern void scheduler_add_process(int pid, uint32_t entry_point, uint32_t user_stack, uint32_t kernel_stack);
-    scheduler_add_process(pcb->pid, entry_point, stack_top, kernel_stack_top);
+    scheduler_add_process(pcb->pid, entry_point, user_stack_top, kernel_stack_top);
     
     serial_print("[PROCESS_CREATE] Created PID=");
     serial_hex(pcb->pid);

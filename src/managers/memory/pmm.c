@@ -146,6 +146,12 @@ void *pmm_alloc_size(uint32_t size_bytes) {
     // Calculate number of pages needed (round up)
     uint32_t pages_needed = (size_bytes + PAGE_SIZE - 1) / PAGE_SIZE;
     
+    serial_print("[PMM_ALLOC_SIZE] Request: ");
+    serial_hex(size_bytes);
+    serial_print(" bytes, ");
+    serial_hex(pages_needed);
+    serial_print(" pages\n");
+    
     if (pages_needed == 0) {
         return 0;
     }
@@ -169,11 +175,18 @@ void *pmm_alloc_size(uint32_t size_bytes) {
                 used_pages++;
             }
             
-            return (void *)page_to_addr(start_page);
+            void *result = (void *)page_to_addr(start_page);
+            serial_print("[PMM_ALLOC_SIZE] SUCCESS at ");
+            serial_hex((uint32_t)result);
+            serial_print("\n");
+            return result;
         }
     }
     
     // No contiguous block found
+    serial_print("[PMM_ALLOC_SIZE] FAILED - no contiguous block for ");
+    serial_hex(pages_needed);
+    serial_print(" pages\n");
     return 0;
 }
 
@@ -188,22 +201,4 @@ void pmm_free_page(void *addr) {
         bitmap_clear(page);
         used_pages--;
     }
-}
-
-void pmm_print_stats() {
-    vga_print("PMM Stats: ");
-    print_hex(total_pages - used_pages);
-    vga_print(" pages free / ");
-    print_hex(total_pages);
-    vga_print(" total (");
-    print_hex((total_pages - used_pages) * PAGE_SIZE / (1024 * 1024));
-    vga_print(" MB free)\n");
-}
-
-uint32_t pmm_get_free_pages() {
-    return total_pages - used_pages;
-}
-
-uint32_t pmm_get_total_pages() {
-    return total_pages;
 }

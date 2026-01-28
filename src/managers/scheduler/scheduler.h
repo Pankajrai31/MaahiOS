@@ -25,6 +25,11 @@ void scheduler_disable(void);
 int scheduler_get_current_pid(void);
 
 /**
+ * Set current process PID (called by pit_handler after context switch)
+ */
+void scheduler_set_current_pid(int pid);
+
+/**
  * Check if scheduler wants to switch processes
  */
 int scheduler_should_switch(void);

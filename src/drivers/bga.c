@@ -38,19 +38,6 @@ static uint32_t *framebuffer = 0;
 static uint16_t screen_width = 0;
 static uint16_t screen_height = 0;
 static uint16_t screen_bpp = 0;
-static int cursor_x = 0;
-static int cursor_y = 0;
-
-/**
- * Read a pixel from the framebuffer
- * Used by cursor compositor to save/restore background
- */
-uint32_t bga_get_pixel(int x, int y) {
-    if (!framebuffer || x < 0 || y < 0 || x >= screen_width || y >= screen_height) {
-        return 0x000000;  // Black for out-of-bounds
-    }
-    return framebuffer[y * screen_width + x];
-}
 
 /* 8x16 VGA Font (same as VBE - for text rendering) */
 static const uint8_t font_8x16[128][16] = {
@@ -321,9 +308,6 @@ int bga_init(uint16_t width, uint16_t height, uint16_t bpp) {
     // Get framebuffer address
     framebuffer = (uint32_t *)bga_get_framebuffer_addr();
     
-    cursor_x = 0;
-    cursor_y = 0;
-    
     return 1;  // Success
 }
 
@@ -340,19 +324,12 @@ void bga_clear(uint32_t color) {
 }
 
 /**
- * Put pixel
- */
-void bga_putpixel(int x, int y, uint32_t color) {
-    if (!framebuffer) return;
-    if (x < 0 || x >= screen_width || y < 0 || y >= screen_height) return;
-    
-    framebuffer[y * screen_width + x] = color & 0x00FFFFFF;  // Strip alpha byte
-}
-
-/**
- * Draw character
+ * Draw character helper function
  */
 static void bga_putchar(int x, int y, char c, uint32_t fg, uint32_t bg) {
+    if (!framebuffer) return;
+    if (x < 0 || y < 0 || x + 8 > screen_width || y + 16 > screen_height) return;
+    
     uint8_t uc = (uint8_t)c;
     if (uc >= 128) uc = 0;
     
@@ -361,48 +338,14 @@ static void bga_putchar(int x, int y, char c, uint32_t fg, uint32_t bg) {
     for (int row = 0; row < 16; row++) {
         uint8_t line = glyph[row];
         for (int col = 0; col < 8; col++) {
-            // Only draw foreground pixels if bit is set, skip background (transparent)
-            if (line & (0x80 >> col)) {
-                bga_putpixel(x + col, y + row, fg);
-            }
+            uint32_t color = (line & (0x80 >> col)) ? fg : bg;
+            framebuffer[(y + row) * screen_width + (x + col)] = color & 0x00FFFFFF;
         }
     }
 }
 
 /**
- * Print string at current cursor position
- */
-void bga_print(const char *str, uint32_t fg, uint32_t bg) {
-    if (!framebuffer) return;
-    
-    while (*str) {
-        if (*str == '\n') {
-            cursor_x = 0;
-            cursor_y += 16;
-            if (cursor_y >= screen_height) {
-                cursor_y = 0;  // Wrap to top (simple for now)
-            }
-            str++;
-            continue;
-        }
-        
-        bga_putchar(cursor_x, cursor_y, *str, fg, bg);
-        cursor_x += 8;
-        
-        if (cursor_x + 8 > screen_width) {
-            cursor_x = 0;
-            cursor_y += 16;
-            if (cursor_y >= screen_height) {
-                cursor_y = 0;
-            }
-        }
-        
-        str++;
-    }
-}
-
-/**
- * Print string at specific position (doesn't update cursor)
+ * Print string at specific position
  */
 void bga_print_at(int x, int y, const char *str, uint32_t fg, uint32_t bg) {
     if (!framebuffer) return;
@@ -431,22 +374,6 @@ void bga_print_at(int x, int y, const char *str, uint32_t fg, uint32_t bg) {
 }
 
 /**
- * Set cursor position
- */
-void bga_set_cursor(int x, int y) {
-    cursor_x = x;
-    cursor_y = y;
-}
-
-/**
- * Get cursor position
- */
-void bga_get_cursor(int *x, int *y) {
-    if (x) *x = cursor_x;
-    if (y) *y = cursor_y;
-}
-
-/**
  * Fill a rectangle with solid color
  */
 void bga_fill_rect(int x, int y, int width, int height, uint32_t color) {
@@ -470,88 +397,72 @@ void bga_fill_rect(int x, int y, int width, int height, uint32_t color) {
 void bga_draw_rect(int x, int y, int width, int height, uint32_t color) {
     if (!framebuffer) return;
     
-    // Top and bottom lines
+    // Strip alpha byte if present
+    uint32_t rgb_color = color & 0x00FFFFFF;
+    
+    // Top and bottom edges
     for (int col = x; col < x + width && col < screen_width; col++) {
         if (col >= 0) {
-            if (y >= 0 && y < screen_height) bga_putpixel(col, y, color);
-            if (y + height - 1 >= 0 && y + height - 1 < screen_height) 
-                bga_putpixel(col, y + height - 1, color);
+            if (y >= 0 && y < screen_height) {
+                framebuffer[y * screen_width + col] = rgb_color;
+            }
+            if (y + height - 1 >= 0 && y + height - 1 < screen_height) {
+                framebuffer[(y + height - 1) * screen_width + col] = rgb_color;
+            }
         }
     }
     
-    // Left and right lines
+    // Left and right edges
     for (int row = y; row < y + height && row < screen_height; row++) {
         if (row >= 0) {
-            if (x >= 0 && x < screen_width) bga_putpixel(x, row, color);
-            if (x + width - 1 >= 0 && x + width - 1 < screen_width) 
-                bga_putpixel(x + width - 1, row, color);
+            if (x >= 0 && x < screen_width) {
+                framebuffer[row * screen_width + x] = rgb_color;
+            }
+            if (x + width - 1 >= 0 && x + width - 1 < screen_width) {
+                framebuffer[row * screen_width + (x + width - 1)] = rgb_color;
+            }
         }
     }
 }
 
 /**
- * Draw BMP image from memory
- * Supports 32-bit BMP files only
+ * Write a single pixel
  */
-void bga_draw_bmp(int x, int y, const uint8_t *bmp_data) {
-    if (!framebuffer || !bmp_data) {
-        serial_print("[BMP] NULL pointer\n");
-        return;
+void bga_put_pixel(int x, int y, uint32_t color) {
+    if (!framebuffer) return;
+    if (x < 0 || x >= screen_width || y < 0 || y >= screen_height) return;
+    framebuffer[y * screen_width + x] = color & 0x00FFFFFF;
+}
+
+/**
+ * Write a pixel with alpha blending (for anti-aliased fonts)
+ * alpha: 0 = transparent, 255 = fully opaque
+ */
+void bga_put_pixel_alpha(int x, int y, uint32_t color, uint8_t alpha) {
+    if (!framebuffer) return;
+    if (x < 0 || x >= screen_width || y < 0 || y >= screen_height) return;
+    
+    if (alpha == 255) {
+        /* Fully opaque - just write */
+        framebuffer[y * screen_width + x] = color & 0x00FFFFFF;
+    } else if (alpha > 0) {
+        /* Blend with background */
+        uint32_t bg = framebuffer[y * screen_width + x];
+        
+        uint8_t bg_r = (bg >> 16) & 0xFF;
+        uint8_t bg_g = (bg >> 8) & 0xFF;
+        uint8_t bg_b = bg & 0xFF;
+        
+        uint8_t fg_r = (color >> 16) & 0xFF;
+        uint8_t fg_g = (color >> 8) & 0xFF;
+        uint8_t fg_b = color & 0xFF;
+        
+        /* Alpha blend: result = fg * alpha + bg * (255 - alpha) */
+        uint8_t r = (fg_r * alpha + bg_r * (255 - alpha)) / 255;
+        uint8_t g = (fg_g * alpha + bg_g * (255 - alpha)) / 255;
+        uint8_t b = (fg_b * alpha + bg_b * (255 - alpha)) / 255;
+        
+        framebuffer[y * screen_width + x] = (r << 16) | (g << 8) | b;
     }
-    
-    // Debug: Print first few bytes
-    serial_print("[BMP] Data at 0x");
-    serial_hex((uint32_t)bmp_data);
-    serial_print(" bytes: 0x");
-    serial_hex(bmp_data[0]);
-    serial_print(" 0x");
-    serial_hex(bmp_data[1]);
-    serial_print("\n");
-    
-    // Verify BMP signature (should be 'BM')
-    if (bmp_data[0] != 0x42 || bmp_data[1] != 0x4D) {
-        // Invalid BMP - just draw a red square to show error
-        serial_print("[BMP] Invalid signature!\n");
-        bga_fill_rect(x, y, 32, 32, 0xFF0000);
-        return;
-    }
-    
-    serial_print("[BMP] Valid signature, drawing...\n");
-    
-    // Parse BMP header to get dimensions
-    // Offset 18: width (4 bytes, little-endian)
-    // Offset 22: height (4 bytes, little-endian)
-    uint32_t width = bmp_data[18] | (bmp_data[19] << 8) | (bmp_data[20] << 16) | (bmp_data[21] << 24);
-    uint32_t height = bmp_data[22] | (bmp_data[23] << 8) | (bmp_data[24] << 16) | (bmp_data[25] << 24);
-    
-    // Sanity check dimensions (our icons are 32x32)
-    if (width > 128 || height > 128 || width == 0 || height == 0) {
-        // Invalid dimensions - draw yellow square
-        bga_fill_rect(x, y, 32, 32, 0xFFFF00);
-        return;
-    }
-    
-    // Pixel data starts at offset 54 for our 32-bit BMPs
-    const uint8_t *pixel_data = bmp_data + 54;
-    
-    // BMP stores pixels bottom-to-top, so we need to flip vertically
-    for (uint32_t row = 0; row < height; row++) {
-        for (uint32_t col = 0; col < width; col++) {
-            // Calculate index in BMP data (bottom-to-top)
-            uint32_t bmp_row = height - 1 - row;
-            uint32_t pixel_index = (bmp_row * width + col) * 4;
-            
-            uint8_t b = pixel_data[pixel_index + 0];
-            uint8_t g = pixel_data[pixel_index + 1];
-            uint8_t r = pixel_data[pixel_index + 2];
-            uint8_t a = pixel_data[pixel_index + 3];
-            
-            // Skip transparent pixels (alpha == 0)
-            if (a == 0) continue;
-            
-            // Draw pixel as RGB (strip alpha)
-            uint32_t color = (r << 16) | (g << 8) | b;
-            bga_putpixel(x + col, y + row, color);
-        }
-    }
+    /* alpha == 0: do nothing (fully transparent) */
 }

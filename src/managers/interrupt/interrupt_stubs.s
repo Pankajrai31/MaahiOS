@@ -21,6 +21,7 @@
 .globl exception_stub_19
 .globl syscall_int
 .globl irq0_stub
+.globl irq1_stub
 .globl irq12_stub
 /* .globl ata_irq_handler - removed (using AHCI now) */
 
@@ -30,6 +31,7 @@
 .extern pit_handler
 .extern ata_irq_c_handler
 .extern mouse_handler
+.extern keyboard_irq_handler
 
 /* Exception stub for exceptions WITHOUT error code (e.g., exception 0 - divide by zero) */
 .macro exception_no_error_code exception_num
@@ -231,6 +233,18 @@ irq0_stub:
     iret
 
 /* IRQ 14 handler removed - now using AHCI instead of IDE */
+
+/* ============================================================ */
+/* IRQ 1 HANDLER - PS/2 Keyboard */
+/* ============================================================ */
+.align 4
+irq1_stub:
+    pusha
+    call keyboard_irq_handler
+    movb $0x20, %al
+    outb %al, $0x20
+    popa
+    iret
 
 /* ============================================================ */
 /* IRQ 12 HANDLER - PS/2 Mouse */

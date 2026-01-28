@@ -1,0 +1,838 @@
+﻿#include <stdint.h>
+#include "syscall_numbers.h"
+#include "../managers/scheduler/scheduler.h"
+
+/**
+ * Ring 0 Syscall Handler/Dispatcher
+ * 
+ * This code runs in Ring 0 (kernel mode) and is called from interrupt stub
+ * when INT 0x80 is triggered from Ring 3
+ * 
+ * Called from: src/managers/interrupt/interrupt_stubs.s (syscall_int stub)
+ * Receives: eax=syscall_number, ebx=arg1, ecx=arg2, edx=arg3
+ * 
+ * Dispatcher pattern:
+ * 1. Read syscall number from EAX
+ * 2. Switch on syscall number
+ * 3. Call appropriate kernel function
+ * 4. Return to Ring 3 via IRET
+ */
+
+/* Global graphics state - kernel manages colors for user programs */
+uint32_t current_fg_color = 0xFFFFFFFF;  // White by default
+uint32_t current_bg_color = 0x00000000;  // Black by default
+
+/* Serial debug functions */
+static inline unsigned char inb(unsigned short port) {
+    unsigned char ret;
+    __asm__ volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
+    return ret;
+}
+
+static inline void outb(unsigned short port, unsigned char val) {
+    __asm__ volatile("outb %0, %1" : : "a"(val), "Nd"(port));
+}
+
+static void serial_print(const char *str) {
+    while (*str) {
+        while ((inb(0x3FD) & 0x20) == 0);
+        outb(0x3F8, *str++);
+    }
+}
+
+static void serial_hex(unsigned char value) {
+    char hex[] = "0123456789ABCDEF";
+    while ((inb(0x3FD) & 0x20) == 0);
+    outb(0x3F8, hex[(value >> 4) & 0xF]);
+    while ((inb(0x3FD) & 0x20) == 0);
+    outb(0x3F8, hex[value & 0xF]);
+}
+
+/* Forward declare process function */
+extern int current_process_id(void);
+
+/* Forward declare VGA functions from vga.c */
+extern void vga_putchar(char c);
+extern void vga_putint(int num);
+extern void vga_clear();
+extern void vga_set_color(unsigned char fg, unsigned char bg);
+extern void vga_draw_rect(int x, int y, int width, int height, unsigned char color);
+extern void vga_print_at(int x, int y, const char *s);
+extern void vga_set_cursor(int x, int y);
+extern void vga_draw_box(int x, int y, int width, int height);
+
+/* Forward declare graphics functions from graphics.c */
+extern void graphics_mode_13h(void);
+extern void put_pixel(int x, int y, unsigned char color);
+extern void clear_screen(unsigned char color);
+
+/* Forward declare BGA graphics functions from bga.c */
+extern void bga_clear(uint32_t color);
+extern void bga_fill_rect(int x, int y, int width, int height, uint32_t color);
+extern void bga_print_at(int x, int y, const char *str, uint32_t fg, uint32_t bg);
+
+
+/* Forward declare mouse driver functions from mouse.c */
+extern int mouse_get_x(void);
+extern int mouse_get_y(void);
+extern uint8_t mouse_get_buttons(void);
+
+/* Forward declare VMM functions (which wrap PMM) */
+extern void *vmm_alloc_page();
+extern void vmm_free_page(void *addr);
+
+/* Forward declare ISO9660 functions */
+extern int iso9660_list_files(void);
+
+/**
+ * Kernel-side: putchar implementation
+ * Can directly access VGA buffer (Ring 0 privilege)
+ */
+static void kernel_putchar(char c) {
+    vga_putchar(c);
+}
+
+/**
+ * Kernel-side: puts implementation
+ * Can directly access VGA buffer (Ring 0 privilege)
+ */
+static void kernel_puts(const char* str) {
+    // Safety check - make sure pointer looks valid
+    if (!str) {
+        vga_putchar('N');
+        vga_putchar('U');
+        vga_putchar('L');
+        vga_putchar('L');
+        return;
+    }
+    
+    while (*str) {
+        vga_putchar(*str);
+        str++;
+    }
+}
+
+/**
+ * Kernel-side: putint implementation
+ * Can directly access VGA buffer (Ring 0 privilege)
+ */
+static void kernel_putint(int num) {
+    vga_putint(num);
+}
+
+/**
+ * Kernel-side: exit implementation
+ * Halts execution
+ */
+static void kernel_exit(int code) {
+    // Unused parameter
+    (void)code;
+    
+    // Halt the CPU
+    asm volatile("hlt");
+    
+    // Infinite loop (should never reach here)
+    while(1) {
+        asm volatile("hlt");
+    }
+}
+
+/**
+ * Kernel-side: allocate page implementation
+ * Returns address of allocated 4KB page (now via VMM)
+ */
+static unsigned int kernel_alloc_page() {
+    void *page = vmm_alloc_page();
+    return (unsigned int)page;
+}
+
+/**
+ * Kernel-side: free page implementation
+ * Frees a previously allocated page (now via VMM)
+ */
+static void kernel_free_page(unsigned int addr) {
+    vmm_free_page((void*)addr);
+}
+
+/**
+ * Kernel-side: clear screen implementation
+ * Clears the VGA text buffer
+ */
+static void kernel_clear() {
+    vga_clear();
+}
+
+/**
+ * Main syscall dispatcher
+ * 
+ * Called from assembly stub with:
+ *   EAX = syscall number
+ *   EBX = argument 1
+ *   ECX = argument 2
+ *   EDX = argument 3
+ * 
+ * This function is called after ALL general purpose registers
+ * have been saved by the assembly stub
+ * 
+ * Return value in EAX will be passed back to userspace
+ */
+unsigned int syscall_dispatcher(unsigned int syscall_num,
+                                unsigned int arg1,
+                                unsigned int arg2,
+                                unsigned int arg3,
+                                unsigned int arg4_esi,
+                                unsigned int user_esp) {
+    // Get additional arguments from user stack if needed
+    unsigned int *user_stack = (unsigned int*)user_esp;
+    unsigned int arg5 = (user_esp > 0) ? user_stack[0] : 0;  // First arg on stack
+    unsigned int arg6 = (user_esp > 0) ? user_stack[1] : 0;  // Second arg on stack
+    
+    // CRITICAL: Re-enable interrupts during syscall handling
+    // INT 0x80 clears IF, but we need timer/mouse IRQs to work
+    __asm__ volatile("sti");
+    
+    unsigned int return_value = 0;
+    
+    // Dispatch based on syscall number
+    switch(syscall_num) {
+        case SYSCALL_PUTCHAR:
+            // arg1 = character to print
+            kernel_putchar((char)arg1);
+            break;
+            
+        case SYSCALL_PUTS:
+            // arg1 = pointer to string
+            serial_print("[SYSCALL_PUTS] str=");
+            if (arg1 != 0) {
+                serial_print((const char*)arg1);
+            } else {
+                serial_print("(null)\n");
+            }
+            kernel_puts((const char*)arg1);
+            break;
+            
+        case SYSCALL_PUTINT:
+            // arg1 = integer to print
+            kernel_putint((int)arg1);
+            break;
+            
+        case SYSCALL_EXIT:
+            // arg1 = exit code
+            kernel_exit((int)arg1);
+            break;
+            
+        case SYSCALL_ALLOC_PAGE:
+            // Return address of allocated page
+            return_value = kernel_alloc_page();
+            break;
+            
+        case SYSCALL_FREE_PAGE:
+            // arg1 = address to free
+            kernel_free_page(arg1);
+            break;
+            
+        case SYSCALL_CLEAR:
+            // Clear screen
+            kernel_clear();
+            break;
+            
+        case SYSCALL_SET_COLOR:
+            // arg1 = foreground color, arg2 = background color
+            vga_set_color((unsigned char)arg1, (unsigned char)arg2);
+            break;
+            
+        case SYSCALL_DRAW_RECT:
+            // arg1 = x, arg2 = y, arg3 = width, EDX stack = height, ESI stack = color
+            // For now, use arg3 as packed: low 16 bits = width+height, high byte = color
+            {
+                int x = (int)arg1;
+                int y = (int)arg2;
+                int width = arg3 & 0xFF;
+                int height = (arg3 >> 8) & 0xFF;
+                unsigned char color = (arg3 >> 16) & 0xFF;
+                vga_draw_rect(x, y, width, height, color);
+            }
+            break;
+            
+        case SYSCALL_GRAPHICS_MODE:
+            // Switch to 320x200 graphics mode
+            graphics_mode_13h();
+            break;
+            
+        case SYSCALL_PUT_PIXEL:
+            // arg1 = x, arg2 = y, arg3 = color
+            put_pixel((int)arg1, (int)arg2, (unsigned char)arg3);
+            break;
+            
+        case SYSCALL_CLEAR_GFX:
+            // arg1 = color
+            clear_screen((unsigned char)arg1);
+            break;
+            
+        case SYSCALL_PRINT_AT:
+            // arg1 = x, arg2 = y, arg3 = string pointer, stack = fg, bg colors
+            {
+                int x = (int)arg1;
+                int y = (int)arg2;
+                const char *str = (const char*)arg3;
+                // TEMPORARY: Force white color to verify it works
+                uint32_t fg = 0xFFFFFF;  // Pure white
+                uint32_t bg = 0x000000;  // Black (ignored by bga_putchar)
+                bga_print_at(x, y, str, fg, bg);
+            }
+            break;
+            
+        case SYSCALL_SET_CURSOR:
+            // arg1 = x, arg2 = y
+            vga_set_cursor((int)arg1, (int)arg2);
+            break;
+            
+        case SYSCALL_DRAW_BOX:
+            // arg1 = x, arg2 = y, arg3 = width, EDX = height (packed)
+            {
+                int x = (int)arg1;
+                int y = (int)arg2;
+                int width = arg3 & 0xFFFF;
+                int height = (arg3 >> 16) & 0xFFFF;
+                vga_draw_box(x, y, width, height);
+            }
+            break;
+            
+        case SYSCALL_CREATE_PROCESS: {
+            // Create new process
+            extern int process_create(uint32_t entry_point);
+            uint32_t entry_point = arg1;  // Entry point passed in arg1
+            return_value = process_create(entry_point);
+            break;
+        }
+        
+        case SYSCALL_GET_ORBIT_ADDR:
+            // Return orbit module address
+            extern uint32_t orbit_module_address;
+            return_value = orbit_module_address;
+            break;
+            
+        case SYSCALL_GET_UIMANAGER_ADDR:
+            // Return UIManager module address
+            extern uint32_t uimanager_module_address;
+            return_value = uimanager_module_address;
+            break;
+            
+        case SYSCALL_UI_REGISTER_BUTTON:
+            // arg1=owner_pid, arg2=x, arg3=y, arg4=w, arg5=h, ebp=label
+            // This is a cross-process call - need to send message to UIManager
+            // For now, just return -1 (not implemented yet)
+            return_value = -1;
+            break;
+            
+        case SYSCALL_GFX_PUTC:
+        case SYSCALL_GFX_PUTS:
+        case SYSCALL_GFX_CLEAR:
+            // Removed - use UIManager syscalls instead
+            return_value = -1;
+            break;
+            
+        case SYSCALL_GFX_SET_COLOR:
+            // arg1 = fg color, arg2 = bg color
+            {
+                extern uint32_t current_fg_color;
+                extern uint32_t current_bg_color;
+                current_fg_color = arg1;
+                current_bg_color = arg2;
+            }
+            break;
+            
+        case SYSCALL_GFX_FILL_RECT:
+            // SIMPLIFIED: arg1=x, arg2=y, arg3=packed(w/h), arg4_esi=color
+            {
+                int x = (int)arg1;
+                int y = (int)arg2;
+                unsigned int packed = arg3;
+                uint32_t color = arg4_esi;
+                
+                int width = (int)(packed & 0xFFFF);
+                int height = (int)(packed >> 16);
+                
+                bga_fill_rect(x, y, width, height, color);
+            }
+            break;
+            
+        case SYSCALL_GFX_DRAW_RECT:
+            // Removed - use UIManager syscalls instead
+            return_value = -1;
+            break;
+            
+        case SYSCALL_GFX_PRINT_AT:
+            // arg1 = x, arg2 = y, arg3 = str, stack = fg, bg
+            {
+                int x = (int)arg1;
+                int y = (int)arg2;
+                const char *str = (const char *)arg3;
+                
+                // FORCE WHITE COLOR
+                uint32_t fg = 0xFFFFFF;  // Pure white
+                uint32_t bg = 0x000000;
+                
+                bga_print_at(x, y, str, fg, bg);
+            }
+            break;
+            
+        case SYSCALL_GFX_CLEAR_COLOR:
+            // arg1 = RGB color
+            bga_clear((uint32_t)arg1);
+            break;
+            
+        case SYSCALL_GFX_DRAW_BMP:
+            // Removed - use UIManager syscalls instead
+            return_value = -1;
+            break;
+            
+        case SYSCALL_MOUSE_GET_X:
+            // Return current mouse X position (atomic read - disable IRQs to prevent race with IRQ12)
+            __asm__ volatile("cli");  // Disable interrupts
+            return_value = (unsigned int)mouse_get_x();
+            __asm__ volatile("sti");  // Re-enable interrupts
+            break;
+            
+        case SYSCALL_MOUSE_GET_Y:
+            // Return current mouse Y position (atomic read - disable IRQs to prevent race with IRQ12)
+            __asm__ volatile("cli");  // Disable interrupts
+            return_value = (unsigned int)mouse_get_y();
+            __asm__ volatile("sti");  // Re-enable interrupts
+            break;
+            
+        case SYSCALL_MOUSE_GET_BUTTONS:
+            // Return button state bitmap (atomic read - disable IRQs)
+            __asm__ volatile("cli");  // Disable interrupts
+            return_value = (unsigned int)mouse_get_buttons();
+            __asm__ volatile("sti");  // Re-enable interrupts
+            break;
+            
+        case SYSCALL_YIELD:
+            // Yield CPU - trigger scheduler
+            scheduler_tick();  // Trigger context switch
+            break;
+            
+        case SYSCALL_MOUSE_GET_IRQ_TOTAL:
+            // Return total IRQ12 count for debugging (atomic read)
+            extern int mouse_get_irq_total(void);
+            __asm__ volatile("cli");  // Disable interrupts
+            return_value = (unsigned int)mouse_get_irq_total();
+            __asm__ volatile("sti");  // Re-enable interrupts
+            break;
+            
+        case SYSCALL_GET_PIC_MASK:
+            // Return PIC mask register status
+            extern unsigned int irq_get_pic_mask(void);
+            return_value = irq_get_pic_mask();
+            break;
+            
+        case SYSCALL_RE_ENABLE_MOUSE:
+            // Re-enable IRQ12 and drain PS/2 buffer
+            extern void irq_enable_mouse(void);
+            extern void mouse_drain_buffer(void);
+            mouse_drain_buffer();  // CRITICAL: drain buffer first
+            irq_enable_mouse();
+            break;
+            
+        case SYSCALL_POLL_MOUSE: {
+            // Manually check 8042 for mouse data and process if available
+            // This is a workaround for when IRQ12 stops firing
+            extern void mouse_handler(void);
+            uint8_t status = inb(0x64);
+            
+            if ((status & 0x01) && (status & 0x20)) {  // Data available AND it's from mouse (bit 5 set)
+                mouse_handler();  // Call handler directly
+                return_value = 1;  // Indicate we found data
+            } else {
+                return_value = 0;  // No data available
+            }
+            break;
+        }
+        
+        case SYSCALL_READ_PIXEL:
+            // Removed - not needed
+            return_value = 0;
+            break;
+        
+        case SYSCALL_GET_CURRENT_PID:
+            // Returns current process PID
+            extern int scheduler_get_current_pid(void);
+            return_value = (unsigned int)scheduler_get_current_pid();
+            break;
+        
+        case SYSCALL_UI_CREATE_WINDOW:
+            // arg1=x, arg2=y, arg3=width, arg4_esi=height, arg5=title, arg6=parent
+            extern int uiman_create_window_kernel(int x, int y, int w, int h, const char *title, int parent, int owner_pid);
+            return_value = (unsigned int)uiman_create_window_kernel(
+                (int)arg1, (int)arg2, (int)arg3, (int)arg4_esi,
+                (const char*)arg5, (int)arg6, scheduler_get_current_pid());
+            break;
+        
+        case SYSCALL_UI_CREATE_BUTTON:
+            // arg1=window_id, arg2=x, arg3=y, arg4_esi=width, arg5=height, arg6=text
+            extern int uiman_create_button_kernel(int window_id, int x, int y, int w, int h, const char *text, int owner_pid);
+            
+            // DEBUG: Print what we received
+            serial_print("[SYSCALL] Button: arg5=");
+            serial_hex((unsigned char)((arg5 >> 24) & 0xFF));
+            serial_hex((unsigned char)((arg5 >> 16) & 0xFF));
+            serial_hex((unsigned char)((arg5 >> 8) & 0xFF));
+            serial_hex((unsigned char)(arg5 & 0xFF));
+            serial_print(" arg6=");
+            serial_hex((unsigned char)((arg6 >> 24) & 0xFF));
+            serial_hex((unsigned char)((arg6 >> 16) & 0xFF));
+            serial_hex((unsigned char)((arg6 >> 8) & 0xFF));
+            serial_hex((unsigned char)(arg6 & 0xFF));
+            serial_print("\n");
+            
+            return_value = (unsigned int)uiman_create_button_kernel(
+                (int)arg1, (int)arg2, (int)arg3, (int)arg4_esi, (int)arg5,
+                (const char*)arg6, scheduler_get_current_pid());
+            break;
+        
+        case SYSCALL_UI_CREATE_ICON:
+            // arg1=window_id, arg2=x, arg3=y, arg4_esi=text
+            extern int uiman_create_icon_kernel(int window_id, int x, int y, const char *text, int owner_pid);
+            return_value = (unsigned int)uiman_create_icon_kernel(
+                (int)arg1, (int)arg2, (int)arg3, (const char*)arg4_esi, scheduler_get_current_pid());
+            break;
+        
+        case SYSCALL_UI_CREATE_LABEL:
+            // arg1=window_id, arg2=x, arg3=y, arg4_esi=text
+            serial_print("[SYSCALL] Label: window=");
+            serial_hex((unsigned char)(arg1 & 0xFF));
+            serial_print(" text_ptr=");
+            serial_hex((unsigned char)((arg4_esi >> 24) & 0xFF));
+            serial_hex((unsigned char)((arg4_esi >> 16) & 0xFF));
+            serial_hex((unsigned char)((arg4_esi >> 8) & 0xFF));
+            serial_hex((unsigned char)(arg4_esi & 0xFF));
+            serial_print("\n");
+            extern int uiman_create_label_kernel(int window_id, int x, int y, const char *text, int owner_pid);
+            return_value = (unsigned int)uiman_create_label_kernel(
+                (int)arg1, (int)arg2, (int)arg3, (const char*)arg4_esi, scheduler_get_current_pid());
+            serial_print("[SYSCALL] Label created OK\n");
+            break;
+        
+        case SYSCALL_UI_POLL_EVENT:
+            // arg1=pointer to uiman_event_t structure
+            extern int uiman_poll_event_kernel(void *event_ptr, int calling_pid);
+            return_value = (unsigned int)uiman_poll_event_kernel((void*)arg1, scheduler_get_current_pid());
+            break;
+        
+        case SYSCALL_UI_GET_WINDOWS_PTR:
+            // Returns pointer to kernel windows array
+            extern void* uiman_get_kernel_windows(void);
+            return_value = (unsigned int)uiman_get_kernel_windows();
+            break;
+        
+        case SYSCALL_UI_GET_CONTROLS_PTR:
+            // Returns pointer to kernel controls array
+            extern void* uiman_get_kernel_controls(void);
+            return_value = (unsigned int)uiman_get_kernel_controls();
+            break;
+        
+        case SYSCALL_UI_GET_EVENTS_PTR:
+            // Returns pointer to kernel event queues
+            extern void* uiman_get_kernel_event_queues(void);
+            return_value = (unsigned int)uiman_get_kernel_event_queues();
+            break;
+        
+        case 50:  // SYSCALL_ALLOC_MEMORY
+            // Allocate memory using vmm_alloc_size
+            extern void* vmm_alloc_size(unsigned int size_bytes);
+            return_value = (unsigned int)vmm_alloc_size(arg1);
+            break;
+        
+        case 51: {  // SYSCALL_ATOMIC_MEMCPY - Interrupt-safe memory copy
+            // arg1 = dest, arg2 = src, arg3 = size (in bytes)
+            uint32_t *dest = (uint32_t*)arg1;
+            uint32_t *src = (uint32_t*)arg2;
+            uint32_t count = arg3 / 4;  // Convert bytes to dwords
+            
+            // Disable interrupts for atomic copy
+            __asm__ volatile("cli");
+            
+            // Copy memory
+            for (uint32_t i = 0; i < count; i++) {
+                dest[i] = src[i];
+            }
+            
+            // Re-enable interrupts
+            __asm__ volatile("sti");
+            
+            return_value = 0;  // Success
+            break;
+        }
+        
+        case 52: {  // SYSCALL_LAUNCH_FILE_MANAGER - Launch file_manager.bin
+            extern int launch_file_manager(void);
+            return_value = launch_file_manager();
+            break;
+        }
+        
+        case 53: {  // SYSCALL_KILL_PROCESS - Terminate process
+            extern int process_terminate(int pid);
+            int pid = arg1;  // First argument is the PID
+            return_value = process_terminate(pid);
+            break;
+        }
+        
+        case 55: {  // SYSCALL_LAUNCH_DISK_MANAGER - Launch disk_manager.bin
+            extern int launch_disk_manager(void);
+            return_value = launch_disk_manager();
+            break;
+        }
+        
+        case 56: {  // SYSCALL_DISK_GET_COUNT - Get number of disks
+            extern int disk_manager_get_count(void);
+            extern void serial_print(const char*);
+            return_value = disk_manager_get_count();
+            if (return_value == 0) {
+                serial_print("[SYSCALL 56] WARNING: disk_manager_get_count() returned 0\n");
+            } else if (return_value == 1) {
+                serial_print("[SYSCALL 56] disk_manager_get_count() returned 1\n");
+            } else {
+                serial_print("[SYSCALL 56] disk_manager_get_count() returned other value\n");
+            }
+            break;
+        }
+        
+        case 57: {  // SYSCALL_DISK_GET_INFO - Get disk information
+            extern void* disk_manager_get_disk(uint8_t index);
+            uint8_t index = (uint8_t)arg1;
+            void *buffer = (void*)arg2;
+            
+            serial_print("[SYSCALL 57] index=");
+            serial_hex(index);
+            serial_print(" buffer=");
+            serial_hex((unsigned char)((arg2 >> 24) & 0xFF));
+            serial_hex((unsigned char)((arg2 >> 16) & 0xFF));
+            serial_hex((unsigned char)((arg2 >> 8) & 0xFF));
+            serial_hex((unsigned char)(arg2 & 0xFF));
+            serial_print("\n");
+            
+            void *disk_info = disk_manager_get_disk(index);
+            
+            serial_print("[SYSCALL 57] disk_info=");
+            if (disk_info) {
+                serial_print("valid");
+            } else {
+                serial_print("NULL");
+            }
+            serial_print("\n");
+            
+            if (disk_info && buffer) {
+                // Copy disk_info_t structure to user buffer
+                // Structure size: 5 bytes + 3 padding + 4 + 32 + 16 + 16 = 76 bytes
+                uint8_t *src = (uint8_t*)disk_info;
+                uint8_t *dst = (uint8_t*)buffer;
+                for (int i = 0; i < 76; i++) {
+                    dst[i] = src[i];
+                }
+                return_value = 0;  // Success
+                serial_print("[SYSCALL 57] copy OK\n");
+            } else {
+                return_value = -1;  // Error
+                serial_print("[SYSCALL 57] FAILED\n");
+            }
+            break;
+        }
+        
+        case 58: {  // SYSCALL_DISK_READ_SECTOR - Read disk sector
+            extern int disk_manager_read_sector(uint8_t disk_index, uint32_t lba, void *buffer);
+            uint8_t disk_index = (uint8_t)arg1;
+            uint32_t lba = (uint32_t)arg2;
+            void *buffer = (void*)arg3;
+            return_value = disk_manager_read_sector(disk_index, lba, buffer);
+            break;
+        }
+        
+        case 59: {  // SYSCALL_UI_CREATE_PANEL - Create flat colored rectangle
+            // arg1=window_id, arg2=x, arg3=y, arg4_esi=width, arg5=height, arg6=packed(color_style + text_ptr)
+            // Actually: arg5=packed(height|color_style), arg6=text
+            extern int uiman_create_panel_kernel(int window_id, int x, int y, int w, int h, int color_style, const char *text, int owner_pid);
+            int window_id = (int)arg1;
+            int x = (int)arg2;
+            int y = (int)arg3;
+            int w = (int)arg4_esi;
+            int h = (int)(arg5 & 0xFFFF);           // Lower 16 bits = height
+            int color_style = (int)((arg5 >> 16) & 0xFF);  // Bits 16-23 = color style
+            const char *text = (const char*)arg6;
+            return_value = (unsigned int)uiman_create_panel_kernel(
+                window_id, x, y, w, h, color_style, text, scheduler_get_current_pid());
+            break;
+        }
+        
+        // ==================== UI CONTROL SYSCALLS ====================
+        
+        case 60: {  // SYSCALL_CONTROL_CREATE - Create UI control
+            extern int control_create(int window_id, uint8_t type);
+            int window_id = (int)arg1;
+            uint8_t type = (uint8_t)arg2;
+            return_value = control_create(window_id, type);
+            break;
+        }
+        
+        case 61: {  // SYSCALL_CONTROL_SET_POSITION - Set control position
+            extern int control_set_position(int control_id, int x, int y);
+            int control_id = (int)arg1;
+            int x = (int)arg2;
+            int y = (int)arg3;
+            return_value = control_set_position(control_id, x, y);
+            break;
+        }
+        
+        case 62: {  // SYSCALL_CONTROL_SET_SIZE - Set control size
+            extern int control_set_size(int control_id, int width, int height);
+            int control_id = (int)arg1;
+            int width = (int)arg2;
+            int height = (int)arg3;
+            return_value = control_set_size(control_id, width, height);
+            break;
+        }
+        
+        case 63: {  // SYSCALL_CONTROL_SET_TEXT - Set control text
+            extern int control_set_text(int control_id, const char *text);
+            int control_id = (int)arg1;
+            const char *text = (const char*)arg5;  // Stack parameter
+            return_value = control_set_text(control_id, text);
+            break;
+        }
+        
+        case 64: {  // SYSCALL_CONTROL_SET_PARENT - Set control parent
+            extern int control_set_parent(int control_id, int parent_id);
+            int control_id = (int)arg1;
+            int parent_id = (int)arg2;
+            return_value = control_set_parent(control_id, parent_id);
+            break;
+        }
+        
+        case 65: {  // SYSCALL_CONTROL_SET_COLORS - Set control colors
+            extern int control_set_colors(int control_id, uint32_t bg, uint32_t fg, uint32_t border);
+            int control_id = (int)arg1;
+            uint32_t bg = (uint32_t)arg2;
+            uint32_t fg = (uint32_t)arg3;
+            uint32_t border = (uint32_t)arg4_esi;
+            return_value = control_set_colors(control_id, bg, fg, border);
+            break;
+        }
+        
+        case 66: {  // SYSCALL_CONTROL_SET_MARGINS - Set control margins
+            extern int control_set_margins(int control_id, int left, int top, int right, int bottom);
+            int control_id = (int)arg1;
+            int left = (int)arg2;
+            int top = (int)arg3;
+            int right = (int)arg4_esi;
+            int bottom = (int)arg5;  // Stack parameter
+            return_value = control_set_margins(control_id, left, top, right, bottom);
+            break;
+        }
+        
+        case 67: {  // SYSCALL_CONTROL_RENDER - Render control
+            extern void control_render(int control_id);
+            int control_id = (int)arg1;
+            control_render(control_id);
+            return_value = 0;
+            break;
+        }
+        
+        case 68: {  // SYSCALL_PANEL_ADD_CHILD - Add child to panel
+            extern int panel_add_child(int panel_id, int child_id);
+            int panel_id = (int)arg1;
+            int child_id = (int)arg2;
+            return_value = panel_add_child(panel_id, child_id);
+            break;
+        }
+        
+        case 69: {  // SYSCALL_PANEL_SET_SCROLLABLE - Set panel scrollable
+            extern int panel_set_scrollable(int panel_id, uint8_t scrollable);
+            int panel_id = (int)arg1;
+            uint8_t scrollable = (uint8_t)arg2;
+            return_value = panel_set_scrollable(panel_id, scrollable);
+            break;
+        }
+        
+        case 70: {  // SYSCALL_TABLE_SET_DIMENSIONS - Set table dimensions
+            extern int table_set_dimensions(int table_id, int rows, int cols);
+            int table_id = (int)arg1;
+            int rows = (int)arg2;
+            int cols = (int)arg3;
+            return_value = table_set_dimensions(table_id, rows, cols);
+            break;
+        }
+        
+        case 71: {  // SYSCALL_TABLE_SET_COLUMN_WIDTH - Set table column width
+            extern int table_set_column_width(int table_id, int col, int width);
+            int table_id = (int)arg1;
+            int col = (int)arg2;
+            int width = (int)arg3;
+            return_value = table_set_column_width(table_id, col, width);
+            break;
+        }
+        
+        case 72: {  // SYSCALL_TEXTBOX_SET_CONTENT - Set textbox content
+            extern int textbox_set_content(int textbox_id, const char *content);
+            int textbox_id = (int)arg1;
+            const char *content = (const char*)arg5;  // Stack parameter
+            return_value = textbox_set_content(textbox_id, content);
+            break;
+        }
+        
+        case 73: {  // SYSCALL_TEXTBOX_GET_CONTENT - Get textbox content
+            extern const char* textbox_get_content(int textbox_id);
+            int textbox_id = (int)arg1;
+            return_value = (int)textbox_get_content(textbox_id);
+            break;
+        }
+        
+        case 74: {  // SYSCALL_ISO_GET_FILE_COUNT - Get number of files in ISO root
+            extern int iso9660_get_file_count(void);
+            return_value = iso9660_get_file_count();
+            break;
+        }
+        
+        case 75: {  // SYSCALL_ISO_LIST_FILES - List files in ISO root
+            // arg1 = pointer to buffer (array of iso_file_entry_t)
+            // arg2 = max entries
+            extern int iso9660_list_root(void *entries, int max_entries);
+            void *buffer = (void*)arg1;
+            int max_entries = (int)arg2;
+            return_value = iso9660_list_root(buffer, max_entries);
+            break;
+        }
+        
+        case 76: {  // SYSCALL_UI_CREATE_LIST - Create list control
+            // arg1=window_id, arg2=x, arg3=y, arg4_esi=width, arg5=height, arg6=items (newline separated)
+            extern int uiman_create_list_kernel(int window_id, int x, int y, int w, int h, const char *items, int owner_pid);
+            int window_id = (int)arg1;
+            int x = (int)arg2;
+            int y = (int)arg3;
+            int w = (int)arg4_esi;
+            int h = (int)arg5;
+            const char *items = (const char*)arg6;
+            return_value = (unsigned int)uiman_create_list_kernel(
+                window_id, x, y, w, h, items, scheduler_get_current_pid());
+            break;
+        }
+        
+        case 77: {  // SYSCALL_ISO_LIST_BOOT - List files in /boot directory
+            // arg1 = pointer to buffer (array of iso_file_entry_t)
+            // arg2 = max entries
+            extern int iso9660_list_boot(void *entries, int max_entries);
+            void *buffer = (void*)arg1;
+            int max_entries = (int)arg2;
+            return_value = iso9660_list_boot(buffer, max_entries);
+            break;
+        }
+        
+        default:
+            // Unknown syscall - print error
+            kernel_puts("Unknown syscall: ");
+            kernel_putint(syscall_num);
+            kernel_puts("\n");
+            break;
+    }
+    
+    return return_value;
+}

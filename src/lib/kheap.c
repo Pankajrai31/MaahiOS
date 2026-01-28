@@ -4,7 +4,12 @@
  * Uses the gap between actual usage and 128MB identity map limit
  */
 
+#include <stdint.h>
 #include "kheap.h"
+
+/* External serial functions */
+extern void serial_print(const char *s);
+extern void serial_hex(uint8_t byte);
 
 /* Heap boundaries (set during init) */
 static unsigned int heap_start = 0;
@@ -25,6 +30,23 @@ void kheap_init(void) {
     
     /* Start allocating from heap_start */
     heap_current = heap_start;
+    
+    /* Log heap initialization */
+    serial_print("[KHEAP] Initialized: start=");
+    serial_hex((heap_start >> 24) & 0xFF);
+    serial_hex((heap_start >> 16) & 0xFF);
+    serial_hex((heap_start >> 8) & 0xFF);
+    serial_hex(heap_start & 0xFF);
+    serial_print(" end=");
+    serial_hex((heap_end >> 24) & 0xFF);
+    serial_hex((heap_end >> 16) & 0xFF);
+    serial_hex((heap_end >> 8) & 0xFF);
+    serial_hex(heap_end & 0xFF);
+    serial_print(" size=");
+    unsigned int size_mb = (heap_end - heap_start) / (1024*1024);
+    serial_hex((size_mb >> 8) & 0xFF);
+    serial_hex(size_mb & 0xFF);
+    serial_print("MB\n");
 }
 
 /* Bump allocator - allocates from identity-mapped free space */
@@ -38,7 +60,34 @@ void* kmalloc(size_t size) {
     
     /* Check if we have space */
     if (heap_current + size > heap_end) {
+        serial_print("[KMALLOC] OUT OF MEMORY! Requested=");
+        serial_hex((size >> 24) & 0xFF);
+        serial_hex((size >> 16) & 0xFF);
+        serial_hex((size >> 8) & 0xFF);
+        serial_hex(size & 0xFF);
+        serial_print(" current=");
+        serial_hex((heap_current >> 24) & 0xFF);
+        serial_hex((heap_current >> 16) & 0xFF);
+        serial_hex((heap_current >> 8) & 0xFF);
+        serial_hex(heap_current & 0xFF);
+        serial_print(" end=");
+        serial_hex((heap_end >> 24) & 0xFF);
+        serial_hex((heap_end >> 16) & 0xFF);
+        serial_hex((heap_end >> 8) & 0xFF);
+        serial_hex(heap_end & 0xFF);
+        serial_print("\n");
         return 0;  /* Out of memory */
+    }
+    
+    /* Warning when heap usage > 90% */
+    unsigned int used = heap_current - heap_start;
+    unsigned int total = heap_end - heap_start;
+    if (used * 100 > total * 90) {
+        static int warned = 0;
+        if (!warned) {
+            serial_print("[KMALLOC] WARNING: Heap usage > 90%\n");
+            warned = 1;
+        }
     }
     
     /* Allocate */
@@ -56,6 +105,14 @@ void* kmalloc(size_t size) {
             pmm_alloc_page();  /* This marks the page as used */
             last_page_allocated += 4096;
         }
+        
+        /* CRITICAL: Flush TLB after extending heap with new pages
+         * The identity-mapped pages were mapped during paging_init(),
+         * but PMM allocations change physical page ownership.
+         * Without TLB flush, CPU uses stale TLB entries → page faults/freezes
+         * This is especially critical during frequent window operations
+         * which trigger rapid kmalloc() calls for PCB allocation. */
+        asm volatile("mov %%cr3, %%eax; mov %%eax, %%cr3" ::: "eax", "memory");
     }
     
     return ptr;
@@ -89,6 +146,9 @@ void* kmalloc_aligned(size_t size, size_t alignment) {
             pmm_alloc_page();
             last_page_allocated_aligned += 4096;
         }
+        
+        /* Flush TLB after heap extension (same reason as kmalloc) */
+        asm volatile("mov %%cr3, %%eax; mov %%eax, %%cr3" ::: "eax", "memory");
     }
     
     return ptr;

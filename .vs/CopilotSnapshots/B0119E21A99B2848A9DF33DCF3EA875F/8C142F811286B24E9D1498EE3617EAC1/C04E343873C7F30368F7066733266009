@@ -1,0 +1,198 @@
+﻿/*
+ * Process Manager - Simple and Clean
+ * Based on OSDev best practices
+ */
+
+#include "process_manager.h"
+
+/* External functions */
+extern void* kmalloc(uint32_t size);
+extern void kfree(void* ptr);
+
+/* Process table */
+#define MAX_PROCESSES 64
+static process_t *process_table[MAX_PROCESSES];
+static int next_pid = 1;
+
+/* Stack allocators */
+#define USER_STACK_BASE 0x00200000
+#define USER_STACK_SIZE 0x00010000
+static uint32_t next_stack_top = USER_STACK_BASE;
+
+#define KERNEL_INT_STACK_BASE 0x00600000
+#define KERNEL_INT_STACK_SIZE 0x00004000
+static uint32_t next_kernel_stack_top = KERNEL_INT_STACK_BASE;
+
+/* Serial debug helpers */
+static void serial_print(const char *str) {
+    while (*str) {
+        while ((*(volatile unsigned char*)0x3FD & 0x20) == 0);
+        *(volatile unsigned char*)0x3F8 = *str++;
+    }
+}
+
+static void serial_hex(unsigned int n) {
+    char buf[9];
+    const char *hex = "0123456789ABCDEF";
+    for (int i = 7; i >= 0; i--) {
+        buf[i] = hex[n & 0xF];
+        n >>= 4;
+    }
+    buf[8] = 0;
+    serial_print(buf);
+}
+
+static void serial_hex32(uint32_t value) {
+    serial_hex(value);
+}
+
+/**
+ * Initialize process manager
+ */
+void process_manager_init(void) {
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        process_table[i] = 0;
+    }
+    next_pid = 1;
+}
+
+/**
+ * Create a process
+ * Simple: allocate PCB, add to scheduler queue, return
+ */
+int process_create(uint32_t entry_point) {
+    serial_print("[PROCESS_CREATE] Entry=0x");
+    serial_hex32(entry_point);
+    serial_print("\n");
+    
+    /* Check limits */
+    if (next_pid >= MAX_PROCESSES) {
+        serial_print("[PROCESS_CREATE] ERROR: Max processes\n");
+        return -1;
+    }
+    
+    /* Allocate PCB */
+    process_t *pcb = kmalloc(sizeof(process_t));
+    if (!pcb) {
+        serial_print("[PROCESS_CREATE] ERROR: kmalloc failed\n");
+        return -1;
+    }
+    
+    /* Initialize PCB - simple and clean */
+    pcb->pid = next_pid++;
+    pcb->entry_point = entry_point;
+    pcb->state = PROCESS_STATE_READY;
+    
+    /* Allocate user stack */
+    uint32_t stack_base = next_stack_top;
+    next_stack_top += USER_STACK_SIZE;
+    uint32_t user_stack_top = stack_base + USER_STACK_SIZE - 4;  // Top of stack (stacks grow down)
+    pcb->user_stack_top = user_stack_top;
+    
+    /* Allocate kernel interrupt stack */
+    uint32_t kernel_stack_base = next_kernel_stack_top;
+    next_kernel_stack_top += KERNEL_INT_STACK_SIZE;
+    uint32_t kernel_stack_top = kernel_stack_base + KERNEL_INT_STACK_SIZE;  // Top of kernel stack
+    pcb->kernel_stack_top = kernel_stack_top;
+    
+    /* Build initial interrupt frame on kernel stack */
+    /* This makes the process look like it was interrupted while running in Ring 3 */
+    /* When context switched to, IRET will "return" to Ring 3 entry point */
+    uint32_t *stack = (uint32_t *)(kernel_stack_top);
+    
+    /* IRET frame (pushed by CPU on interrupt) */
+    *(--stack) = 0x23;                   /* SS (user data segment with RPL=3) */
+    *(--stack) = user_stack_top;         /* ESP (user stack - at TOP of allocated region) */
+    *(--stack) = 0x00003202;             /* EFLAGS (IF=1, IOPL=3) */
+    *(--stack) = 0x1B;                   /* CS (user code segment with RPL=3) */
+    *(--stack) = entry_point;            /* EIP (entry point) */
+    
+    /* PUSHA frame (pushed by irq stub) */
+    *(--stack) = 0;  /* EDI */
+    *(--stack) = 0;  /* ESI */
+    *(--stack) = 0;  /* EBP */
+    *(--stack) = 0;  /* ESP (ignored by popa) */
+    *(--stack) = 0;  /* EBX */
+    *(--stack) = 0;  /* EDX */
+    *(--stack) = 0;  /* ECX */
+    *(--stack) = 0;  /* EAX */
+    
+    /* Set PCB esp to this prepared stack */
+    pcb->esp = (uint32_t)stack;
+    
+    serial_print("[PROCESS_CREATE] Built initial frame, ESP=0x");
+    serial_hex32(pcb->esp);
+    serial_print("\n");
+    
+    /* Store in process table */
+    process_table[pcb->pid - 1] = pcb;
+    
+    /* Add to scheduler queue */
+    extern void scheduler_add_process(int pid, uint32_t entry_point, uint32_t user_stack, uint32_t kernel_stack);
+    scheduler_add_process(pcb->pid, entry_point, stack_top, kernel_stack_top);
+    
+    serial_print("[PROCESS_CREATE] Created PID=");
+    serial_hex(pcb->pid);
+    serial_print("\n");
+    
+    return pcb->pid;
+}
+
+/**
+ * Get process by PID
+ */
+process_t* process_get_by_pid(int pid) {
+    if (pid < 1 || pid > MAX_PROCESSES) {
+        return 0;
+    }
+    return process_table[pid - 1];
+}
+
+/**
+ * Get total process count
+ */
+int process_manager_get_count(void) {
+    int count = 0;
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (process_table[i] != 0) {
+            count++;
+        }
+    }
+    return count;
+}
+
+/**
+ * Terminate a process and free its resources
+ * Returns: 0 on success, -1 on failure
+ */
+int process_terminate(int pid) {
+    serial_print("[PROCESS_TERMINATE] PID=");
+    serial_hex(pid);
+    serial_print("\n");
+    
+    if (pid < 1 || pid > MAX_PROCESSES) {
+        serial_print("[PROCESS_TERMINATE] ERROR: Invalid PID\n");
+        return -1;
+    }
+    
+    process_t *pcb = process_table[pid - 1];
+    if (!pcb) {
+        serial_print("[PROCESS_TERMINATE] ERROR: Process not found\n");
+        return -1;
+    }
+    
+    serial_print("[PROCESS_TERMINATE] Calling scheduler_remove_process\n");
+    
+    /* Remove from scheduler */
+    extern void scheduler_remove_process(int pid);
+    scheduler_remove_process(pid);
+    
+    serial_print("[PROCESS_TERMINATE] Freeing PCB\n");
+    
+    /* Free PCB */
+    kfree(pcb);
+    process_table[pid - 1] = 0;
+    
+    serial_print("[PROCESS_TERMINATE] Process terminated successfully\n");
+    return 0;
+}

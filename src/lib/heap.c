@@ -6,7 +6,7 @@
  */
 
 #include "heap.h"
-#include "../syscalls/user_syscalls.h"
+#include "../system/syscalls/user/user_syscalls.h"
 
 /* Block header structure */
 typedef struct block_header {
