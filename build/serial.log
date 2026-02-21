@@ -1,0 +1,130 @@
+                 [33m[K][0m [0m[INFO ][0m PMM: Initialized: total/used pages:  0x0001FEE0, 0x00000034
+                 [33m[K][0m [0m[INFO ][0m PAGING: Paging enabled
+                 [33m[K][0m [0m[INFO ][0m PAGING: Initialized, identity mapped to:  0x08000000
+                 [33m[K][0m [0m[INFO ][0m GDT: GDT initialized, entries:  0x00000006
+                 [33m[K][0m [0m[INFO ][0m GDT: GDT loaded at:  0x00122240
+                 [33m[K][0m [0m[INFO ][0m IDT: IDT initialized, entries:  0x00000100
+                 [33m[K][0m [0m[INFO ][0m IDT: IDT loaded at:  0x00122300
+                 [33m[K][0m [0m[INFO ][0m IRQ: PIC remapped, IRQs at 0x20-0x2F
+                 [33m[K][0m [0m[INFO ][0m IDT: Exception handlers installed (0-19, IRQ0-1, INT 0x80)
+=== MaahiOS KLOG initialized ===
+                 [33m[K][0m [0m[INFO ][0m KERNEL: === MaahiOS 2.0 Boot ===
+                 [33m[K][0m [0m[INFO ][0m SHM: Initializing shared memory manager...
+                 [33m[K][0m [0m[INFO ][0m SHM: Manager initialized, max regions:  0x00000040
+                 [33m[K][0m [0m[INFO ][0m KERNEL: SHM Manager initialized
+                 [33m[K][0m [0m[INFO ][0m SHM: Created region, ID/size:  0x00000001, 0x00004000
+                 [33m[K][0m [0m[INFO ][0m SHM: Attached to PID, virt addr:  0x00000000, 0x80100000
+                 [33m[K][0m [0m[INFO ][0m KERNEL: KLOG migrated to SHM, ID: 0x00000001
+                 [33m[K][0m [0m[INFO ][0m CELL: Initializing cell manager...
+                 [33m[K][0m [0m[INFO ][0m CELL: Cell data size (bytes):  0x00018C08
+                 [33m[K][0m [0m[INFO ][0m SHM: Created region, ID/size:  0x00000002, 0x00019000
+                 [33m[K][0m [0m[INFO ][0m CELL: Initialized, SHM ID/cells:  0x00000002, 0x00000100
+                 [33m[K][0m [0m[INFO ][0m CELL: Creating root hive structure...
+                 [33m[K][0m [0m[INFO ][0m CELL: Root hives created, cells used:  0x00000008
+                 [33m[K][0m [0m[INFO ][0m KERNEL: Cell Manager SHM ID: 0x00000002
+                 [33m[K][0m [0m[INFO ][0m PROCMGR: Reserved kernel stacks:  0x00600000, 0x00700000
+                 [33m[K][0m [0m[INFO ][0m PROCMGR: Reserved user stacks:  0x00200000, 0x00600000
+                 [33m[K][0m [0m[INFO ][0m KERNEL: Process Manager initialized
+                 [33m[K][0m [0m[INFO ][0m SCHED: Scheduler initialized
+                 [33m[K][0m [0m[INFO ][0m KERNEL: Scheduler initialized
+                 [33m[K][0m [0m[INFO ][0m SYSCALL: Initializing syscall manager...
+                 [33m[K][0m [0m[INFO ][0m SYSCALL: Time handlers registered (112-115)
+                 [33m[K][0m [0m[INFO ][0m SYSCALL: Debug handlers registered (240-255)
+                 [33m[K][0m [0m[INFO ][0m SYSCALL: Manager initialized, handlers:  0x0000002C
+                 [33m[K][0m [0m[INFO ][0m KERNEL: Syscall Manager initialized
+                 [33m[K][0m [0m[INFO ][0m GRUBMOD: Initializing GRUB module manager...
+                 [33m[K][0m [0m[INFO ][0m GRUBMOD: Manager initialized, modules:  0x00000005
+                 [33m[K][0m [0m[INFO ][0m KERNEL: GRUB Module Manager initialized
+                 [33m[K][0m [0m[INFO ][0m PIT: Timer initialized, freq:  0x00000032
+                 [33m[K][0m [0m[INFO ][0m KERNEL: PIT Timer initialized (50Hz)
+                 [33m[K][0m [0m[INFO ][0m DEVMGR: Device Manager initialized
+                 [33m[K][0m [0m[INFO ][0m KERNEL: Device Manager initialized
+                 [33m[K][0m [0m[INFO ][0m DEVMGR: Device registered id= 0x00000007
+                 [33m[K][0m [0m[INFO ][0m RTC: Driver initialized
+                 [33m[K][0m [0m[INFO ][0m SHM: Created region, ID/size:  0x00000003, 0x00001000
+                 [33m[K][0m [0m[INFO ][0m SHM: Attached to PID, virt addr:  0x00000000, 0x80300000
+                 [33m[K][0m [0m[INFO ][0m TIME: Manager initialized, shared SHM ID 0x00000003
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m DISK: Initializing disk subsystem...
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m ATA: Initializing ATA/ATAPI driver...
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m ATA: Secondary Master: ATAPI
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m ATA: Initialization complete
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m DISK: Scanning for disks...
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m DISK: CD-ROM
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m DISK: Disks found: 0x00000001
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m ISO9660: Initializing...
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m ISO9660: Found ATAPI drive at index: 0x00000002
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m ISO9660: Root directory at LBA: 0x00000013
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m ISO9660: Initialization complete
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m DEVMGR: Device registered id= 0x00000004
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m DISK: Initialization complete
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: Disk subsystem initialized
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m IDT: Mouse handler installed (IRQ12 -> INT 44)
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m IRQ: Enabled IRQ, mask:  0x0000000C, 0x000000EF
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m DEVMGR: Device registered id= 0x00000001
+[90m[02-08 10:05:23][0m [33m[K][0m [33m[WARN ][0m KERNEL: Mouse init failed (non-fatal)
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: Mouse driver initialized
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: Hardware cursor initialized
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m DEVMGR: Device registered id= 0x00000002
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KEYBOARD: Initialized and registered
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: Keyboard driver initialized
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: === PHASE 6: Starting Sysman ===
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: GRUB module count: 0x00000005
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: Sysman entry address: 0x0012E000
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: Switching to graphics mode...
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m DEVMGR: Device registered id= 0x00000003
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: Graphics mode: 1024x768x32
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: Enabling scheduler...
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SCHED: Scheduler enabled
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: Scheduler enabled
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m PROCMGR: Creating process, entry:  0x0012E000
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m PROCMGR: Created process with PID:  0x00000001
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: Sysman created with PID: 0x00000001
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: Enabling timer IRQ...
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m IRQ: Enabled IRQ, mask:  0x00000000, 0x000000F8
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m KERNEL: === Entering multitasking mode ===
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSMAN: ========================================
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSMAN:   MaahiOS System Manager v2.0
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSMAN: ========================================
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSMAN: Starting system initialization...
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSMAN: GRUB modules available: 0x00000005
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSMAN: Loading Cell Executive...
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSMAN:   Address: 0x0012F000
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSCALL: Creating process at entry:  0x0012F000
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m PROCMGR: Creating process, entry:  0x0012F000
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m PROCMGR: Created process with PID:  0x00000002
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSMAN:   Started as PID: 0x00000002
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSMAN: Loading Log Executive...
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSMAN:   Address: 0x00131000
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSCALL: Creating process at entry:  0x00131000
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m PROCMGR: Creating process, entry:  0x00131000
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m PROCMGR: Created process with PID:  0x00000003
+[90m[02-08 10:05:23][0m [33m[K][0m [0m[INFO ][0m SYSMAN:   Started as PID: 0x00000003
+[90m[02-08 10:05:23][0m [33m[K][0m [33m[WARN ][0m SYSMAN: Skipping UIManager (mouse disa
+================================================================================
+                          KLOG BUFFER DUMP
+================================================================================
+[INFO ][KERNEL] === MaahiOS 2.0 Boot ===
+[INFO ][SHM] Initializing shared memory manager...
+[INFO ][SHM] Manager initialized, max regions:  0x00000040
+[INFO ][KERNEL] SHM Manager initialized
+[INFO ][SHM] Created region, ID/size:  0x00000001, 0x00004000
+[INFO ][SHM] Attached to PID, virt addr:  0x00000000, 0x80100000
+[INFO ][KERNEL] KLOG migrated to SHM, ID: 0x00000001
+[INFO ][CELL] Initializing cell manager...
+[INFO ][CELL] Cell data size (bytes):  0x00018C08
+[INFO ][SHM] Created region, ID/size:  0x00000002, 0x00019000
+[INFO ][CELL] Initialized, SHM ID/cells:  0x00000002, 0x00000100
+[INFO ][CELL] Creating root hive structure...
+[INFO ][CELL] Root hives created, cells used:  0x00000008
+[INFO ][KERNEL] Cell Manager SHM ID: 0x00000002
+[INFO ][PROCMGR] Reserved kernel stacks:  0x00600000, 0x00700000
+[INFO ][PROCMGR] Reserved user stacks:  0x00200000, 0x00600000
+[INFO ][KERNEL] Process Manager initialized
+[INFO ][SCHED] Scheduler initialized
+[INFO ][KERNEL] Scheduler initialized
+[INFO ][SYSCALL] Initializing syscall manager...
+[INFO ][SYSCALL] Time handlers registered (112-115)
+[INFO ][SYSCALL] Debug handlers registered (24
+================================================================================
+                          KLOG BUFFER DUMP
+================================================================================

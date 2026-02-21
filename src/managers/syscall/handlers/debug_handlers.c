@@ -1,0 +1,116 @@
+/**
+ * Debug Syscall Handlers
+ * Domain: 240-255 (klog, system info)
+ */
+
+#include "../syscall_manager.h"
+#include "../syscall_numbers.h"
+#include "../../klog/klog.h"
+#include <stdint.h>
+
+/* ===========================================================================
+ * KLOG HANDLER
+ * =========================================================================== */
+
+/**
+ * sys_klog - Write to log from Ring 3
+ * 
+ * Since this is called via syscall (from user space / ring 3),
+ * we output with [U] prefix to distinguish from kernel logs [K].
+ */
+static int sys_klog(uint32_t level, uint32_t tag_ptr, uint32_t msg_ptr,
+                    uint32_t arg4, uint32_t arg5) {
+    (void)arg4; (void)arg5;
+    
+    if (!tag_ptr || !msg_ptr) {
+        return SYSCALL_ERR_INVALID;
+    }
+    
+    /* Clamp level to valid range */
+    if (level > LOG_TRACE) {
+        level = LOG_TRACE;
+    }
+    
+    const char *tag = (const char *)tag_ptr;
+    const char *msg = (const char *)msg_ptr;
+    
+    /* Use ulog for [U] prefix since request is from ring 3 */
+    extern void ulog(int level, const char *tag, const char *msg);
+    ulog(level, tag, msg);
+    
+    return SYSCALL_OK;
+}
+
+/**
+ * sys_klog_hex - Write to log with hex value from Ring 3
+ * 
+ * Outputs with [U] prefix since called from user space.
+ */
+static int sys_klog_hex(uint32_t level, uint32_t tag_ptr, uint32_t msg_ptr,
+                        uint32_t value, uint32_t arg5) {
+    (void)arg5;
+    
+    if (!tag_ptr || !msg_ptr) {
+        return SYSCALL_ERR_INVALID;
+    }
+    
+    if (level > LOG_TRACE) {
+        level = LOG_TRACE;
+    }
+    
+    const char *tag = (const char *)tag_ptr;
+    const char *msg = (const char *)msg_ptr;
+    
+    /* Use ulog_hex for [U] prefix since request is from ring 3 */
+    extern void ulog_hex(int level, const char *tag, const char *msg, unsigned int value);
+    ulog_hex(level, tag, msg, value);
+    
+    return SYSCALL_OK;
+}
+
+/**
+ * sys_klog_get_shm_id - Get KLOG SHM ID for direct access (deprecated)
+ */
+static int sys_klog_get_shm_id(uint32_t arg1, uint32_t arg2, uint32_t arg3,
+                                uint32_t arg4, uint32_t arg5) {
+    (void)arg1; (void)arg2; (void)arg3; (void)arg4; (void)arg5;
+    return -1;  /* No longer supported */
+}
+
+/* ===========================================================================
+ * SYSTEM INFO HANDLERS (Stubs)
+ * =========================================================================== */
+
+static int sys_get_cpu_info(uint32_t info_ptr, uint32_t arg2, uint32_t arg3,
+                            uint32_t arg4, uint32_t arg5) {
+    (void)info_ptr; (void)arg2; (void)arg3; (void)arg4; (void)arg5;
+    return SYSCALL_ERR_NOSYS;
+}
+
+static int sys_get_mem_info(uint32_t info_ptr, uint32_t arg2, uint32_t arg3,
+                            uint32_t arg4, uint32_t arg5) {
+    (void)info_ptr; (void)arg2; (void)arg3; (void)arg4; (void)arg5;
+    return SYSCALL_ERR_NOSYS;
+}
+
+static int sys_get_pic_mask(uint32_t arg1, uint32_t arg2, uint32_t arg3,
+                            uint32_t arg4, uint32_t arg5) {
+    (void)arg1; (void)arg2; (void)arg3; (void)arg4; (void)arg5;
+    return SYSCALL_ERR_NOSYS;
+}
+
+/* ===========================================================================
+ * REGISTRATION
+ * =========================================================================== */
+
+void syscall_register_debug_handlers(void) {
+    syscall_register(SYS_KLOG, sys_klog);
+    syscall_register(SYS_KLOG_HEX, sys_klog_hex);
+    syscall_register(SYS_KLOG_GET_SHM, sys_klog_get_shm_id);
+    syscall_register(SYS_GET_CPU_INFO, sys_get_cpu_info);
+    syscall_register(SYS_GET_MEM_INFO, sys_get_mem_info);
+    syscall_register(SYS_GET_PIC_MASK, sys_get_pic_mask);
+    /* SYS_ULOG removed - SYS_KLOG now outputs [U] for ring 3 callers */
+    
+    KLOG_INFO("SYSCALL", "Debug handlers registered (240-255)");
+}
