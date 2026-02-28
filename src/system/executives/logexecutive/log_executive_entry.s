@@ -14,6 +14,14 @@ _start:
     movw %ax, %fs
     movw %ax, %gs
     
+    # Zero .bss section
+    movl $__bss_start, %edi
+    movl $__bss_end, %ecx
+    subl %edi, %ecx
+    shrl $2, %ecx
+    xorl %eax, %eax
+    rep stosl
+    
     # Call Log Executive main function
     call exe_log_main
     

@@ -4,8 +4,8 @@
  */
 
 #include "mouse_cursor.h"
-#include "../../libgui/bmp_renderer.h"
-#include "../../libgui/cursor_data.h"
+#include "../../system/libraries/libgui/bmp_renderer.h"
+#include "../../system/libraries/libgui/cursor_data.h"
 
 // Cursor state
 static uint32_t cursor_save_buffer[20 * 20]; // Save area under cursor

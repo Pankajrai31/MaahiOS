@@ -1,3 +1,17 @@
+/**
+ * MaahiOS GDT Manager
+ * 
+ * Sets up Global Descriptor Table with:
+ *   0: NULL (required by x86)
+ *   1: Kernel Code (Ring 0)
+ *   2: Kernel Data (Ring 0)
+ *   3: User Code (Ring 3)
+ *   4: User Data (Ring 3)
+ *   5: TSS (Task State Segment for ring transitions)
+ */
+
+#include "../klog/klog.h"
+
 #define GDT_ENTRIES 6
 
 /* TSS (Task State Segment) structure - 104 bytes */
@@ -90,9 +104,10 @@ int gdt_init(void) {
     /* Initialize TSS - set Ring 0 stack for privilege transitions */
     __builtin_memset(&tss, 0, sizeof(struct tss_entry));
     tss.ss0 = 0x10;              /* Ring 0 Data Segment */
-    tss.esp0 = 0x00090000;       /* Ring 0 stack at 576KB (safe kernel area) */
+    tss.esp0 = 0x00090000;       /* Initial Ring 0 stack (overridden per-process) */
     tss.iomap_base = sizeof(struct tss_entry);  /* No I/O port bitmap */
     
+    KLOG_INFO("GDT", "6 entries configured (null,kcode,kdata,ucode,udata,tss)");
     return 1;  /* Success */
 }
 
@@ -111,10 +126,11 @@ int gdt_load(void) {
                  "mov %eax, %gs\n"
                  "mov %eax, %ss\n");
     
-    /* Load TSS - selector 0x28 = entry 5 * 8, no RPL bits needed for TSS */
+    /* Load TSS - selector 0x28 = entry 5 * 8 */
     asm volatile("mov $0x28, %eax\n"
                  "ltr %ax");
     
+    KLOG_INFO("GDT", "GDT and TSS loaded successfully");
     return 1;  /* Success */
 }
 

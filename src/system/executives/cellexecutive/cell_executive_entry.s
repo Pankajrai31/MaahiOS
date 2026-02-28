@@ -1,5 +1,5 @@
 # Cell Executive Entry Point
-# Sets up Ring 3 segments and calls exe_cell_main()
+# Sets up Ring 3 segments, zeros .bss, calls exe_cell_main()
 
 .section .text
 .global _start
@@ -13,6 +13,14 @@ _start:
     movw %ax, %es
     movw %ax, %fs
     movw %ax, %gs
+    
+    # Zero .bss section
+    movl $__bss_start, %edi
+    movl $__bss_end, %ecx
+    subl %edi, %ecx
+    shrl $2, %ecx
+    xorl %eax, %eax
+    rep stosl
     
     # Call Cell Executive main function
     call exe_cell_main

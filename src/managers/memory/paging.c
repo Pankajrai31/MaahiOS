@@ -1,20 +1,17 @@
+/**
+ * MaahiOS Paging Manager
+ * 
+ * Virtual memory management using x86 two-level page tables.
+ * - Identity maps 128MB for kernel space
+ * - Supports dynamic page mapping for processes and MMIO
+ * - VMM wrappers for future full virtual memory manager
+ */
+
 #include "paging.h"
 #include "pmm.h"
+#include "../klog/klog.h"
 
-// External VGA functions
-extern void vga_print(const char *s);
-static void print_hex(uint32_t val) {
-    char hex[9];
-    hex[8] = '\0';
-    for (int i = 7; i >= 0; i--) {
-        uint32_t digit = val & 0xF;
-        hex[i] = (digit < 10) ? ('0' + digit) : ('a' + digit - 10);
-        val >>= 4;
-    }
-    vga_print(hex);
-}
-
-// Global page directory pointer (exposed for kheap)
+/* Global page directory pointer (exposed for kheap) */
 uint32_t *kernel_page_directory = 0;
 static uint32_t identity_map_end = 0;
 
@@ -31,9 +28,7 @@ void paging_map_page(uint32_t *page_dir, uint32_t virt, uint32_t phys, uint32_t 
         
         // Sanity check - page table should be in high memory
         if ((uint32_t)page_table < 0x02400000) {
-            vga_print("ERROR: Page table allocated in reserved region: 0x");
-            print_hex((uint32_t)page_table);
-            vga_print("\n");
+            KLOG_ERROR_HEX("PAGING", "Page table allocated in reserved region", (uint32_t)page_table);
         }
         
         // Clear page table
@@ -72,7 +67,7 @@ void identity_map_region(uint32_t *page_dir, uint32_t start, uint32_t end) {
 // Enable paging by setting CR0 and CR3
 void paging_enable() {
     if (!kernel_page_directory) {
-        vga_print("ERROR: Cannot enable paging - no page directory!\n");
+        KLOG_ERROR("PAGING", "Cannot enable paging - no page directory!");
         return;
     }
     
@@ -172,7 +167,135 @@ int paging_init(multiboot_info_t *mbi) {
     // Enable paging
     paging_enable();
     
+    KLOG_INFO("PAGING", "Initialized: identity mapped 128MB, page dir at 0x%x",
+              (uint32_t)kernel_page_directory);
+    
     return 1;  /* Success */
+}
+
+/* ===========================================================================
+ * Per-Process Page Directory Functions
+ * =========================================================================== */
+
+/**
+ * Get the kernel page directory pointer.
+ */
+uint32_t *paging_get_kernel_directory(void) {
+    return kernel_page_directory;
+}
+
+/**
+ * Clone the kernel page directory for a new process.
+ * Copies all kernel-space page directory entries (identity-mapped regions,
+ * MMIO, SHM mappings at 0x80000000+) so the new process can access
+ * kernel services, SHM, and shared memory.
+ * User-space entries (below identity_map_end) that belong to other processes
+ * are NOT copied — the new process gets a clean user address space.
+ */
+uint32_t *paging_clone_kernel_directory(void) {
+    /* Allocate a new page directory (4KB aligned from PMM) */
+    uint32_t *new_dir = (uint32_t *)pmm_alloc_page();
+    if (!new_dir) {
+        KLOG_ERROR("PAGING", "Failed to allocate page directory");
+        return 0;
+    }
+    
+    /* Copy ALL entries from kernel page directory.
+     * This gives the new process:
+     * - Identity-mapped kernel space (0x00000000 - 0x08000000)
+     * - MMIO regions (framebuffer, PCI BARs)
+     * - SHM mappings (0x80000000+)
+     * The new process will add its own user mappings separately.
+     */
+    for (int i = 0; i < ENTRIES_PER_TABLE; i++) {
+        new_dir[i] = kernel_page_directory[i];
+    }
+    
+    KLOG_DEBUG_HEX("PAGING", "Cloned kernel page directory at", (uint32_t)new_dir);
+    return new_dir;
+}
+
+/**
+ * Map a contiguous physical region into a process page directory.
+ * Used to load .mex app code/data at the app's virtual base address.
+ *
+ * @param page_dir  Target page directory
+ * @param virt_start Virtual address to map at (must be page-aligned)
+ * @param phys_start Physical address of the memory (must be page-aligned)
+ * @param size      Size in bytes (rounded up to pages)
+ * @param flags     Page flags (PAGE_PRESENT | PAGE_WRITE | PAGE_USER)
+ */
+void paging_map_user_region(uint32_t *page_dir, uint32_t virt_start, uint32_t phys_start, uint32_t size, uint32_t flags) {
+    /* Align to page boundaries */
+    virt_start = virt_start & 0xFFFFF000;
+    phys_start = phys_start & 0xFFFFF000;
+    uint32_t pages = (size + PAGE_SIZE_4KB - 1) / PAGE_SIZE_4KB;
+    
+    for (uint32_t i = 0; i < pages; i++) {
+        uint32_t virt = virt_start + (i * PAGE_SIZE_4KB);
+        uint32_t phys = phys_start + (i * PAGE_SIZE_4KB);
+        paging_map_page(page_dir, virt, phys, flags);
+    }
+    
+    KLOG_DEBUG_HEX2("PAGING", "Mapped user region virt/pages: ", virt_start, pages);
+}
+
+/**
+ * Unmap a virtual region from a process page directory.
+ * Clears page table entries but does NOT free physical memory.
+ * (Physical memory is freed separately by the caller.)
+ */
+void paging_unmap_user_region(uint32_t *page_dir, uint32_t virt_start, uint32_t size) {
+    virt_start = virt_start & 0xFFFFF000;
+    uint32_t pages = (size + PAGE_SIZE_4KB - 1) / PAGE_SIZE_4KB;
+    
+    for (uint32_t i = 0; i < pages; i++) {
+        uint32_t virt = virt_start + (i * PAGE_SIZE_4KB);
+        uint32_t pd_idx = virt >> 22;
+        uint32_t pt_idx = (virt >> 12) & 0x3FF;
+        
+        if (page_dir[pd_idx] & PAGE_PRESENT) {
+            uint32_t *page_table = (uint32_t *)(page_dir[pd_idx] & 0xFFFFF000);
+            page_table[pt_idx] = 0;
+            asm volatile("invlpg (%0)" :: "r"(virt) : "memory");
+        }
+    }
+}
+
+/**
+ * Destroy a per-process page directory.
+ * Frees page tables that were allocated specifically for user-space mappings.
+ * Does NOT free page tables shared with the kernel directory.
+ */
+void paging_destroy_directory(uint32_t *page_dir) {
+    if (!page_dir || page_dir == kernel_page_directory) {
+        return;  /* Never destroy the kernel's own directory */
+    }
+    
+    /* Free page tables that were created for this process
+     * (i.e., page tables that differ from the kernel directory).
+     * Kernel-shared page tables must NOT be freed. */
+    for (int i = 0; i < ENTRIES_PER_TABLE; i++) {
+        if ((page_dir[i] & PAGE_PRESENT) && 
+            page_dir[i] != kernel_page_directory[i]) {
+            /* This page table was allocated specifically for this process */
+            uint32_t *pt = (uint32_t *)(page_dir[i] & 0xFFFFF000);
+            pmm_free_page(pt);
+        }
+    }
+    
+    /* Free the page directory itself */
+    pmm_free_page(page_dir);
+    KLOG_DEBUG_HEX("PAGING", "Destroyed page directory at", (uint32_t)page_dir);
+}
+
+/**
+ * Switch the active page directory (load CR3).
+ * Called during context switch when switching to a process
+ * with a different page directory.
+ */
+void paging_switch_directory(uint32_t *page_dir) {
+    asm volatile("mov %0, %%cr3" : : "r"(page_dir) : "memory");
 }
 
 // VMM wrapper functions (simple for now, full VMM in Phase 3)
@@ -227,7 +350,7 @@ void vmm_free_page(void *addr) {
  */
 void paging_map_mmio_region(uint32_t phys_start, uint32_t size) {
     if (!kernel_page_directory) {
-        vga_print("[PAGING] ERROR: Cannot map MMIO - paging not initialized\n");
+        KLOG_ERROR("PAGING", "Cannot map MMIO - paging not initialized");
         return;
     }
     

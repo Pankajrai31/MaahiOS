@@ -1,0 +1,3331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaahiOS Wiki</title>
+    <style>
+        :root {
+            --bg: #0b0f16;
+            --card: #121a26;
+            --card2: #0f1622;
+            --line: #263246;
+            --text: #e6eefc;
+            --muted: #a7b4cb;
+            --accent: #7aa2ff;
+            --good: #5ad6a6;
+            --warn: #ffcf5a;
+            --bad: #ff6b6b;
+            --purple: #b08cff;
+            --orange: #ffaa5a;
+            --cyan: #5ad6e6;
+            --pink: #ff7ab8;
+            --shadow: 0 14px 40px rgba(0,0,0,.45);
+            --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--sans);
+            background:
+                radial-gradient(1200px 700px at 20% -10%, rgba(122,162,255,.18), transparent 60%),
+                radial-gradient(900px 600px at 90% 10%, rgba(90,214,166,.10), transparent 55%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        html { scroll-behavior: smooth; }
+
+        /* Header */
+        header {
+            padding: 14px 22px;
+            border-bottom: 1px solid rgba(38,50,70,.7);
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(10px);
+            background: rgba(11,15,22,.72);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-left .logo { font-size: 1.8rem; }
+        .header-left h1 {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: .2px;
+            color: var(--accent);
+        }
+        .header-left .subtitle {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 1px;
+        }
+        header nav {
+            display: flex;
+            gap: 6px;
+        }
+        header nav a {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--muted);
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            transition: all .2s;
+        }
+        header nav a:hover {
+            color: var(--text);
+            border-color: rgba(38,50,70,.9);
+            background: rgba(122,162,255,.08);
+        }
+
+        /* Layout */
+        .wiki-layout {
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 240px;
+            min-height: calc(100vh - 52px);
+            border-right: 1px solid rgba(38,50,70,.7);
+            background: rgba(11,15,22,.4);
+            position: sticky;
+            top: 52px;
+            height: calc(100vh - 52px);
+            overflow-y: auto;
+            padding: 14px;
+            flex-shrink: 0;
+        }
+        aside h3 {
+            font-family: var(--mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            color: var(--muted);
+            padding: 0 10px;
+            margin-bottom: 8px;
+        }
+        aside ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        aside ul ul { margin-left: 12px; margin-top: 4px; }
+        .nav-link {
+            display: block;
+            padding: 6px 10px;
+            font-size: 13px;
+            color: var(--muted);
+            text-decoration: none;
+            border-radius: 10px;
+            border-left: 2px solid transparent;
+            transition: all .2s;
+        }
+        .nav-link:hover {
+            color: var(--text);
+            background: rgba(122,162,255,.08);
+            border-left-color: var(--accent);
+        }
+        .nav-link.active {
+            background: rgba(122,162,255,.12);
+            border-left-color: var(--accent);
+            color: var(--text);
+        }
+        aside ul ul .nav-link {
+            font-size: 12px;
+            padding: 4px 10px;
+        }
+
+        /* Main content */
+        main {
+            flex: 1;
+            padding: 24px 32px;
+            min-width: 0;
+        }
+
+        /* Sections */
+        section { margin-bottom: 48px; }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .section-header .icon { font-size: 2rem; }
+        .section-header h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .section-header p {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        /* Articles (subsections) */
+        article { margin-bottom: 32px; }
+        article h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        article h3 .num {
+            opacity: 0.5;
+        }
+
+        /* Cards */
+        .wiki-card {
+            border: 1px solid rgba(38,50,70,.92);
+            border-radius: 16px;
+            padding: 20px;
+            background: linear-gradient(180deg, rgba(18,26,38,.7), rgba(15,22,34,.7));
+            box-shadow: var(--shadow);
+            margin-bottom: 14px;
+        }
+        .wiki-card .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .wiki-card .card-header .card-icon { font-size: 1.4rem; }
+        .wiki-card .card-header h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .wiki-card .card-header .card-sub {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+        }
+        .wiki-card p {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        .wiki-card p:last-child { margin-bottom: 0; }
+        .wiki-card strong { color: var(--text); }
+        .wiki-card code {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+        /* Inner box (darker inset) */
+        .inner-box {
+            border: 1px solid rgba(38,50,70,.85);
+            border-radius: 14px;
+            padding: 14px;
+            background: rgba(0,0,0,.12);
+            margin-bottom: 12px;
+        }
+        .inner-box:last-child { margin-bottom: 0; }
+        .inner-box h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--good);
+            margin-bottom: 8px;
+        }
+        .inner-box p, .inner-box div {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* Code/pre blocks */
+        pre {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.5;
+            background: rgba(0,0,0,.14);
+            border: 1px solid rgba(38,50,70,.85);
+            border-radius: 12px;
+            padding: 12px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        /* Grids */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        @media (max-width: 900px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        /* Mono list items (syscall tables, API tables) */
+        .mono-item {
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 5px 10px;
+            border: 1px solid rgba(38,50,70,.85);
+            border-radius: 8px;
+            background: rgba(0,0,0,.10);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .mono-item .name { color: var(--accent); }
+        .mono-item .info { color: var(--muted); font-size: 11px; }
+
+        /* Mono list (vertical) */
+        .mono-list { margin-bottom: 8px; }
+        .mono-list .mono-item:last-child { margin-bottom: 0; }
+
+        /* Mono text for flow diagrams */
+        .flow-text {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* Badges/pills */
+        .pill {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(38,50,70,.9);
+            background: rgba(0,0,0,.14);
+            color: rgba(230,238,252,.85);
+            white-space: nowrap;
+        }
+
+        /* Driver/component cards (compact) */
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 12px;
+        }
+        .component-item {
+            border: 1px dashed rgba(38,50,70,.95);
+            border-radius: 14px;
+            padding: 12px;
+            background: rgba(255,255,255,.02);
+        }
+        .component-item h5 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .component-item .comp-path {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .component-item p {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.45;
+        }
+        .component-item ul {
+            padding-left: 16px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid rgba(38,50,70,.7);
+            padding: 24px 0;
+            margin-top: 48px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 12px;
+        }
+        footer p { margin: 0 0 4px; }
+
+        /* Scroll to top */
+        .scroll-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid rgba(38,50,70,.9);
+            background: rgba(18,26,38,.9);
+            backdrop-filter: blur(8px);
+            color: var(--accent);
+            font-size: 16px;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            transition: all .2s;
+            box-shadow: var(--shadow);
+        }
+        .scroll-top:hover {
+            border-color: var(--accent);
+            background: rgba(122,162,255,.12);
+        }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            aside { display: none; }
+            main { padding: 16px; }
+        }
+
+        /* ── Added to replace Tailwind utilities ── */
+
+        /* Standalone name/info classes (also used by .mono-item) */
+        .name { color: var(--accent); font-family: var(--mono); }
+        .info { color: var(--muted); }
+
+        /* Section label ("Key Functions", "Data Flow", etc.) */
+        .section-label {
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            margin-bottom: 12px;
+        }
+
+        /* Detail label ("📍 Location", "🆔 Device ID") */
+        .detail-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        /* Badge row (status pill + description paragraph) */
+        .badge-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        /* Flow row (horizontal flow items / pills) */
+        .flow-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* Flow diagram centered mono */
+        .flow-center {
+            font-family: var(--mono);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        /* Pill color variants */
+        .pill-green  { color: var(--good);   border-color: rgba(90,214,166,.3); }
+        .pill-accent { color: var(--accent); border-color: rgba(122,162,255,.3); }
+        .pill-purple { color: var(--purple); border-color: rgba(176,140,255,.3); }
+        .pill-orange { color: var(--orange); border-color: rgba(255,170,90,.3); }
+
+        /* Tree indentation for directory listings */
+        .tree-indent   { margin-left: 16px; }
+        .tree-indent-2 { margin-left: 32px; }
+
+        /* Wiki table */
+        .wiki-table {
+            width: 100%;
+            font-size: 12px;
+            border-collapse: collapse;
+        }
+        .wiki-table th {
+            text-align: left;
+            padding: 8px 12px;
+            color: var(--muted);
+            border-bottom: 1px solid var(--line);
+        }
+        .wiki-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(38,50,70,.5);
+        }
+        .wiki-table tbody {
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 11px;
+        }
+        .wiki-table tfoot td {
+            border-top: 1px solid var(--line);
+            border-bottom: none;
+            font-weight: 600;
+        }
+
+        /* Table wrapper */
+        .table-wrap { overflow-x: auto; }
+
+        /* Boot order step row */
+        .boot-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .boot-num {
+            background: rgba(90,214,166,.2);
+            color: var(--good);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            width: 32px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        /* Highlight for inline emphasis (e.g. "Ring 0") */
+        .highlight-bad { color: var(--bad); font-weight: 600; }
+
+        /* Info grid (device ID grids) */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-family: var(--mono);
+            font-size: 11px;
+        }
+        @media (min-width: 900px) {
+            .info-grid-4 { grid-template-columns: repeat(4, 1fr); }
+        }
+
+        /* Design notes grid */
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+        @media (max-width: 900px) {
+            .notes-grid { grid-template-columns: 1fr; }
+        }
+
+    </style>
+</head>
+<body>
+    
+    <!-- Top Header -->
+    <header>
+        <div class="header-left">
+            <span class="logo">🌀</span>
+            <div>
+                <h1>MaahiOS Wiki</h1>
+                <div class="subtitle">Developer Documentation</div>
+            </div>
+        </div>
+        <nav>
+            <a href="#drivers">Drivers</a>
+            <a href="#managers">Managers</a>
+            <a href="#syscalls">Syscalls</a>
+            <a href="#executives">Executives</a>
+            <a href="#libraries">Libraries</a>
+        </nav>
+    </header>
+
+    <div class="wiki-layout">
+        
+        <!-- Sidebar Navigation -->
+        <aside>
+            <nav>
+                <div>
+                    <h3>Contents</h3>
+                    <ul>
+                        <li>
+                            <a href="#drivers" class="nav-link">
+                                📁 1. Drivers
+                            </a>
+                            <ul>
+                                <li>
+                                    <a href="#driver-architecture" class="nav-link">
+                                        1.1 Architecture
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#driver-device-ops" class="nav-link">
+                                        1.2 Device Operations
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#driver-registration" class="nav-link">
+                                        1.3 Registration
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#drive-drivers" class="nav-link">
+                                💾 2. Drive Drivers
+                            </a>
+                            <ul>
+                                <li>
+                                    <a href="#drive-ata" class="nav-link">
+                                        2.1 ATA Driver
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#drive-disk" class="nav-link">
+                                        2.2 Disk Subsystem
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#drive-iso9660" class="nav-link">
+                                        2.3 ISO9660 Filesystem
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#input-drivers" class="nav-link">
+                                🎮 3. Input Drivers
+                            </a>
+                            <ul>
+                                <li>
+                                    <a href="#input-mouse" class="nav-link">
+                                        3.1 Mouse Driver
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#input-keyboard" class="nav-link">
+                                        3.2 Keyboard Driver
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#display-drivers" class="nav-link">
+                                🖥️ 4. Display Drivers
+                            </a>
+                            <ul>
+                                <li>
+                                    <a href="#display-main" class="nav-link">
+                                        4.1 Display (GFX)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#display-bga" class="nav-link">
+                                        4.2 BGA Driver
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#display-vga" class="nav-link">
+                                        4.3 VGA Text Mode
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#utility-drivers" class="nav-link">
+                                🔧 5. Utility Drivers
+                            </a>
+                            <ul>
+                                <li>
+                                    <a href="#utility-rtc" class="nav-link">
+                                        5.1 RTC Driver
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#utility-pci" class="nav-link">
+                                        5.2 PCI Driver
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#utility-io" class="nav-link">
+                                        5.3 Shared I/O
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#managers" class="nav-link">
+                                🎛️ 6. Kernel Managers
+                            </a>
+                            <ul>
+                                <li>
+                                    <a href="#mgr-overview" class="nav-link">
+                                        6.1 Overview
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#mgr-core" class="nav-link">
+                                        6.2 Core Managers
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#mgr-services" class="nav-link">
+                                        6.3 Service Managers
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#syscalls" class="nav-link">
+                                🔌 7. Syscall Layer
+                            </a>
+                            <ul>
+                                <li>
+                                    <a href="#syscall-overview" class="nav-link">
+                                        7.1 Overview
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#syscall-domains" class="nav-link">
+                                        7.2 Domains (9)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#syscall-handlers" class="nav-link">
+                                        7.3 Handler Files
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#executives" class="nav-link">
+                                🏛️ 8. Executives
+                            </a>
+                            <ul>
+                                <li>
+                                    <a href="#exec-overview" class="nav-link">
+                                        8.1 Overview
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#exec-log" class="nav-link">
+                                        8.2 Log Executive
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#exec-cell" class="nav-link">
+                                        8.3 Cell Executive
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#exec-process" class="nav-link">
+                                        8.4 Process Executive
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#exec-memory" class="nav-link">
+                                        8.5 Memory Executive
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#libraries" class="nav-link">
+                                📚 9. Libraries
+                            </a>
+                            <ul>
+                                <li>
+                                    <a href="#lib-overview" class="nav-link">
+                                        9.1 Overview
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-liblog" class="nav-link">
+                                        9.2 liblog
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libcell" class="nav-link">
+                                        9.3 libcell
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libprocess" class="nav-link">
+                                        9.4 libprocess
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libmemory" class="nav-link">
+                                        9.5 libmemory
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main>
+            
+            <!-- Section 1: Drivers -->
+            <section id="drivers">
+                <div class="section-header">
+                    <span class="icon">📁</span>
+                    <div>
+                        <h2>1. Drivers</h2>
+                        <p>Hardware abstraction layer for MaahiOS</p>
+                    </div>
+                </div>
+                
+                <div class="wiki-card">
+                    <p>
+                        MaahiOS drivers provide a unified interface between hardware devices and the kernel. 
+                        All drivers follow a consistent architecture pattern that enables the Device Manager 
+                        to manage them uniformly through a standard set of operations.
+                    </p>
+                    <p>
+                        Drivers run in <span class="highlight-bad">Ring 0</span> (kernel space) 
+                        and are accessed by user applications through syscalls via the Device Manager.
+                    </p>
+                </div>
+
+                <!-- 1.1 Architecture -->
+                <article id="driver-architecture">
+                    <h3>
+                        <span class="name">§</span> 1.1 Driver Architecture
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <p>
+                            Every MaahiOS driver follows a <strong>3-part pattern</strong>:
+                        </p>
+                        
+                        <div class="grid-3">
+                            <div class="inner-box">
+                                <div>1️⃣</div>
+                                <h4>Registration</h4>
+                                <p>
+                                    Call <code>register_device()</code> to add 
+                                    driver to Device Manager's array
+                                </p>
+                            </div>
+                            <div class="inner-box">
+                                <div>2️⃣</div>
+                                <h4>Handler Functions</h4>
+                                <p>
+                                    Implement <code>device_ops_t</code> interface 
+                                    (open, close, read, write, ioctl, poll)
+                                </p>
+                            </div>
+                            <div class="inner-box">
+                                <div>3️⃣</div>
+                                <h4>Device-Specific</h4>
+                                <p>
+                                    Hardware-specific functions (IRQ handlers, port I/O, etc.)
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Architecture Diagram -->
+                        <div class="inner-box">
+                            <h5 class="section-label">Data Flow</h5>
+                            <div class="flow-center">
+                                <div class="flow-row">
+                                    <span class="pill pill-purple">User App</span>
+                                    <span class="info">→</span>
+                                    <span class="pill pill-accent">Syscall (INT 0x80)</span>
+                                    <span class="info">→</span>
+                                    <span class="pill pill-orange">Device Manager</span>
+                                    <span class="info">→</span>
+                                    <span class="pill pill-green">Driver</span>
+                                    <span class="info">→</span>
+                                    <span class="pill">Hardware</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 1.2 Device Operations -->
+                <article id="driver-device-ops">
+                    <h3>
+                        <span class="name">§</span> 1.2 Device Operations Structure
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <p>
+                            All drivers must implement the <code>device_ops_t</code> 
+                            structure, which provides a uniform interface:
+                        </p>
+                        
+                        <pre><code>typedef struct device_ops {
+    int  (*open)(int flags);
+    int  (*close)(int handle);
+    int  (*read)(int handle, void* buffer, size_t size);
+    int  (*write)(int handle, const void* buffer, size_t size);
+    int  (*ioctl)(int handle, int cmd, void* arg);
+    int  (*poll)(int handle);
+} device_ops_t;</code></pre>
+
+                        <div class="table-wrap">
+                            <table class="wiki-table">
+                                <thead>
+                                    <tr>
+                                        <th>Function</th>
+                                        <th>Purpose</th>
+                                        <th>Returns</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="name">open()</td>
+                                        <td>Initialize device access</td>
+                                        <td>Handle (≥0) or error (<0)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">close()</td>
+                                        <td>Release device</td>
+                                        <td>0 on success</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">read()</td>
+                                        <td>Read data from device</td>
+                                        <td>Bytes read or error</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">write()</td>
+                                        <td>Write data to device</td>
+                                        <td>Bytes written or error</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">ioctl()</td>
+                                        <td>Device-specific commands</td>
+                                        <td>Command-dependent</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">poll()</td>
+                                        <td>Check if data available</td>
+                                        <td>1 = ready, 0 = not ready</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 1.3 Registration -->
+                <article id="driver-registration">
+                    <h3>
+                        <span class="name">§</span> 1.3 Driver Registration
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <p>
+                            Drivers register with the Device Manager using <code>register_device()</code>. 
+                            This adds the driver to a static array in kernel memory:
+                        </p>
+                        
+                        <pre><code>// In driver's init function:
+static device_ops_t my_driver_ops = {
+    .open  = my_dev_open,
+    .close = my_dev_close,
+    .read  = my_dev_read,
+    .write = my_dev_write,
+    .ioctl = my_dev_ioctl,
+    .poll  = my_dev_poll
+};
+
+int my_driver_init(void) {
+    // ... hardware initialization ...
+    
+    register_device(DEV_MY_DEVICE, "mydevice", &my_driver_ops);
+    return 0;
+}</code></pre>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Device IDs (from device_manager.h)</h5>
+                            <div class="info-grid info-grid-4">
+                                <div class="pill"><span class="name">DEV_MOUSE</span> = 1</div>
+                                <div class="pill"><span class="name">DEV_KEYBOARD</span> = 2</div>
+                                <div class="pill"><span class="name">DEV_DISPLAY</span> = 3</div>
+                                <div class="pill"><span class="name">DEV_DISK</span> = 4</div>
+                                <div class="pill"><span class="name">DEV_TIMER</span> = 6</div>
+                                <div class="pill"><span class="name">DEV_RTC</span> = 7</div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- Section 2: Drive Drivers -->
+            <section id="drive-drivers">
+                <div class="section-header">
+                    <span class="icon">💾</span>
+                    <div>
+                        <h2>2. Drive Drivers</h2>
+                        <p>Storage device drivers (ATA, Disk, ISO9660)</p>
+                    </div>
+                </div>
+
+                <div class="wiki-card">
+                    <p>
+                        The <code>drivers/drive/</code> folder 
+                        contains all storage-related drivers organized in a layered architecture:
+                    </p>
+                    
+                    <!-- Folder Structure -->
+                    <div class="inner-box flow-text">
+                        <div>drivers/drive/</div>
+                        <div class="tree-indent">
+                            <div>├── ata/</div>
+                            <div class="tree-indent-2">├── ata.c <span>← Hardware transport (ports, DMA)</span></div>
+                            <div class="tree-indent-2">└── ata.h</div>
+                            <div>├── disk/</div>
+                            <div class="tree-indent-2">├── disk_subsystem.c <span>← Device Manager interface ✓</span></div>
+                            <div class="tree-indent-2">└── disk_subsystem.h</div>
+                            <div>└── iso9660/</div>
+                            <div class="tree-indent-2">├── iso9660.c <span>← Filesystem parser</span></div>
+                            <div class="tree-indent-2">└── iso9660.h</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2.1 ATA Driver -->
+                <article id="drive-ata">
+                    <h3>
+                        <span>§</span> 2.1 ATA Driver
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <div class="badge-row">
+                            <div class="pill pill-green">
+                                INTERNAL
+                            </div>
+                            <p>
+                                Low-level hardware driver for ATA/ATAPI devices. Communicates directly with disk 
+                                controllers via I/O ports. <strong>Not registered</strong> with Device Manager 
+                                (used internally by disk_subsystem).
+                            </p>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom:14px">
+                            <div class="inner-box">
+                                <h5 class="detail-label">📍 Location</h5>
+                                <code>drivers/drive/ata/ata.c</code>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="detail-label">🔌 I/O Ports</h5>
+                                <span>Primary: 0x1F0-0x1F7 | Secondary: 0x170-0x177</span>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Key Functions</h5>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">ata_init()</span>
+                                    <span class="info">Initialize ATA subsystem, detect drives</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">ata_detect_drive(port, is_slave)</span>
+                                    <span class="info">Detect drive type (ATA/ATAPI/none)</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">ata_read_sector(drive_id, lba, buffer)</span>
+                                    <span class="info">Read 512-byte sector via PIO</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">ata_get_drive(drive_id)</span>
+                                    <span class="info">Get drive info struct</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Supported Device Types</h5>
+                            <div class="flow-row">
+                                <span class="pill pill-green">ATA (Hard Disks)</span>
+                                <span class="pill pill-purple">ATAPI (CD/DVD)</span>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 2.2 Disk Subsystem -->
+                <article id="drive-disk">
+                    <h3>
+                        <span class="name">§</span> 2.2 Disk Subsystem
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <div class="badge-row">
+                            <div class="pill pill-accent">
+                                REGISTERED
+                            </div>
+                            <p>
+                                Main disk abstraction layer. <strong>Registered with Device Manager</strong> 
+                                as <code>DEV_DISK</code>. Provides unified access to all 
+                                storage devices regardless of underlying hardware.
+                            </p>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom:14px">
+                            <div class="inner-box">
+                                <h5 class="detail-label">📍 Location</h5>
+                                <code>drivers/drive/disk/disk_subsystem.c</code>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="detail-label">🆔 Device ID</h5>
+                                <span>DEV_DISK = 4</span>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Device Operations (device_ops_t)</h5>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">disk_dev_open(flags)</span>
+                                    <span class="info">Always succeeds</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">disk_dev_read(handle, buf, size)</span>
+                                    <span class="info">Returns disk_info_t</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">disk_dev_write(handle, buf, size)</span>
+                                    <span class="info">NOT_SUPPORTED (read-only)</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">disk_dev_ioctl(handle, cmd, arg)</span>
+                                    <span class="info">GET_INFO, GET_SECTOR_SIZE, FLUSH</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">disk_dev_poll(handle)</span>
+                                    <span class="info">1 if disks exist</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">IOCTL Commands</h5>
+                            <div class="grid-2 mono-list">
+                                <div class="pill">DISK_IOCTL_GET_INFO = 1</div>
+                                <div class="pill">DISK_IOCTL_GET_SECTOR_SIZE = 2</div>
+                                <div class="pill">DISK_IOCTL_GET_SECTOR_COUNT = 3</div>
+                                <div class="pill">DISK_IOCTL_FLUSH = 4</div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 2.3 ISO9660 -->
+                <article id="drive-iso9660">
+                    <h3>
+                        <span>§</span> 2.3 ISO9660 Filesystem Driver
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <div class="badge-row">
+                            <div class="pill pill-purple">
+                                FILESYSTEM
+                            </div>
+                            <p>
+                                Filesystem driver for reading CD/DVD ISO images. Parses ISO9660 volume descriptors 
+                                and directory entries. <strong>Not registered</strong> with Device Manager 
+                                (called internally by disk_subsystem).
+                            </p>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom:14px">
+                            <div class="inner-box">
+                                <h5 class="detail-label">📍 Location</h5>
+                                <code>drivers/drive/iso9660/iso9660.c</code>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="detail-label">📦 Sector Size</h5>
+                                <span>2048 bytes (CD standard)</span>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Key Functions</h5>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">iso9660_init()</span>
+                                    <span class="info">Find CDROM, read volume descriptor</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">iso9660_list_root(entries, max)</span>
+                                    <span class="info">List files in root directory</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">iso9660_find_directory(name, lba, size)</span>
+                                    <span class="info">Find directory by name</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">iso9660_read_file(lba, size, buf, max)</span>
+                                    <span class="info">Read file data from ISO</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">atapi_read_sector(drive, lba, buf)</span>
+                                    <span class="info">Read 2048-byte CD sector</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">ISO9660 Structures</h5>
+                            <div class="flow-row">
+                                <span class="pill">iso_primary_volume_descriptor_t</span>
+                                <span class="pill">iso_directory_entry_t</span>
+                                <span class="pill">iso_file_entry_t</span>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+            </section>
+
+            <!-- Section 3: Input Drivers -->
+            <section id="input-drivers">
+                <div class="section-header">
+                    <span class="icon">🎮</span>
+                    <div>
+                        <h2>3. Input Drivers</h2>
+                        <p>Mouse and Keyboard input devices</p>
+                    </div>
+                </div>
+
+                <div class="wiki-card">
+                    <p>
+                        Input drivers handle PS/2 mouse and keyboard hardware. Both are fully registered with 
+                        the Device Manager and provide event-based input through IRQ handlers.
+                    </p>
+                    
+                    <div class="inner-box flow-text">
+                        <div>drivers/</div>
+                        <div class="tree-indent">
+                            <div>├── mouse/</div>
+                            <div class="tree-indent-2">├── mouse.c <span>← DEV_MOUSE ✓</span></div>
+                            <div class="tree-indent-2">└── mouse.h</div>
+                            <div>└── keyboard/</div>
+                            <div class="tree-indent-2">├── keyboard.c <span>← DEV_KEYBOARD ✓</span></div>
+                            <div class="tree-indent-2">└── keyboard.h</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3.1 Mouse Driver -->
+                <article id="input-mouse">
+                    <h3>
+                        <span class="name">§</span> 3.1 Mouse Driver
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <div class="badge-row">
+                            <div class="pill pill-accent">
+                                REGISTERED
+                            </div>
+                            <p>
+                                PS/2 mouse driver with IRQ12 handling. Registers with Device Manager as 
+                                <code>DEV_MOUSE</code>. Provides relative movement 
+                                and button state through device_ops_t interface.
+                            </p>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom:14px">
+                            <div class="inner-box">
+                                <h5 class="detail-label">📍 Location</h5>
+                                <code>drivers/mouse/mouse.c</code>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="detail-label">🆔 Device ID</h5>
+                                <span>DEV_MOUSE = 1 | IRQ12</span>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Device Operations (device_ops_t)</h5>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">mouse_dev_open(flags)</span>
+                                    <span class="info">Always succeeds</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">mouse_dev_read(handle, buf, size)</span>
+                                    <span class="info">Returns mouse_state_t {x, y, buttons}</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">mouse_dev_ioctl(handle, cmd, arg)</span>
+                                    <span class="info">GET_STATE, GET_IRQ_COUNT, RESET</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">mouse_dev_poll(handle)</span>
+                                    <span class="info">1 if data in ring buffer</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="inner-box">
+                                <h5 class="section-label">IOCTL Commands</h5>
+                                <div>
+                                    <div class="pill">MOUSE_IOCTL_GET_STATE = 1</div>
+                                    <div class="pill">MOUSE_IOCTL_GET_IRQ_COUNT = 2</div>
+                                    <div class="pill">MOUSE_IOCTL_RESET = 3</div>
+                                </div>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="section-label">Button Masks</h5>
+                                <div>
+                                    <div class="pill">MOUSE_LEFT_BUTTON = 0x01</div>
+                                    <div class="pill">MOUSE_RIGHT_BUTTON = 0x02</div>
+                                    <div class="pill">MOUSE_MIDDLE_BUTTON = 0x04</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 3.2 Keyboard Driver -->
+                <article id="input-keyboard">
+                    <h3>
+                        <span>§</span> 3.2 Keyboard Driver
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <div class="badge-row">
+                            <div class="pill pill-green">
+                                REGISTERED
+                            </div>
+                            <p>
+                                PS/2 keyboard driver with IRQ1 handling. Registers with Device Manager as 
+                                <code>DEV_KEYBOARD</code>. Provides scancode-to-ASCII 
+                                translation with modifier key support (Shift, Ctrl, Alt, Caps Lock).
+                            </p>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom:14px">
+                            <div class="inner-box">
+                                <h5 class="detail-label">📍 Location</h5>
+                                <code>drivers/keyboard/keyboard.c</code>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="detail-label">🆔 Device ID</h5>
+                                <span>DEV_KEYBOARD = 2 | IRQ1</span>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Device Operations (device_ops_t)</h5>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">keyboard_dev_open(flags)</span>
+                                    <span class="info">Always succeeds</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">keyboard_dev_read(handle, buf, size)</span>
+                                    <span class="info">Returns key_event_t from queue</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">keyboard_dev_ioctl(handle, cmd, arg)</span>
+                                    <span class="info">GET_SCANCODE, SET_LEDS</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">keyboard_dev_poll(handle)</span>
+                                    <span class="info">1 if events in queue</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="inner-box">
+                                <h5 class="section-label">Modifier Flags</h5>
+                                <div>
+                                    <div class="pill">MOD_SHIFT = 0x01</div>
+                                    <div class="pill">MOD_CTRL = 0x02</div>
+                                    <div class="pill">MOD_ALT = 0x04</div>
+                                    <div class="pill">MOD_CAPS = 0x08</div>
+                                </div>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="section-label">key_event_t Structure</h5>
+                                <div class="flow-text">
+                                    <div>uint8_t type; <span>// PRESSED/RELEASED</span></div>
+                                    <div>uint8_t keycode; <span>// Scancode</span></div>
+                                    <div>uint8_t ascii; <span>// Character</span></div>
+                                    <div>uint8_t modifiers; <span>// Active mods</span></div>
+                                    <div>uint8_t scancode; <span>// Raw scancode</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- Section 4: Display Drivers -->
+            <section id="display-drivers">
+                <div class="section-header">
+                    <span class="icon">🖥️</span>
+                    <div>
+                        <h2>4. Display Drivers</h2>
+                        <p>Graphics and display subsystem</p>
+                    </div>
+                </div>
+
+                <div class="wiki-card">
+                    <p>
+                        The display subsystem provides graphics rendering capabilities. The main Display driver 
+                        is registered with Device Manager and abstracts multiple backend drivers (BGA, VGA).
+                    </p>
+                    
+                    <div class="inner-box flow-text">
+                        <div>drivers/display/</div>
+                        <div class="tree-indent">
+                            <div>├── display.c <span>← DEV_DISPLAY ✓ (GFX abstraction)</span></div>
+                            <div>├── bga.c <span>← BGA hardware driver (internal)</span></div>
+                            <div>├── bga_mouse.c <span>← Hardware cursor (internal)</span></div>
+                            <div>└── cursor.c <span>← Software cursor fallback</span></div>
+                        </div>
+                        <div>drivers/vga/</div>
+                        <div class="tree-indent">
+                            <div>└── vga.c <span>← Early boot text mode</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4.1 Display Driver -->
+                <article id="display-main">
+                    <h3>
+                        <span class="name">§</span> 4.1 Display Driver (GFX)
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <div class="badge-row">
+                            <div class="pill pill-accent">
+                                REGISTERED
+                            </div>
+                            <p>
+                                Graphics abstraction layer providing hardware-independent drawing functions. 
+                                Registered with Device Manager as <code>DEV_DISPLAY</code>.
+                                Currently uses BGA backend (QEMU/Bochs/VirtualBox).
+                            </p>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom:14px">
+                            <div class="inner-box">
+                                <h5 class="detail-label">📍 Location</h5>
+                                <code>drivers/display/display.c</code>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="detail-label">🆔 Device ID</h5>
+                                <span>DEV_DISPLAY = 3 | 1024x768x32</span>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Graphics API</h5>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">gfx_init(width, height, bpp)</span>
+                                    <span class="info">Initialize + register_device()</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">gfx_clear(color)</span>
+                                    <span class="info">Clear screen to color</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">gfx_fill_rect(x, y, w, h, color)</span>
+                                    <span class="info">Draw filled rectangle</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">gfx_draw_string(x, y, str, fg, bg)</span>
+                                    <span class="info">Render text</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">gfx_put_pixel(x, y, color)</span>
+                                    <span class="info">Write single pixel</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">gfx_get_framebuffer()</span>
+                                    <span class="info">Get FB address for direct access</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="inner-box">
+                                <h5 class="section-label">IOCTL Commands</h5>
+                                <div>
+                                    <div class="pill">DISPLAY_IOCTL_GET_INFO = 1</div>
+                                    <div class="pill">DISPLAY_IOCTL_SET_MODE = 2</div>
+                                    <div class="pill">DISPLAY_IOCTL_GET_FB = 3</div>
+                                </div>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="section-label">display_info_t</h5>
+                                <div class="flow-text">
+                                    <div>uint16_t width, height, bpp;</div>
+                                    <div>uint32_t framebuffer_addr;</div>
+                                    <div>uint32_t framebuffer_size;</div>
+                                    <div>display_driver_t driver;</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 4.2 BGA Driver -->
+                <article id="display-bga">
+                    <h3>
+                        <span>§</span> 4.2 BGA Driver (Bochs Graphics Adapter)
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <div class="badge-row">
+                            <div class="pill pill-green">
+                                INTERNAL
+                            </div>
+                            <p>
+                                Low-level hardware driver for BGA (Bochs/QEMU/VirtualBox graphics). Provides 
+                                framebuffer access and basic drawing primitives. <strong>Not registered</strong> - 
+                                used internally by display.c.
+                            </p>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom:14px">
+                            <div class="inner-box">
+                                <h5 class="detail-label">📍 Location</h5>
+                                <code>drivers/display/bga.c</code>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="detail-label">🔌 I/O Ports</h5>
+                                <span>0x01CE (Index) | 0x01CF (Data)</span>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Key Functions</h5>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">bga_is_available()</span>
+                                    <span class="info">Check if BGA present (PCI)</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">bga_init(width, height, bpp)</span>
+                                    <span class="info">Set video mode</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">bga_get_framebuffer_addr()</span>
+                                    <span class="info">Get LFB address (0xE0000000)</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">bga_clear/fill_rect/draw_rect()</span>
+                                    <span class="info">Drawing primitives</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">bga_print_at(x, y, str, fg, bg)</span>
+                                    <span class="info">8x16 VGA font rendering</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 4.3 VGA Text Mode -->
+                <article id="display-vga">
+                    <h3>
+                        <span>§</span> 4.3 VGA Text Mode
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <div class="badge-row">
+                            <div class="pill pill-orange">
+                                EARLY BOOT
+                            </div>
+                            <p>
+                                Early boot text console driver. Available immediately at boot (BIOS sets it up).
+                                <strong>Not registered</strong> with Device Manager - used before 
+                                device_manager_init() is called for early debug output.
+                            </p>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom:14px">
+                            <div class="inner-box">
+                                <h5 class="detail-label">📍 Location</h5>
+                                <code>drivers/vga/vga.c</code>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="detail-label">📺 Video Memory</h5>
+                                <span>0xB8000 | 80x25 characters</span>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Functions</h5>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">vga_clear()</span>
+                                    <span class="info">Clear screen</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">vga_print(str)</span>
+                                    <span class="info">Print string</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">vga_putchar(c)</span>
+                                    <span class="info">Print character</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">vga_set_color(fg, bg)</span>
+                                    <span class="info">Set text attributes</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- Section 5: Utility Drivers -->
+            <section id="utility-drivers">
+                <div class="section-header">
+                    <span class="icon">🔧</span>
+                    <div>
+                        <h2>5. Utility Drivers</h2>
+                        <p>RTC, PCI and other utility drivers</p>
+                    </div>
+                </div>
+
+                <div class="wiki-card">
+                    <p>
+                        Utility drivers provide system services like timekeeping (RTC) and bus access (PCI). 
+                        Some are registered with Device Manager, others are internal utilities.
+                    </p>
+                    
+                    <div class="inner-box flow-text">
+                        <div>drivers/</div>
+                        <div class="tree-indent">
+                            <div>├── rtc/ <span>← DEV_RTC ✓</span></div>
+                            <div>└── pci/ <span>← Utility (bus access)</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5.1 RTC Driver -->
+                <article id="utility-rtc">
+                    <h3>
+                        <span class="name">§</span> 5.1 RTC Driver (Real-Time Clock)
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <div class="badge-row">
+                            <div class="pill pill-accent">
+                                REGISTERED
+                            </div>
+                            <p>
+                                CMOS battery-backed real-time clock driver (MC146818 compatible). 
+                                Registered with Device Manager as <code>DEV_RTC</code>.
+                                QEMU syncs this with host machine time.
+                            </p>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom:14px">
+                            <div class="inner-box">
+                                <h5 class="detail-label">📍 Location</h5>
+                                <code>drivers/rtc/rtc.c</code>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="detail-label">🆔 Device ID</h5>
+                                <span>DEV_RTC = 7 | CMOS 0x70/0x71</span>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Device Operations</h5>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">rtc_dev_open/close()</span>
+                                    <span class="info">Always succeeds</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">rtc_dev_read(handle, buf, size)</span>
+                                    <span class="info">Returns rtc_datetime_t</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">rtc_dev_ioctl(handle, cmd, arg)</span>
+                                    <span class="info">GET_TIME, GET_UNIX</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="inner-box">
+                                <h5 class="section-label">IOCTL Commands</h5>
+                                <div>
+                                    <div class="pill">RTC_IOCTL_GET_TIME = 1</div>
+                                    <div class="pill">RTC_IOCTL_GET_UNIX = 2</div>
+                                </div>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="section-label">rtc_datetime_t</h5>
+                                <div class="flow-text">
+                                    <div>uint8_t second, minute, hour;</div>
+                                    <div>uint8_t day, month, weekday;</div>
+                                    <div>uint16_t year;</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 5.2 PCI Driver -->
+                <article id="utility-pci">
+                    <h3>
+                        <span>§</span> 5.2 PCI Driver
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <div class="badge-row">
+                            <div class="pill pill-green">
+                                UTILITY
+                            </div>
+                            <p>
+                                PCI Configuration Space access driver. Provides read/write functions for 
+                                detecting and configuring PCI devices. <strong>Not registered</strong> - 
+                                utility driver used by other drivers (BGA, etc.)
+                            </p>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom:14px">
+                            <div class="inner-box">
+                                <h5 class="detail-label">📍 Location</h5>
+                                <code>drivers/pci/pci.c</code>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="detail-label">🔌 I/O Ports</h5>
+                                <span>0xCF8 (Address) | 0xCFC (Data)</span>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Functions</h5>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">pci_config_read_byte(bus, slot, func, off)</span>
+                                    <span class="info">Read 8-bit</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">pci_config_read_word(bus, slot, func, off)</span>
+                                    <span class="info">Read 16-bit</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">pci_config_read_dword(bus, slot, func, off)</span>
+                                    <span class="info">Read 32-bit</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">pci_config_write_byte/word/dword()</span>
+                                    <span class="info">Write config space</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+            </section>
+
+            <!-- Section 5.3: Shared I/O -->
+            <article id="utility-io">
+                <section>
+                    <h3>
+                        <span>§</span> 5.3 Shared I/O (io.h)
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <div class="badge-row">
+                            <div class="pill pill-purple">
+                                UTILITY
+                            </div>
+                            <p>
+                                Centralized port I/O functions used by <strong>all drivers and kernel managers</strong>.
+                                Single source of truth for <code>inb</code>/<code>outb</code> 
+                                and related functions. Prevents duplicate inline assembly definitions across files.
+                            </p>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom:14px">
+                            <div class="inner-box">
+                                <h5 class="detail-label">📍 Location</h5>
+                                <code>system/libraries/shared/io.h</code>
+                            </div>
+                            <div class="inner-box">
+                                <h5 class="detail-label">📊 Users</h5>
+                                <span>10 files (all drivers + irq_manager + pit)</span>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">Functions</h5>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">inb(port) / outb(port, val)</span>
+                                    <span class="info">8-bit port I/O</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">inw(port) / outw(port, val)</span>
+                                    <span class="info">16-bit port I/O</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">inl(port) / outl(port, val)</span>
+                                    <span class="info">32-bit port I/O</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">io_wait()</span>
+                                    <span class="info">Wait ~1μs via port 0x80</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="inner-box">
+                            <h5 class="section-label">⚠️ Rules</h5>
+                            <div>
+                                <div>• <strong>NEVER</strong> define your own inline <code>inb</code>/<code>outb</code> — always include this header</div>
+                                <div>• <strong>NEVER</strong> expose port I/O to Ring 3 via syscalls — security violation</div>
+                                <div>• All functions are <code>static inline</code> — zero overhead, no linker symbols</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </article>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- Section 6: Kernel Managers -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <section id="managers">
+                <div class="section-header">
+                    <span class="icon">🎛️</span>
+                    <div>
+                        <h2>6. Kernel Managers</h2>
+                        <p>Ring 0 kernel subsystems — all verified ✅</p>
+                    </div>
+                    <span class="pill pill-green">✅ VERIFIED</span>
+                </div>
+
+                <!-- 6.1 Overview -->
+                <article id="mgr-overview">
+                    <h3>
+                        <span class="name">§</span> 6.1 Overview
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <p>
+                            Managers are kernel-space services that run in <span class="highlight-bad">Ring 0</span>. 
+                            They own all kernel state and are accessed from user-space exclusively through syscalls (INT 0x80). 
+                            Each manager follows a consistent pattern: <code>*_init()</code> → returns 
+                            <code>int</code> (0 = success).
+                        </p>
+
+                        <div class="inner-box flow-text">
+                            <div>managers/</div>
+                            <div class="tree-indent">
+                                <div>├── cell/          <span>Key-value store</span></div>
+                                <div>├── device/        <span>Device registration + dispatch</span></div>
+                                <div>├── gdt/           <span>Global Descriptor Table</span></div>
+                                <div>├── grub_module/   <span>GRUB module loading</span></div>
+                                <div>├── interrupt/     <span>IDT, exceptions, stubs</span></div>
+                                <div>├── irq/           <span>IRQ routing, PIC</span></div>
+                                <div>├── klog/          <span>Kernel logging (serial COM1)</span></div>
+                                <div>├── memory/        <span>PMM, paging, kheap</span></div>
+                                <div>├── process/       <span>Process lifecycle</span></div>
+                                <div>├── ring3/         <span>Ring 0→3 switching</span></div>
+                                <div>├── scheduler/     <span>Round-robin scheduling</span></div>
+                                <div>├── shm/           <span>Shared memory regions</span></div>
+                                <div>├── syscall/       <span>Dispatcher + 9 handler files</span></div>
+                                <div>├── time/          <span>Time computation from RTC+ticks</span></div>
+                                <div>└── timer/         <span>PIT (Programmable Interval Timer)</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Boot Initialization Order -->
+                    <div class="wiki-card">
+                        <h4>🚀 Kernel Boot Initialization Order</h4>
+                        <div>
+                            <div class="boot-step">
+                                <span class="boot-num">1</span>
+                                <span class="name">klog_manager_init()</span>
+                                <span class="info">→ Serial output ready</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">2</span>
+                                <span class="name">gdt_init()</span>
+                                <span class="info">→ Segment descriptors + TSS</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">3</span>
+                                <span class="name">idt_init()</span>
+                                <span class="info">→ Interrupt Descriptor Table</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">4</span>
+                                <span class="name">irq_manager_init()</span>
+                                <span class="info">→ PIC remapping (IRQ0→0x20)</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">5</span>
+                                <span class="name">pmm_init(mbi)</span>
+                                <span class="info">→ Physical memory bitmap</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">6</span>
+                                <span class="name">paging_init(mbi)</span>
+                                <span class="info">→ Page tables + identity map</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">7</span>
+                                <span class="name">kheap_init()</span>
+                                <span class="info">→ Kernel heap allocator</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">8</span>
+                                <span class="name">pit_init(50)</span>
+                                <span class="info">→ Timer at 50 Hz</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">9</span>
+                                <span class="name">device_manager_init()</span>
+                                <span class="info">→ Device array + driver init</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">10</span>
+                                <span class="name">time_manager_init()</span>
+                                <span class="info">→ Boot time snapshot</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">11</span>
+                                <span class="name">shm_manager_init()</span>
+                                <span class="info">→ SHM region tracking</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">12</span>
+                                <span class="name">cell_manager_init()</span>
+                                <span class="info">→ Key-value store</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">13</span>
+                                <span class="name">process_manager_init()</span>
+                                <span class="info">→ Process table</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">14</span>
+                                <span class="name">scheduler_init()</span>
+                                <span class="info">→ Scheduling queues</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">15</span>
+                                <span class="name">grub_module_manager_init(mbi)</span>
+                                <span class="info">→ Parse GRUB modules</span>
+                            </div>
+                            <div class="boot-step">
+                                <span class="boot-num">16</span>
+                                <span class="name">syscall_manager_init()</span>
+                                <span class="info">→ Register 47 handlers</span>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 6.2 Core Managers -->
+                <article id="mgr-core">
+                    <h3>
+                        <span class="name">§</span> 6.2 Core Managers
+                    </h3>
+                    <p>Low-level infrastructure managers initialized during early boot.</p>
+
+                    <div>
+                        <!-- GDT -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">📋</span>
+                                <h4>GDT Manager</h4>
+                                <code>managers/gdt/</code>
+                            </div>
+                            <p>Sets up segment descriptors for Ring 0/3 code+data and the TSS (Task State Segment) for privilege switching.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">gdt_init()</span><span class="info">→ int</span></div>
+                            </div>
+                            <div class="grid-3 flow-text">
+                                <div class="pill">0x08 Kernel Code</div>
+                                <div class="pill">0x18 User Code</div>
+                                <div class="pill">0x28 TSS</div>
+                            </div>
+                        </div>
+
+                        <!-- IDT + IRQ -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">⚡</span>
+                                <h4>Interrupt + IRQ Manager</h4>
+                                <code>managers/interrupt/ + managers/irq/</code>
+                            </div>
+                            <p>IDT setup for 256 interrupt gates. IRQ manager remaps PIC (IRQ0→0x20, IRQ8→0x28) and provides EOI handling.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">idt_init()</span><span class="info">→ int (256 gates)</span></div>
+                                <div class="mono-item"><span class="name">irq_manager_init()</span><span class="info">→ int (PIC remap)</span></div>
+                                <div class="mono-item"><span class="name">irq_register_handler(irq, fn)</span><span class="info">→ void</span></div>
+                            </div>
+                            <div>INT 0x80 gate has DPL=3 (user-accessible for syscalls)</div>
+                        </div>
+
+                        <!-- PMM + Paging + kheap -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">🧠</span>
+                                <h4>Memory Manager (PMM + Paging + kheap)</h4>
+                                <code>managers/memory/</code>
+                            </div>
+                            <p>Physical page allocator (bitmap), virtual memory with page tables, and kernel heap for dynamic allocation.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">pmm_init(mbi)</span><span class="info">→ int (page bitmap)</span></div>
+                                <div class="mono-item"><span class="name">paging_init(mbi)</span><span class="info">→ int (page tables)</span></div>
+                                <div class="mono-item"><span class="name">kheap_init()</span><span class="info">→ int (heap at 0x400000+)</span></div>
+                                <div class="mono-item"><span class="name">pmm_alloc_page()</span><span class="info">→ void* (4KB page)</span></div>
+                                <div class="mono-item"><span class="name">pmm_free_page(addr)</span><span class="info">→ void</span></div>
+                            </div>
+                        </div>
+
+                        <!-- PIT Timer -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">⏱️</span>
+                                <h4>Timer (PIT)</h4>
+                                <code>managers/timer/</code>
+                            </div>
+                            <p>Programmable Interval Timer — generates IRQ0 at configured frequency (50 Hz). Drives the scheduler tick and time tracking.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">pit_init(frequency)</span><span class="info">→ int (sets channel 0)</span></div>
+                                <div class="mono-item"><span class="name">pit_get_ticks()</span><span class="info">→ uint64_t</span></div>
+                            </div>
+                            <div>Port 0x40 (Channel 0) | Port 0x43 (Command) | Uses shared io.h</div>
+                        </div>
+
+                        <!-- Scheduler -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">🔄</span>
+                                <h4>Scheduler</h4>
+                                <code>managers/scheduler/</code>
+                            </div>
+                            <p>Round-robin preemptive scheduler triggered by PIT timer interrupt. Manages process time slices and context switching.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">scheduler_init()</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">scheduler_enable() / disable()</span><span class="info">→ void</span></div>
+                                <div class="mono-item"><span class="name">scheduler_add_process(...)</span><span class="info">→ void</span></div>
+                                <div class="mono-item"><span class="name">scheduler_get_current_pid()</span><span class="info">→ int</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 6.3 Service Managers -->
+                <article id="mgr-services">
+                    <h3>
+                        <span class="name">§</span> 6.3 Service Managers
+                    </h3>
+                    <p>Higher-level managers providing kernel services accessible via syscalls.</p>
+
+                    <div>
+                        <!-- Device Manager -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">📋</span>
+                                <h4>Device Manager</h4>
+                                <code>managers/device/</code>
+                            </div>
+                            <p>Central registry for all hardware drivers. Initializes each driver and dispatches device operations from syscalls.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">device_manager_init()</span><span class="info">→ int (calls all driver inits)</span></div>
+                                <div class="mono-item"><span class="name">register_device(id, name, ops)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">kernel_device_open/read/write/ioctl/poll</span><span class="info">→ int</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Process Manager -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">🔄</span>
+                                <h4>Process Manager</h4>
+                                <code>managers/process/</code>
+                            </div>
+                            <p>Manages process table, creation (with own address space), termination, and info queries.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">process_manager_init()</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">kernel_process_create(entry)</span><span class="info">→ int: pid</span></div>
+                                <div class="mono-item"><span class="name">kernel_process_terminate(pid)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">process_manager_get_count()</span><span class="info">→ int</span></div>
+                            </div>
+                        </div>
+
+                        <!-- SHM Manager -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">🔗</span>
+                                <h4>SHM Manager</h4>
+                                <code>managers/shm/</code>
+                            </div>
+                            <p>Shared memory regions for IPC between processes. Executives use SHM for request/response queues.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">shm_manager_init()</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">kernel_shm_create(size, pid)</span><span class="info">→ int: shm_id</span></div>
+                                <div class="mono-item"><span class="name">kernel_shm_attach(id, pid, virt)</span><span class="info">→ uint32_t</span></div>
+                                <div class="mono-item"><span class="name">kernel_shm_detach(id, pid)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">kernel_shm_destroy(id)</span><span class="info">→ int</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Cell Manager -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">🗄️</span>
+                                <h4>Cell Manager</h4>
+                                <code>managers/cell/</code>
+                            </div>
+                            <p>In-kernel key-value store. Executives register their SHM IDs here so other processes can discover them.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">cell_manager_init()</span><span class="info">→ int: shm_id</span></div>
+                                <div class="mono-item"><span class="name">kernel_cell_write(key, value, size)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">kernel_cell_read(key, buf, sz, actual)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">kernel_cell_delete(key)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">kernel_cell_exists(key)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">kernel_cell_list(prefix, keys, max)</span><span class="info">→ int</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Time Manager -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">🕐</span>
+                                <h4>Time Manager</h4>
+                                <code>managers/time/</code>
+                            </div>
+                            <p>Computes current datetime from RTC boot snapshot + PIT tick count. Provides uptime, unix time, and tick queries.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">time_manager_init()</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">time_get_datetime(dt)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">time_get_unix()</span><span class="info">→ uint32_t</span></div>
+                                <div class="mono-item"><span class="name">time_get_uptime(up)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">time_get_ticks()</span><span class="info">→ uint64_t</span></div>
+                                <div class="mono-item"><span class="name">time_get_tick_frequency()</span><span class="info">→ uint32_t</span></div>
+                                <div class="mono-item"><span class="name">time_get_shared_shm_id()</span><span class="info">→ int</span></div>
+                            </div>
+                            <div>Formula: boot_time + (ticks / 50) = current_time</div>
+                        </div>
+
+                        <!-- Klog Manager -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">📝</span>
+                                <h4>Klog Manager</h4>
+                                <code>managers/klog/</code>
+                            </div>
+                            <p>Kernel logging via serial COM1 (0x3F8). Supports kernel [K] and user [U] log origins with timestamps.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">klog(level, tag, msg)</span><span class="info">→ void [K] kernel origin</span></div>
+                                <div class="mono-item"><span class="name">klog_hex(level, tag, msg, val)</span><span class="info">→ void [K]</span></div>
+                                <div class="mono-item"><span class="name">ulog(level, tag, msg)</span><span class="info">→ void [U] user origin</span></div>
+                                <div class="mono-item"><span class="name">ulog_hex(level, tag, msg, val)</span><span class="info">→ void [U]</span></div>
+                            </div>
+                            <div>Format: [MM-DD HH:MM:SS] [K/U] [LEVEL] [TAG] message</div>
+                        </div>
+
+                        <!-- GRUB Module Manager -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">📦</span>
+                                <h4>GRUB Module Manager</h4>
+                                <code>managers/grub_module/</code>
+                            </div>
+                            <p>Parses GRUB multiboot module list. Provides access to loaded binaries (executives, apps) by index or name.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">grub_module_manager_init(mbi)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">grub_module_get_count()</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">grub_module_get_address(idx)</span><span class="info">→ uint32_t</span></div>
+                                <div class="mono-item"><span class="name">grub_module_get_size(idx)</span><span class="info">→ uint32_t</span></div>
+                                <div class="mono-item"><span class="name">grub_module_get_name(idx)</span><span class="info">→ char*</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Ring3 -->
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">🚪</span>
+                                <h4>Ring3 Switch</h4>
+                                <code>managers/ring3/</code>
+                            </div>
+                            <p>One-way transition from Ring 0 to Ring 3. Sets up user-mode segments and jumps via IRET.</p>
+                            <div class="inner-box flow-text">
+                                <div class="mono-item"><span class="name">ring3_switch(entry)</span><span class="info">→ noreturn</span></div>
+                                <div class="mono-item"><span class="name">manual_first_switch()</span><span class="info">→ noreturn</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- Section 7: Syscall Layer -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <section id="syscalls">
+                <div class="section-header">
+                    <span class="icon">🔌</span>
+                    <div>
+                        <h2>7. Syscall Layer</h2>
+                        <p>INT 0x80 dispatch — 47 syscalls across 9 domains ✅</p>
+                    </div>
+                    <span class="pill pill-green">✅ 47 VERIFIED</span>
+                </div>
+
+                <!-- 7.1 Overview -->
+                <article id="syscall-overview">
+                    <h3>
+                        <span class="name">§</span> 7.1 Overview
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <p>
+                            The syscall layer is the <strong>only way</strong> Ring 3 code can access kernel services.
+                            User code triggers <code>INT 0x80</code> with 
+                            EAX = syscall number and arguments in EBX, ECX, EDX, ESI, EDI.
+                        </p>
+
+                        <!-- Flow diagram -->
+                        <div class="inner-box">
+                            <h5 class="section-label">Syscall Flow</h5>
+                            <div class="flow-center">
+                                <div class="flow-row">
+                                    <span class="pill pill-purple">User Code</span>
+                                    <span class="info">→</span>
+                                    <span class="pill pill-accent">INT 0x80</span>
+                                    <span class="info">→</span>
+                                    <span class="pill pill-orange">syscall_dispatch()</span>
+                                    <span class="info">→</span>
+                                    <span class="pill pill-green">Handler</span>
+                                    <span class="info">→</span>
+                                    <span class="pill">Manager</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="inner-box flow-text">
+                            <div>managers/syscall/</div>
+                            <div class="tree-indent">
+                                <div>├── syscall_manager.c    <span>← Dispatch table</span></div>
+                                <div>├── syscall_manager.h    <span>← API</span></div>
+                                <div>├── syscall_numbers.h    <span>← All 47 numbers</span></div>
+                                <div>└── handlers/</div>
+                                <div class="tree-indent-2">├── core_handlers.c      <span>(4 syscalls)</span></div>
+                                <div class="tree-indent-2">├── process_handlers.c   <span>(4 syscalls)</span></div>
+                                <div class="tree-indent-2">├── memory_handlers.c    <span>(4 syscalls)</span></div>
+                                <div class="tree-indent-2">├── shm_handlers.c       <span>(5 syscalls)</span></div>
+                                <div class="tree-indent-2">├── cell_handlers.c      <span>(6 syscalls)</span></div>
+                                <div class="tree-indent-2">├── device_handlers.c    <span>(7 syscalls)</span></div>
+                                <div class="tree-indent-2">├── module_handlers.c    <span>(5 syscalls)</span></div>
+                                <div class="tree-indent-2">├── time_handlers.c      <span>(6 syscalls)</span></div>
+                                <div class="tree-indent-2">└── debug_handlers.c     <span>(6 syscalls)</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 7.2 Domains -->
+                <article id="syscall-domains">
+                    <h3>
+                        <span class="name">§</span> 7.2 Syscall Domains
+                    </h3>
+                    
+                    <div class="wiki-card">
+                        <p>
+                            Syscalls are grouped into 9 domains with reserved number ranges (16 numbers per block).
+                            Each domain corresponds to a kernel manager.
+                        </p>
+
+                        <div class="table-wrap">
+                            <table class="wiki-table">
+                                <thead>
+                                    <tr>
+                                        <th>Domain</th>
+                                        <th>Range</th>
+                                        <th>Count</th>
+                                        <th>Handler File</th>
+                                        <th>Target Manager</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="name">Core</td>
+                                        <td>0 – 3</td>
+                                        <td>4</td>
+                                        <td>core_handlers.c</td>
+                                        <td>scheduler, process</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">Process</td>
+                                        <td>16 – 19</td>
+                                        <td>4</td>
+                                        <td>process_handlers.c</td>
+                                        <td>process_manager</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">Memory</td>
+                                        <td>32 – 35</td>
+                                        <td>4</td>
+                                        <td>memory_handlers.c</td>
+                                        <td>pmm, kheap</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">SHM</td>
+                                        <td>48 – 52</td>
+                                        <td>5</td>
+                                        <td>shm_handlers.c</td>
+                                        <td>shm_manager</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">Cell</td>
+                                        <td>64 – 69</td>
+                                        <td>6</td>
+                                        <td>cell_handlers.c</td>
+                                        <td>cell_manager</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">Device</td>
+                                        <td>80 – 86</td>
+                                        <td>7</td>
+                                        <td>device_handlers.c</td>
+                                        <td>device_manager</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">Module</td>
+                                        <td>96 – 100</td>
+                                        <td>5</td>
+                                        <td>module_handlers.c</td>
+                                        <td>grub_module_manager</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">Time</td>
+                                        <td>112 – 117</td>
+                                        <td>6</td>
+                                        <td>time_handlers.c</td>
+                                        <td>time_manager</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="name">Debug</td>
+                                        <td>240 – 245</td>
+                                        <td>6</td>
+                                        <td>debug_handlers.c</td>
+                                        <td>klog + diagnostics</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td>Total</td>
+                                        <td></td>
+                                        <td class="name">47</td>
+                                        <td>9 files</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 7.3 Handler Files -->
+                <article id="syscall-handlers">
+                    <h3>
+                        <span class="name">§</span> 7.3 All 47 Syscall Handlers
+                    </h3>
+                    
+                    <div>
+                        <!-- Core -->
+                        <div class="wiki-card">
+                            <h4>⚡ core_handlers.c — Core (SYS 0–3)</h4>
+                            <div class="grid-2 mono-list">
+                                <div class="mono-item"><span class="name">sys_exit(code)</span><span class="info">SYS 0</span></div>
+                                <div class="mono-item"><span class="name">sys_yield()</span><span class="info">SYS 1</span></div>
+                                <div class="mono-item"><span class="name">sys_getpid()</span><span class="info">SYS 2</span></div>
+                                <div class="mono-item"><span class="name">sys_sleep(ticks)</span><span class="info">SYS 3</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Process -->
+                        <div class="wiki-card">
+                            <h4>🔄 process_handlers.c — Process (SYS 16–19)</h4>
+                            <div class="grid-2 mono-list">
+                                <div class="mono-item"><span class="name">sys_process_create(entry)</span><span class="info">SYS 16</span></div>
+                                <div class="mono-item"><span class="name">sys_process_kill(pid)</span><span class="info">SYS 17</span></div>
+                                <div class="mono-item"><span class="name">sys_process_info(pid, info)</span><span class="info">SYS 18</span></div>
+                                <div class="mono-item"><span class="name">sys_process_get_count()</span><span class="info">SYS 19</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Memory -->
+                        <div class="wiki-card">
+                            <h4>🧠 memory_handlers.c — Memory (SYS 32–35)</h4>
+                            <div class="grid-2 mono-list">
+                                <div class="mono-item"><span class="name">sys_mem_alloc_page()</span><span class="info">SYS 32</span></div>
+                                <div class="mono-item"><span class="name">sys_mem_free_page(addr)</span><span class="info">SYS 33</span></div>
+                                <div class="mono-item"><span class="name">sys_mem_alloc(size)</span><span class="info">SYS 34</span></div>
+                                <div class="mono-item"><span class="name">sys_mem_get_stats(stats)</span><span class="info">SYS 35</span></div>
+                            </div>
+                        </div>
+
+                        <!-- SHM -->
+                        <div class="wiki-card">
+                            <h4>🔗 shm_handlers.c — SHM (SYS 48–52)</h4>
+                            <div class="grid-2 mono-list">
+                                <div class="mono-item"><span class="name">sys_shm_create(size)</span><span class="info">SYS 48</span></div>
+                                <div class="mono-item"><span class="name">sys_shm_attach(id, addr)</span><span class="info">SYS 49</span></div>
+                                <div class="mono-item"><span class="name">sys_shm_detach(id)</span><span class="info">SYS 50</span></div>
+                                <div class="mono-item"><span class="name">sys_shm_destroy(id)</span><span class="info">SYS 51</span></div>
+                                <div class="mono-item"><span class="name">sys_shm_get_info(id, info)</span><span class="info">SYS 52</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Cell -->
+                        <div class="wiki-card">
+                            <h4>🗄️ cell_handlers.c — Cell (SYS 64–69)</h4>
+                            <div class="grid-2 mono-list">
+                                <div class="mono-item"><span class="name">sys_cell_write(key, val, sz)</span><span class="info">SYS 64</span></div>
+                                <div class="mono-item"><span class="name">sys_cell_read(key, buf, sz)</span><span class="info">SYS 65</span></div>
+                                <div class="mono-item"><span class="name">sys_cell_delete(key)</span><span class="info">SYS 66</span></div>
+                                <div class="mono-item"><span class="name">sys_cell_exists(key)</span><span class="info">SYS 67</span></div>
+                                <div class="mono-item"><span class="name">sys_cell_list(prefix, keys, max)</span><span class="info">SYS 68</span></div>
+                                <div class="mono-item"><span class="name">sys_cell_get_shm_id()</span><span class="info">SYS 69</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Device -->
+                        <div class="wiki-card">
+                            <h4>📋 device_handlers.c — Device (SYS 80–86)</h4>
+                            <div class="grid-2 mono-list">
+                                <div class="mono-item"><span class="name">sys_dev_open(id, flags)</span><span class="info">SYS 80</span></div>
+                                <div class="mono-item"><span class="name">sys_dev_close(id, handle)</span><span class="info">SYS 81</span></div>
+                                <div class="mono-item"><span class="name">sys_dev_read(id, buf, sz)</span><span class="info">SYS 82</span></div>
+                                <div class="mono-item"><span class="name">sys_dev_write(id, buf, sz)</span><span class="info">SYS 83</span></div>
+                                <div class="mono-item"><span class="name">sys_dev_ioctl(id, cmd, arg)</span><span class="info">SYS 84</span></div>
+                                <div class="mono-item"><span class="name">sys_dev_poll(id)</span><span class="info">SYS 85</span></div>
+                                <div class="mono-item"><span class="name">sys_dev_list(list, max)</span><span class="info">SYS 86</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Module -->
+                        <div class="wiki-card">
+                            <h4>📦 module_handlers.c — Module (SYS 96–100)</h4>
+                            <div class="grid-2 mono-list">
+                                <div class="mono-item"><span class="name">sys_module_load(name)</span><span class="info">SYS 96</span></div>
+                                <div class="mono-item"><span class="name">sys_module_get_address(idx)</span><span class="info">SYS 97</span></div>
+                                <div class="mono-item"><span class="name">sys_module_get_size(idx)</span><span class="info">SYS 98</span></div>
+                                <div class="mono-item"><span class="name">sys_module_get_name(idx, buf, sz)</span><span class="info">SYS 99</span></div>
+                                <div class="mono-item"><span class="name">sys_module_get_count()</span><span class="info">SYS 100</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Time -->
+                        <div class="wiki-card">
+                            <h4>🕐 time_handlers.c — Time (SYS 112–117)</h4>
+                            <div class="grid-2 mono-list">
+                                <div class="mono-item"><span class="name">sys_time_get_datetime(dt)</span><span class="info">SYS 112</span></div>
+                                <div class="mono-item"><span class="name">sys_time_get_unix()</span><span class="info">SYS 113</span></div>
+                                <div class="mono-item"><span class="name">sys_time_get_uptime(up)</span><span class="info">SYS 114</span></div>
+                                <div class="mono-item"><span class="name">sys_time_get_ticks()</span><span class="info">SYS 115</span></div>
+                                <div class="mono-item"><span class="name">sys_time_get_tick_freq()</span><span class="info">SYS 116</span></div>
+                                <div class="mono-item"><span class="name">sys_time_get_shm_id()</span><span class="info">SYS 117</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Debug -->
+                        <div class="wiki-card">
+                            <h4>🐛 debug_handlers.c — Debug (SYS 240–245)</h4>
+                            <div class="grid-2 mono-list">
+                                <div class="mono-item"><span class="name">sys_klog(level, tag, msg)</span><span class="info">SYS 240</span></div>
+                                <div class="mono-item"><span class="name">sys_klog_hex(level, tag, msg, val)</span><span class="info">SYS 241</span></div>
+                                <div class="mono-item"><span class="name">sys_debug_dump_processes()</span><span class="info">SYS 242</span></div>
+                                <div class="mono-item"><span class="name">sys_debug_dump_memory()</span><span class="info">SYS 243</span></div>
+                                <div class="mono-item"><span class="name">sys_get_mem_info(buf)</span><span class="info">SYS 244 — PMM stats</span></div>
+                                <div class="mono-item"><span class="name">sys_debug_dump_devices()</span><span class="info">SYS 245</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- Section 8: Executives -->
+            <section id="executives">
+                <div class="section-header">
+                    <span class="icon">🏛️</span>
+                    <div>
+                        <h2>8. Executives</h2>
+                        <p>Ring 3 service processes that mediate between user processes and kernel syscalls</p>
+                    </div>
+                </div>
+
+                <!-- 8.1 Overview -->
+                <article id="exec-overview">
+                    <h3>
+                        <span class="num">8.1</span> Overview
+                    </h3>
+                    <div class="wiki-card">
+                        <p>
+                            Executives are Ring 3 (user-space) service processes that run alongside application processes. 
+                            Each executive owns a specific domain of functionality and provides services to other processes 
+                            via <strong>shared memory (SHM) request/response queues</strong>. Executives are started by 
+                            <code>sysman</code> (PID 1) during boot.
+                        </p>
+                        <div class="inner-box">
+                            <h4>Communication Pattern</h4>
+                            <pre class="flow-text">Client Process                     Executive Process
+──────────────                     ─────────────────
+libXXX_write(key, val)
+  → _try_init()                    _start() → main()
+    → cell_read("system.exec.XXX.req_shm")    → SHM_CREATE → CELL_WRITE(shm_id)
+    → SHM_ATTACH(shm_id)                      → loop:
+  → exe_request_queue_push(req)    →   exe_request_queue_pop(req)
+  → SYS_SLEEP poll for response    →   handle_request(req)
+  ← exe_response_queue_pop_by_id() ←   exe_response_queue_push(resp)</pre>
+                        </div>
+                        <div class="grid-3">
+                            <div class="inner-box">
+                                <h4>Boot Order</h4>
+                                <div>
+                                    <p>1. <strong>sysman</strong> (PID 1) starts</p>
+                                    <p>2. <strong>Log Executive</strong> (PID 2) — loaded 1st</p>
+                                    <p>3. <strong>Cell Executive</strong> (PID 3) — loaded 2nd</p>
+                                    <p>4. <strong>Process Executive</strong> (PID 4) — loaded 3rd</p>
+                                    <p>5. <strong>Memory Executive</strong> (PID 5) — loaded 4th</p>
+                                    <p>6. <strong>TestApp</strong> (PID 6) — loaded 5th</p>
+                                </div>
+                            </div>
+                            <div class="inner-box">
+                                <h4>SHM Queues</h4>
+                                <div>
+                                    <p><strong>Request queue</strong>: client → executive</p>
+                                    <p><strong>Response queue</strong>: executive → client</p>
+                                    <p>Discovered via <strong>cell registry</strong></p>
+                                </div>
+                            </div>
+                            <div class="inner-box">
+                                <h4>Common Framework</h4>
+                                <div>
+                                    <p><code>executive_queue.h/c</code></p>
+                                    <p>exec_request_queue_t, exec_response_queue_t</p>
+                                    <p>push/pop with spinlock protection</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 8.2 Log Executive -->
+                <article id="exec-log">
+                    <h3>
+                        <span class="num">8.2</span> Log Executive
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">📝</span>
+                            <div>
+                                <h4>Log Executive — PID 2</h4>
+                                <p class="card-sub">system/executives/logexecutive/logexecutive.c • Load addr: 0x900000</p>
+                            </div>
+                        </div>
+                        <p>
+                            The Log Executive receives log messages from all processes via a <strong>one-way SHM request queue</strong> 
+                            and writes them to the kernel log using direct <code>SYS_KLOG</code> / 
+                            <code>SYS_KLOG_HEX</code> syscalls. It is loaded <strong>first</strong> 
+                            by sysman and <strong>cannot use liblog</strong> (circular dependency — liblog is its own client).
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Startup Sequence</h4>
+                            <div class="flow-text">
+                                <p>1. <span class="name">_start</span> → <span class="name">log_main()</span></p>
+                                <p>2. <span class="name">exe_shm_create()</span> — create request SHM</p>
+                                <p>3. <span class="name">exe_shm_attach()</span> — map into own address space</p>
+                                <p>4. Initialize <span class="name">exec_request_queue_t</span></p>
+                                <p>5. <span class="name">exe_cell_write("system.exec.log.req_shm", shm_id)</span></p>
+                                <p>6. Enter main loop → pop requests → dispatch</p>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Request Handlers</h4>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">LOG_FUNC_LOG</span>
+                                    <span class="info">→ SYS_KLOG(level, tag, msg)</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">LOG_FUNC_LOG_HEX</span>
+                                    <span class="info">→ SYS_KLOG_HEX(level, tag, msg, val)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Syscalls Used (direct — no libraries)</h4>
+                        <div class="grid-2 mono-list">
+                            <div class="mono-item"><span class="name">SYS_KLOG</span><span class="info">240</span></div>
+                            <div class="mono-item"><span class="name">SYS_KLOG_HEX</span><span class="info">241</span></div>
+                            <div class="mono-item"><span class="name">SYS_CELL_WRITE</span><span class="info">64 (registration)</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_CREATE</span><span class="info">48</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_ATTACH</span><span class="info">49</span></div>
+                            <div class="mono-item"><span class="name">SYS_YIELD</span><span class="info">1</span></div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 8.3 Cell Executive -->
+                <article id="exec-cell">
+                    <h3>
+                        <span class="num">8.3</span> Cell Executive
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🗄️</span>
+                            <div>
+                                <h4>Cell Executive — PID 3</h4>
+                                <p class="card-sub">system/executives/cellexecutive/cellexecutive.c • Load addr: 0x800000</p>
+                            </div>
+                        </div>
+                        <p>
+                            The Cell Executive provides the <strong>cell registry service</strong> — a key-value store 
+                            that all executives use to discover each other's SHM queue IDs. It uses 
+                            <strong>dual SHM queues</strong> (request + response) and logs via 
+                            <code>liblog</code> (auto-init). Loaded <strong>second</strong> by sysman.
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Startup Sequence</h4>
+                            <div class="flow-text">
+                                <p>1. <span class="name">_start</span> → <span class="name">cell_main()</span></p>
+                                <p>2. Create <strong>request SHM</strong> + <strong>response SHM</strong></p>
+                                <p>3. Attach both into own address space</p>
+                                <p>4. Initialize both queues (req + resp)</p>
+                                <p>5. Register via <span class="name">exe_cell_write()</span>:</p>
+                                <p class="tree-indent">• <code>system.exec.cell.req_shm</code></p>
+                                <p class="tree-indent">• <code>system.exec.cell.resp_shm</code></p>
+                                <p>6. Enter main loop → pop req → dispatch → push resp</p>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Request Handlers (10)</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">CELL_OP_REGISTER</span></div>
+                                <div class="mono-item"><span class="name">CELL_OP_WRITE</span></div>
+                                <div class="mono-item"><span class="name">CELL_OP_READ</span></div>
+                                <div class="mono-item"><span class="name">CELL_OP_WRITE_INT</span></div>
+                                <div class="mono-item"><span class="name">CELL_OP_READ_INT</span></div>
+                                <div class="mono-item"><span class="name">CELL_OP_DELETE</span></div>
+                                <div class="mono-item"><span class="name">CELL_OP_LOOKUP</span></div>
+                                <div class="mono-item"><span class="name">CELL_OP_EXISTS</span></div>
+                                <div class="mono-item"><span class="name">CELL_OP_GET_INFO</span></div>
+                                <div class="mono-item"><span class="name">CELL_OP_PING</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Syscalls Used (direct — for own service operations)</h4>
+                        <div class="grid-2 mono-list">
+                            <div class="mono-item"><span class="name">SYS_CELL_WRITE</span><span class="info">64</span></div>
+                            <div class="mono-item"><span class="name">SYS_CELL_READ</span><span class="info">65</span></div>
+                            <div class="mono-item"><span class="name">SYS_CELL_DELETE</span><span class="info">66</span></div>
+                            <div class="mono-item"><span class="name">SYS_CELL_EXISTS</span><span class="info">67</span></div>
+                            <div class="mono-item"><span class="name">SYS_CELL_WRITE_INT</span><span class="info">68</span></div>
+                            <div class="mono-item"><span class="name">SYS_CELL_READ_INT</span><span class="info">69</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_CREATE</span><span class="info">48</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_ATTACH</span><span class="info">49</span></div>
+                            <div class="mono-item"><span class="name">SYS_YIELD</span><span class="info">1</span></div>
+                            <div class="mono-item"><span class="name">SYS_SLEEP</span><span class="info">3</span></div>
+                        </div>
+                        <p>Logging via <code>liblog</code> (auto-init, falls back to direct SYS_KLOG if Log Executive not ready)</p>
+                    </div>
+                </article>
+
+                <!-- 8.4 Process Executive -->
+                <article id="exec-process">
+                    <h3>
+                        <span class="num">8.4</span> Process Executive
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🔄</span>
+                            <div>
+                                <h4>Process Executive — PID 4</h4>
+                                <p class="card-sub">system/executives/processexecutive/process_executive.c • Load addr: 0xA00000</p>
+                            </div>
+                        </div>
+                        <p>
+                            The Process Executive manages user-space process lifecycle — creating, terminating, and querying processes.
+                            It acts as a <strong>smart, memory-aware policy gatekeeper</strong> between user apps and the kernel 
+                            <code>process_manager</code>. Uses <strong>dual SHM queues</strong> 
+                            (request + response) and relies on <code>liblog</code> (auto-init) for logging 
+                            and <code>libcell</code> (auto-init) for cell publishing. 
+                            Loaded <strong>third</strong> by sysman (after Log and Cell Executives).
+                            Periodically monitors system memory via <code>SYS_GET_MEM_INFO</code> and publishes 
+                            metrics to the cell registry. <strong>Refuses process creation</strong> when memory 
+                            pressure is critical (&lt;5% free).
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Startup Sequence</h4>
+                            <div class="flow-text">
+                                <p>1. <span class="name">_start</span> → <span class="name">exe_process_main()</span></p>
+                                <p>2. Create <strong>request SHM</strong> + <strong>response SHM</strong></p>
+                                <p>3. Attach both into own address space</p>
+                                <p>4. Initialize both queues (req + resp)</p>
+                                <p>5. Register via <span class="name">libcell_write()</span>:</p>
+                                <p class="tree-indent">• <code>system.exec.process.req_shm</code></p>
+                                <p class="tree-indent">• <code>system.exec.process.resp_shm</code></p>
+                                <p>6. Enter main loop → pop req → dispatch → push resp</p>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Request Handlers (5)</h4>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">PROC_OP_CREATE</span>
+                                    <span class="info">→ memory guard + module_copy + process_create</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">PROC_OP_KILL</span>
+                                    <span class="info">→ SYS_PROCESS_KILL</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">PROC_OP_GET_INFO</span>
+                                    <span class="info">→ SYS_PROCESS_INFO</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">PROC_OP_GET_COUNT</span>
+                                    <span class="info">→ SYS_PROCESS_GET_COUNT</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">EXEC_OP_PING</span>
+                                    <span class="info">→ returns 0 (alive check)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Create Pipeline</h4>
+                            <div class="flow-text">
+                                <p>1. Client sends <span class="name">PROC_OP_CREATE</span> with module_index + load_address</p>
+                                <p>2. Executive checks <strong>memory pressure</strong> — refuses with EXEC_ERR_NO_MEMORY if critical</p>
+                                <p>3. Executive calls <span class="name">SYS_MODULE_COPY</span> to copy GRUB module to load_address</p>
+                                <p>4. Executive calls <span class="name">SYS_PROCESS_CREATE</span> with entry point = load_address</p>
+                                <p>5. Updates <code>system.process.active_count</code> cell</p>
+                                <p>6. Returns new PID in response</p>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Data Structures</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">proc_create_req_t</span> <span class="info">{ module_index, load_address }</span></div>
+                                <div class="mono-item"><span class="name">proc_kill_req_t</span> <span class="info">{ pid }</span></div>
+                                <div class="mono-item"><span class="name">proc_info_req_t</span> <span class="info">{ pid }</span></div>
+                                <div class="mono-item"><span class="name">process_info_t</span> <span class="info">{ pid, state }</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Syscalls Used (direct — for own service operations)</h4>
+                        <div class="grid-2 mono-list">
+                            <div class="mono-item"><span class="name">SYS_PROCESS_CREATE</span><span class="info">16</span></div>
+                            <div class="mono-item"><span class="name">SYS_PROCESS_KILL</span><span class="info">17</span></div>
+                            <div class="mono-item"><span class="name">SYS_PROCESS_INFO</span><span class="info">18</span></div>
+                            <div class="mono-item"><span class="name">SYS_PROCESS_GET_COUNT</span><span class="info">19</span></div>
+                            <div class="mono-item"><span class="name">SYS_MODULE_COPY</span><span class="info">97</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_CREATE</span><span class="info">48</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_ATTACH</span><span class="info">49</span></div>
+                            <div class="mono-item"><span class="name">SYS_GET_MEM_INFO</span><span class="info">244</span></div>
+                            <div class="mono-item"><span class="name">SYS_YIELD</span><span class="info">1</span></div>
+                        </div>
+                        <p>Logging via <code>liblog</code> (auto-init) · Cell publishing via <code>libcell</code> (auto-init)</p>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Smart Memory Monitoring</h4>
+                        <div class="notes-grid">
+                            <div>
+                                <p>Periodic Monitoring</p>
+                                <p>Every 200 idle cycles (~4 seconds at 50Hz), calls <code>SYS_GET_MEM_INFO</code> to query
+                                PMM total/free/used bytes. Publishes to cell registry: <code>system.memory.total</code>,
+                                <code>system.memory.free</code>, <code>system.memory.used</code>.</p>
+                            </div>
+                            <div>
+                                <p>Memory Pressure Levels</p>
+                                <p><strong>0 = Normal</strong> — free &gt; 10% of total.<br>
+                                <strong>1 = Warning</strong> — free &lt; 10% of total (logged).<br>
+                                <strong>2 = Critical</strong> — free &lt; 5% of total (process creation refused).</p>
+                            </div>
+                            <div>
+                                <p>Active Process Count</p>
+                                <p>After every successful create or kill, calls <code>SYS_PROCESS_GET_COUNT</code> and
+                                writes result to <code>system.process.active_count</code> cell.</p>
+                            </div>
+                            <div>
+                                <p>Create Guard</p>
+                                <p>If <code>g_memory_pressure >= 2</code> (critical), <code>PROC_OP_CREATE</code> returns
+                                <code>EXEC_ERR_NO_MEMORY (-5)</code> without attempting the syscall.</p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 8.5 Memory Executive -->
+                <article id="exec-memory">
+                    <h3>
+                        <span class="num">8.5</span> Memory Executive
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🧠</span>
+                            <div>
+                                <h4>Memory Executive — PID 5</h4>
+                                <p class="card-sub">system/executives/memoryexecutive/memory_executive.c • Load addr: 0xC00000</p>
+                            </div>
+                        </div>
+                        <p>
+                            The Memory Executive manages user-space memory operations — page allocation/free, 
+                            block allocation, shared memory lifecycle, and memory info queries.
+                            It acts as a <strong>policy gatekeeper</strong> between user apps and the kernel 
+                            PMM, paging, and SHM managers. Uses <strong>dual SHM queues</strong> 
+                            (request + response) and relies on <code>liblog</code> (auto-init) for logging 
+                            and <code>libcell</code> (auto-init) for cell registration. 
+                            Loaded <strong>fourth</strong> by sysman (after Log, Cell, and Process Executives).
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Startup Sequence</h4>
+                            <div class="flow-text">
+                                <p>1. <span class="name">_start</span> → <span class="name">exe_memory_main()</span></p>
+                                <p>2. Create <strong>request SHM</strong> + <strong>response SHM</strong></p>
+                                <p>3. Attach both into own address space</p>
+                                <p>4. Initialize both queues (req + resp)</p>
+                                <p>5. Register via <span class="name">libcell_write()</span>:</p>
+                                <p class="tree-indent">• <code>system.exec.memory.req_shm</code></p>
+                                <p class="tree-indent">• <code>system.exec.memory.resp_shm</code></p>
+                                <p>6. Enter main loop → pop req → dispatch → push resp</p>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Request Handlers (8)</h4>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">MEM_OP_ALLOC_PAGE</span>
+                                    <span class="info">→ SYS_MEM_ALLOC_PAGE</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">MEM_OP_FREE_PAGE</span>
+                                    <span class="info">→ SYS_MEM_FREE_PAGE</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">MEM_OP_ALLOC</span>
+                                    <span class="info">→ SYS_MEM_ALLOC</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">MEM_OP_GET_INFO</span>
+                                    <span class="info">→ SYS_GET_MEM_INFO (244)</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">MEM_OP_SHM_CREATE</span>
+                                    <span class="info">→ SYS_SHM_CREATE</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">MEM_OP_SHM_ATTACH</span>
+                                    <span class="info">→ SYS_SHM_ATTACH</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">MEM_OP_SHM_DETACH</span>
+                                    <span class="info">→ SYS_SHM_DETACH</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">MEM_OP_SHM_DELETE</span>
+                                    <span class="info">→ SYS_SHM_DESTROY</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Data Structures</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">memory_info_t</span> <span class="info">{ total_memory, free_memory, used_memory }</span></div>
+                                <div class="mono-item"><span class="name">mem_free_page_req_t</span> <span class="info">{ address }</span></div>
+                                <div class="mono-item"><span class="name">mem_alloc_req_t</span> <span class="info">{ size }</span></div>
+                                <div class="mono-item"><span class="name">mem_shm_create_req_t</span> <span class="info">{ size }</span></div>
+                                <div class="mono-item"><span class="name">mem_shm_attach_req_t</span> <span class="info">{ shm_id }</span></div>
+                                <div class="mono-item"><span class="name">mem_shm_detach_req_t</span> <span class="info">{ address }</span></div>
+                                <div class="mono-item"><span class="name">mem_shm_delete_req_t</span> <span class="info">{ shm_id }</span></div>
+                                <div class="mono-item"><span class="name">mem_info_resp_t</span> <span class="info">{ info: memory_info_t }</span></div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Design Notes</h4>
+                            <div class="notes-grid">
+                                <div>
+                                    <p>Opcodes</p>
+                                    <p>All 8 opcodes start at <code>EXEC_OP_CUSTOM_BASE + 0..7</code> (i.e., 16–23). 
+                                    Defined in <code>memory_executive.h</code>.</p>
+                                </div>
+                                <div>
+                                    <p>Memory Info</p>
+                                    <p><code>MEM_OP_GET_INFO</code> calls <code>SYS_GET_MEM_INFO</code> (syscall 244) 
+                                    which queries <code>pmm_get_total_pages()</code> / <code>pmm_get_used_pages()</code> 
+                                    and returns bytes in a <code>memory_info_t</code> struct.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Syscalls Used (direct — for own service operations)</h4>
+                        <div class="grid-2 mono-list">
+                            <div class="mono-item"><span class="name">SYS_MEM_ALLOC_PAGE</span><span class="info">32</span></div>
+                            <div class="mono-item"><span class="name">SYS_MEM_FREE_PAGE</span><span class="info">33</span></div>
+                            <div class="mono-item"><span class="name">SYS_MEM_ALLOC</span><span class="info">34</span></div>
+                            <div class="mono-item"><span class="name">SYS_GET_MEM_INFO</span><span class="info">244</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_CREATE</span><span class="info">48</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_ATTACH</span><span class="info">49</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_DETACH</span><span class="info">50</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_DESTROY</span><span class="info">51</span></div>
+                            <div class="mono-item"><span class="name">SYS_YIELD</span><span class="info">1</span></div>
+                        </div>
+                        <p>Logging via <code>liblog</code> (auto-init) · Cell registration via <code>libcell</code> (auto-init)</p>
+                    </div>
+                </article>
+            </section>
+            <section id="libraries">
+                <div class="section-header">
+                    <span class="icon">📚</span>
+                    <div>
+                        <h2>9. Libraries</h2>
+                        <p>User-space client libraries that abstract executive communication</p>
+                    </div>
+                </div>
+
+                <!-- 9.1 Overview -->
+                <article id="lib-overview">
+                    <h3>
+                        <span class="num">9.1</span> Overview
+                    </h3>
+                    <div class="wiki-card">
+                        <p>
+                            Libraries are <strong>client-side code</strong> that run inside the calling process's address space.
+                            They provide a simple API that hides the complexity of SHM queue discovery, attachment, 
+                            and request/response marshalling. All libraries follow the <strong>lazy auto-init</strong> pattern.
+                        </p>
+                        <div class="inner-box">
+                            <h4>Lazy Auto-Init Pattern</h4>
+                            <pre class="flow-text">Every API call:
+  1. if (!g_initialized) → _try_init()
+     a. Read executive's SHM ID from cell registry
+     b. Attach SHM into THIS process's address space
+     c. Set g_initialized = 1
+  2. if (g_queue) → push request to SHM queue
+  3. else → fallback to direct kernel syscall</pre>
+                        </div>
+                        <div class="grid-2">
+                            <div class="inner-box">
+                                <h4>Key Design Decisions</h4>
+                                <div>
+                                    <p>• <strong>No explicit init() needed</strong> — auto-called on first use</p>
+                                    <p>• <strong>Graceful fallback</strong> — works even if executive not running</p>
+                                    <p>• <strong>Per-process state</strong> — each process attaches SHM independently</p>
+                                    <p>• <strong>init() still available</strong> — can be called explicitly if needed</p>
+                                </div>
+                            </div>
+                            <div class="inner-box">
+                                <h4>Location</h4>
+                                <div>
+                                    <p><code>system/libraries/liblog/</code> — Logging</p>
+                                    <p><code>system/libraries/libcell/</code> — Cell registry</p>
+                                    <p><code>system/libraries/libprocess/</code> — Process management</p>
+                                    <p><code>system/libraries/libmemory/</code> — Memory management</p>
+                                    <p>Linked into each user process at build time</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.2 liblog -->
+                <article id="lib-liblog">
+                    <h3>
+                        <span class="num">9.2</span> liblog
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">📝</span>
+                            <div>
+                                <h4>liblog — Logging Library</h4>
+                                <p class="card-sub">system/libraries/liblog/liblog.c • Client for Log Executive</p>
+                            </div>
+                        </div>
+                        <p>
+                            Provides <code>liblog()</code> and <code>liblog_hex()</code> 
+                            for user-space logging. Auto-initializes on first call by discovering the Log Executive's SHM queue via 
+                            <code>system.exec.log.req_shm</code> cell. If the Log Executive is not running yet, 
+                            falls back to direct <code>SYS_KLOG</code> kernel syscall.
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Public API</h4>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">liblog_init()</span>
+                                    <span class="info">int (optional)</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">liblog(level, tag, msg)</span>
+                                    <span class="info">void</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">liblog_hex(level, tag, msg, val)</span>
+                                    <span class="info">void</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Internal Flow</h4>
+                            <div class="flow-text">
+                                <p>1. <span class="name">liblog()</span> called</p>
+                                <p>2. <span class="name">_liblog_try_init()</span> if !g_initialized</p>
+                                <p>3a. if g_queue → push to SHM request queue</p>
+                                <p>3b. else → <span class="name">_liblog_direct_klog()</span> via SYS_KLOG</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Design Notes</h4>
+                        <div class="notes-grid">
+                            <div>
+                                <p>One-way queue</p>
+                                <p>No response queue needed — log messages are fire-and-forget. The Log Executive pops requests and calls SYS_KLOG.</p>
+                            </div>
+                            <div>
+                                <p>Fallback path</p>
+                                <p>If Log Executive hasn't registered its SHM cell yet, <code>_liblog_direct_klog()</code> calls SYS_KLOG directly — messages still appear in serial log.</p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.3 libcell -->
+                <article id="lib-libcell">
+                    <h3>
+                        <span class="num">9.3</span> libcell
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🗄️</span>
+                            <div>
+                                <h4>libcell — Cell Registry Library</h4>
+                                <p class="card-sub">system/libraries/libcell/libcell.c • Client for Cell Executive</p>
+                            </div>
+                        </div>
+                        <p>
+                            Provides the cell key-value store API for user processes. Auto-initializes on first call by discovering 
+                            <strong>two SHM queues</strong> from the cell registry: 
+                            <code>system.exec.cell.req_shm</code> and 
+                            <code>system.exec.cell.resp_shm</code>. 
+                            Falls back to direct <code>SYS_CELL_*</code> kernel syscalls if the Cell Executive is not running.
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Public API</h4>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">libcell_init()</span>
+                                    <span class="info">int (optional)</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libcell_write(key, val, sz)</span>
+                                    <span class="info">int</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libcell_read(key, buf, sz)</span>
+                                    <span class="info">int</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libcell_write_int(key, val)</span>
+                                    <span class="info">int</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libcell_read_int(key, out)</span>
+                                    <span class="info">int</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libcell_delete(key)</span>
+                                    <span class="info">int</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libcell_exists(key)</span>
+                                    <span class="info">int</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Internal Flow</h4>
+                            <div class="flow-text">
+                                <p>1. <span class="name">libcell_write()</span> called</p>
+                                <p>2. <span class="name">_libcell_try_init()</span> if !g_initialized</p>
+                                <p>3a. if g_req_queue → <span class="name">_send_and_wait()</span>:</p>
+                                <p class="tree-indent">→ push request to SHM</p>
+                                <p class="tree-indent">→ loop: pop_by_id + SYS_SLEEP(1)</p>
+                                <p class="tree-indent">→ return response status</p>
+                                <p>3b. else → direct <span class="name">SYS_CELL_WRITE</span> syscall</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Design Notes</h4>
+                        <div class="notes-grid">
+                            <div>
+                                <p>Two-way queues</p>
+                                <p>Unlike liblog, libcell needs <strong>response data</strong> (read values, existence checks). 
+                                Both request and response SHM queues are discovered from the cell registry and attached per-process.</p>
+                            </div>
+                            <div>
+                                <p>_send_and_wait()</p>
+                                <p>Assigns a unique <code>msg_id</code>, pushes request, then polls 
+                                <code>exe_response_queue_pop_by_id()</code> up to 100 times with 
+                                <code>SYS_SLEEP(1)</code> between checks.</p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.4 libprocess -->
+                <article id="lib-libprocess">
+                    <h3>
+                        <span class="num">9.4</span> libprocess
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🔄</span>
+                            <div>
+                                <h4>libprocess — Process Management Library</h4>
+                                <p class="card-sub">system/libraries/libprocess/libprocess.c • Client for Process Executive</p>
+                            </div>
+                        </div>
+                        <p>
+                            Provides process lifecycle operations for user-space callers. Auto-initializes on first call by discovering 
+                            <strong>two SHM queues</strong> from the cell registry: 
+                            <code>system.exec.process.req_shm</code> and 
+                            <code>system.exec.process.resp_shm</code>. 
+                            Falls back to direct <code>SYS_PROCESS_*</code> kernel syscalls if the Process Executive is not running.
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Public API</h4>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">libprocess_init()</span>
+                                    <span class="info">int (optional)</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libprocess_create(module_idx, load_addr)</span>
+                                    <span class="info">int: pid</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libprocess_kill(pid)</span>
+                                    <span class="info">int</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libprocess_get_info(pid, info)</span>
+                                    <span class="info">int</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libprocess_get_count()</span>
+                                    <span class="info">int</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Internal Flow</h4>
+                            <div class="flow-text">
+                                <p>1. <span class="name">libprocess_create()</span> called</p>
+                                <p>2. <span class="name">_libprocess_try_init()</span> if !g_initialized</p>
+                                <p>3a. if g_req_queue → <span class="name">_send_and_wait()</span>:</p>
+                                <p class="tree-indent">→ build PROC_OP_CREATE request</p>
+                                <p class="tree-indent">→ push to SHM queue</p>
+                                <p class="tree-indent">→ poll response by msg_id + SYS_SLEEP(1)</p>
+                                <p class="tree-indent">→ return response.result (= new PID)</p>
+                                <p>3b. else → direct <span class="name">SYS_PROCESS_CREATE</span> syscall</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Design Notes</h4>
+                        <div class="notes-grid">
+                            <div>
+                                <p>Two-way queues</p>
+                                <p>Like libcell, libprocess needs <strong>response data</strong> (new PID from create, process info from queries). 
+                                Both request and response SHM queues are discovered from the cell registry and attached per-process.</p>
+                            </div>
+                            <div>
+                                <p>Fallback path</p>
+                                <p>If Process Executive hasn't registered its SHM cells yet, each API function falls back to the 
+                                corresponding direct <code>SYS_PROCESS_*</code> kernel syscall. 
+                                Note: fallback for <code>libprocess_create()</code> requires the caller 
+                                to have already copied the module — only the executive does module_copy + process_create atomically.</p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.5 libmemory -->
+                <article id="lib-libmemory">
+                    <h3>
+                        <span class="num">9.5</span> libmemory
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🧠</span>
+                            <div>
+                                <h4>libmemory — Memory Management Library</h4>
+                                <p class="card-sub">system/libraries/libmemory/libmemory.c • Client for Memory Executive</p>
+                            </div>
+                        </div>
+                        <p>
+                            Provides page allocation, block allocation, shared memory lifecycle, and memory info queries 
+                            for user-space callers. Auto-initializes on first call by discovering 
+                            <strong>two SHM queues</strong> from the cell registry: 
+                            <code>system.exec.memory.req_shm</code> and 
+                            <code>system.exec.memory.resp_shm</code>. 
+                            Falls back to direct <code>SYS_MEM_*</code> / <code>SYS_SHM_*</code> kernel syscalls 
+                            if the Memory Executive is not running.
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Public API</h4>
+                            <div>
+                                <div class="mono-item">
+                                    <span class="name">libmemory_init()</span>
+                                    <span class="info">int (optional)</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libmemory_shutdown()</span>
+                                    <span class="info">void</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libmem_alloc_page()</span>
+                                    <span class="info">void*</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libmem_free_page(ptr)</span>
+                                    <span class="info">int</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libmem_alloc(size)</span>
+                                    <span class="info">void*</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libmem_shm_create(size)</span>
+                                    <span class="info">int: shm_id</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libmem_shm_attach(shm_id)</span>
+                                    <span class="info">void*</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libmem_shm_detach(ptr)</span>
+                                    <span class="info">int</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libmem_shm_delete(shm_id)</span>
+                                    <span class="info">int</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libmem_get_info(info)</span>
+                                    <span class="info">int</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Internal Flow</h4>
+                            <div class="flow-text">
+                                <p>1. <span class="name">libmem_alloc_page()</span> called</p>
+                                <p>2. <span class="name">_libmemory_try_init()</span> if !g_initialized</p>
+                                <p>3a. if g_req_queue → <span class="name">_send_and_wait()</span>:</p>
+                                <p class="tree-indent">→ build MEM_OP_ALLOC_PAGE request</p>
+                                <p class="tree-indent">→ push to SHM queue</p>
+                                <p class="tree-indent">→ poll response by msg_id + SYS_SLEEP(1)</p>
+                                <p class="tree-indent">→ return response.result (= page address)</p>
+                                <p>3b. else → direct <span class="name">SYS_MEM_ALLOC_PAGE</span> syscall</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Design Notes</h4>
+                        <div class="notes-grid">
+                            <div>
+                                <p>Two-way queues</p>
+                                <p>Like libcell and libprocess, libmemory needs <strong>response data</strong> (addresses from alloc, 
+                                memory_info_t from get_info). Both request and response SHM queues are discovered from the cell registry 
+                                and attached per-process.</p>
+                            </div>
+                            <div>
+                                <p>Fallback path</p>
+                                <p>If Memory Executive hasn't registered its SHM cells yet, each API function falls back to the 
+                                corresponding direct <code>SYS_MEM_*</code> or <code>SYS_SHM_*</code> kernel syscall.
+                                <code>libmem_get_info()</code> falls back to <code>SYS_GET_MEM_INFO</code> (244).</p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- Footer -->
+            <footer>
+                <div>
+                    <p>MaahiOS Wiki • Last updated: February 2026 • Drivers ✅ Managers ✅ Syscalls ✅ Executives ✅ Libraries ✅</p>
+                    <p>Built with 💙 for MaahiOS</p>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <!-- Scroll to top button -->
+    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="scroll-top">↑</button>
+
+</body>
+</html>

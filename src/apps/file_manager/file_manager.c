@@ -5,7 +5,7 @@
  * Full navigation support: double-click folders, go up, path display
  */
 
-#include "../../Libraries/maahi.h"
+#include "../../system/libraries/maahi.h"
 
 /* Navigation stack for going back up */
 #define MAX_PATH_DEPTH 8

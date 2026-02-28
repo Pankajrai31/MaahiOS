@@ -2,28 +2,14 @@
 #define PIT_H
 
 #include <stdint.h>
-
-/* Port I/O functions */
-static inline void outb(unsigned short port, unsigned char val) {
-    asm volatile("outb %0, %1" : : "a"(val), "Nd"(port));
-}
-
-static inline unsigned char inb(unsigned short port) {
-    unsigned char ret;
-    asm volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
+#include "../../system/libraries/shared/io.h"
 
 /**
  * Initialize Programmable Interval Timer
  * frequency: Timer interrupts per second (Hz)
+ * Returns: 0 on success
  */
-void pit_init(unsigned int frequency);
-
-/**
- * PIT interrupt handler (called from interrupt stub)
- */
-void pit_handler(void);
+int pit_init(unsigned int frequency);
 
 /**
  * PIT handler with context switching support
@@ -33,14 +19,14 @@ void pit_handler(void);
 uint32_t pit_handler_with_context(uint32_t current_esp);
 
 /**
- * PIT IRQ handler (called from interrupt stub)
+ * Get total ticks since boot (32-bit)
  */
-void pit_handler();
+unsigned int pit_get_ticks(void);
 
 /**
- * Get total ticks since boot
+ * Get total ticks since boot (64-bit)
  */
-unsigned int pit_get_ticks();
+uint64_t pit_get_ticks64(void);
 
 /**
  * Busy-wait for specified ticks

@@ -11,7 +11,6 @@ extern void vga_print(const char *s);
 extern void vga_clear(void);
 extern void vga_set_color(unsigned char fg, unsigned char bg);
 extern void vga_print_at(int x, int y, const char *s);
-extern void ring3_switch(unsigned int entry_point);
 extern unsigned int sysman_entry_point;
 
 /* Process management */
@@ -19,10 +18,18 @@ extern int scheduler_get_current_pid(void);
 extern int process_terminate(int pid);
 extern void scheduler_remove_process(int pid);
 
-/* Serial output helpers */
+/* Serial output helpers - use proper x86 I/O port instructions */
+static inline unsigned char exc_inb(unsigned short port) {
+    unsigned char val;
+    __asm__ volatile("inb %1, %0" : "=a"(val) : "Nd"(port));
+    return val;
+}
+static inline void exc_outb(unsigned short port, unsigned char val) {
+    __asm__ volatile("outb %0, %1" : : "a"(val), "Nd"(port));
+}
 static void serial_putc(char c) {
-    while ((*(volatile unsigned char*)0x3FD & 0x20) == 0);
-    *(volatile unsigned char*)0x3F8 = c;
+    while ((exc_inb(0x3FD) & 0x20) == 0);  /* Wait for transmit buffer empty */
+    exc_outb(0x3F8, c);
 }
 
 static void serial_puts(const char *s) {
@@ -297,8 +304,51 @@ static void handle_kernel_exception(unsigned int exception_num, unsigned int err
     vga_print_at(2, 20, "The system has been halted to prevent data corruption.");
     vga_print_at(2, 21, "Please reboot your system.");
     
+    /* *** DUMP EXCEPTION DETAILS TO SERIAL *** */
+    serial_puts("\n\n======================================================================\n");
+    serial_puts("          KERNEL MODE EXCEPTION - BLACKHOLE\n");
+    serial_puts("======================================================================\n");
+    serial_puts("  Exception: ");
+    serial_puts(get_exception_name(exception_num));
+    serial_puts(" (#");
+    serial_hex(exception_num);
+    serial_puts(")\n");
+    serial_puts("  Error Code: ");
+    serial_hex(error_code);
+    serial_puts("\n");
+    serial_puts("  EIP: ");
+    serial_hex(eip);
+    serial_puts("\n");
+    serial_puts("  CR2: ");
+    serial_hex(cr2);
+    serial_puts("\n");
+    serial_puts("  CR3: ");
+    serial_hex(cr3);
+    serial_puts("\n");
+    serial_puts("  EAX: ");
+    serial_hex(eax);
+    serial_puts("  EBX: ");
+    serial_hex(ebx);
+    serial_puts("\n");
+    serial_puts("  ECX: ");
+    serial_hex(ecx);
+    serial_puts("  EDX: ");
+    serial_hex(edx);
+    serial_puts("\n");
+    if (exception_num == 14) {
+        serial_puts("  Page Fault: ");
+        if (error_code & 0x1) serial_puts("Protection");
+        else serial_puts("Not-Present");
+        if (error_code & 0x2) serial_puts(", Write");
+        else serial_puts(", Read");
+        if (error_code & 0x4) serial_puts(", User");
+        else serial_puts(", Kernel");
+        serial_puts("\n");
+    }
+    serial_puts("======================================================================\n");
+
     /* *** DUMP KLOG BEFORE HALTING *** */
-    serial_puts("\n\n[EXCEPTION] Dumping kernel log before halt...\n");
+    serial_puts("\n[EXCEPTION] Dumping kernel log before halt...\n");
     extern void klog_dump(void);
     klog_dump();  /* Dumps entire log buffer to serial */
     serial_puts("[EXCEPTION] Log dump complete. System halted.\n\n");
@@ -310,26 +360,38 @@ static void handle_kernel_exception(unsigned int exception_num, unsigned int err
 }
 
 /* Main exception handler */
-void exception_handler(unsigned int exception_num, unsigned int error_code) {
-    /* Stack layout when we enter:
-     * Assembly stub pushed: eax,ebx,ecx,edx,esi,edi,ebp (28 bytes)
-     * Before that: exception_num, error_code (8 bytes)
-     * Before that, CPU pushed: EIP, CS, EFLAGS (and ESP,SS if privilege change)
+void exception_handler(unsigned int dummy1, unsigned int dummy2) {
+    /* NOTE: dummy1/dummy2 are NOT the real exception_num/error_code!
+     * The assembly stub doesn't set up C calling convention properly.
+     * We must read values directly from the stack using known offsets.
      * 
-     * Current ESP points to saved EAX
-     * ESP+28 = exception_num
-     * ESP+32 = error_code  
-     * ESP+36 = EIP (pushed by CPU)
-     * ESP+40 = CS (pushed by CPU) <- We need this!
+     * Stack layout (relative to EBP after compiler prologue):
+     * [EBP+0]  = saved EBP (compiler prologue)
+     * [EBP+4]  = return address (from call exception_handler)
+     * [EBP+8]  = saved EBP (exception_common pusha)
+     * [EBP+12] = saved EDI
+     * [EBP+16] = saved ESI
+     * [EBP+20] = saved EDX
+     * [EBP+24] = saved ECX
+     * [EBP+28] = saved EBX
+     * [EBP+32] = saved EAX
+     * [EBP+36] = exception_num (pushed by stub)
+     * [EBP+40] = error_code (pushed by stub)
+     * [EBP+44] = EIP (pushed by CPU)
+     * [EBP+48] = CS (pushed by CPU)
      */
+    (void)dummy1;
+    (void)dummy2;
     
-    unsigned int cs, eip, cr2;
+    unsigned int exception_num, error_code, cs, eip, cr2;
     
     __asm__ volatile(
-        "movl 36(%%esp), %0\n"
-        "movl 40(%%esp), %1\n"
-        "movl %%cr2, %2"
-        : "=r"(eip), "=r"(cs), "=r"(cr2)
+        "movl 36(%%ebp), %0\n"
+        "movl 40(%%ebp), %1\n"
+        "movl 44(%%ebp), %2\n"
+        "movl 48(%%ebp), %3\n"
+        "movl %%cr2, %4"
+        : "=r"(exception_num), "=r"(error_code), "=r"(eip), "=r"(cs), "=r"(cr2)
     );
     
     /* Check CS lowest 2 bits for privilege level */

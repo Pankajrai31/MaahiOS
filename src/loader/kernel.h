@@ -41,7 +41,6 @@ void serial_hex(unsigned char value);
 void vga_clear(void);
 void vga_print(const char *s);
 void vga_set_color(unsigned char fg, unsigned char bg);
-void vga_draw_box(int x, int y, int width, int height);
 void vga_print_at(int x, int y, const char *s);
 
 /* BGA/Graphics driver */
@@ -62,10 +61,6 @@ void gfx_clear(uint32_t color);
 void gfx_fill_rect(int x, int y, int width, int height, uint32_t color);
 void gfx_draw_string(int x, int y, const char *str, uint32_t fg, uint32_t bg);
 
-/* Font manager */
-void font_init(void);
-int font_draw_string(int x, int y, const char *text, uint32_t color, int size);
-
 /* GDT manager */
 int gdt_init(void);
 int gdt_load(void);
@@ -77,7 +72,7 @@ int idt_install_exception_handlers(void);
 int idt_install_mouse_handler(void);
 
 /* IRQ manager */
-void irq_manager_init(void);
+int irq_manager_init(void);
 void irq_enable_mouse(void);
 void irq_enable_timer(void);
 
@@ -86,40 +81,47 @@ int pmm_init(struct multiboot_info *mbi);
 int paging_init(struct multiboot_info *mbi);
 void pmm_mark_region_used(uint32_t start, uint32_t end);
 void identity_map_region(uint32_t *page_dir, uint32_t start, uint32_t end);
-void kheap_init(void);
+int kheap_init(void);
 
 /* Kernel logger */
 void klog_manager_init(void);
 
 /* Process manager */
-void process_manager_init(void);
+int process_manager_init(void);
 int process_create(uint32_t entry_point);
 
-/* Window management */
-void windows_mgmt_init(void);
+/* Shared Memory manager */
+int shm_manager_init(void);
+
+/* Cell manager (key-value store) */
+int cell_manager_init(void);
+
+/* GRUB module manager */
+int grub_module_manager_init(uint32_t mods_count, uint32_t mods_addr);
+
+/* Time manager */
+int time_manager_init(void);
+
+/* Syscall manager */
+int syscall_manager_init(void);
 
 /* Scheduler */
-void scheduler_init(void);
+int scheduler_init(void);
 void scheduler_enable(void);
 
 /* Timer */
-void pit_init(unsigned int frequency);
+int pit_init(unsigned int frequency);
 
 /* Input drivers */
 int mouse_init(void);
-void keyboard_init(void);
+int keyboard_init(void);
 
 /* Disk subsystem */
-void disk_subsystem_init(void);
+int disk_subsystem_init(void);
 
 /* Global variables for module addresses */
-extern unsigned int sysman_entry_point;
 extern unsigned int uimanager_module_address;
 extern unsigned int orbit_module_address;
-extern unsigned int file_manager_module_address;
-extern unsigned int file_manager_module_size;
-extern unsigned int disk_manager_module_address;
-extern unsigned int disk_manager_module_size;
 extern uint32_t *kernel_page_directory;
 
 #endif /* KERNEL_H */

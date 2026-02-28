@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # MaahiOS Build Script
-# Builds the kernel and creates bootable ISO
+# Builds the kernel + sysman and creates bootable ISO
 
 set -e
 
@@ -20,489 +20,348 @@ BUILD_DIR="."
 BINARIES_DIR="./binaries"
 ISODIR="./isodir"
 
+# Common compiler flags
+KFLAGS="-ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32"
+UFLAGS="-ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32"
+
 echo -e "${YELLOW}======================================${NC}"
-echo -e "${YELLOW}MaahiOS Build System${NC}"
+echo -e "${YELLOW}MaahiOS Build System (Minimal)${NC}"
 echo -e "${YELLOW}======================================${NC}"
 
-# Ensure binaries directory exists
+# Ensure directories exist
 mkdir -p "$BINARIES_DIR"
 mkdir -p "$ISODIR/boot/grub"
 
-echo -e "\n${YELLOW}[1/5] Assembling boot.s...${NC}"
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# LAYER 1: Drivers
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+echo -e "\n${YELLOW}[1/17] Compiling Drivers...${NC}"
+
+i686-elf-gcc -c "$SRC_DIR/drivers/vga/vga.c"                   -o "$BINARIES_DIR/vga.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/drivers/display/bga.c"               -o "$BINARIES_DIR/bga.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/drivers/display/bga_mouse.c"         -o "$BINARIES_DIR/bga_mouse.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/drivers/display/display.c"           -o "$BINARIES_DIR/display.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/drivers/mouse/mouse.c"               -o "$BINARIES_DIR/mouse.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/drivers/pci/pci.c"                   -o "$BINARIES_DIR/pci.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/drivers/drive/ata/ata.c"             -o "$BINARIES_DIR/ata.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/drivers/drive/disk/disk_subsystem.c" -o "$BINARIES_DIR/disk_subsystem.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/drivers/drive/iso9660/iso9660.c"     -o "$BINARIES_DIR/iso9660.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/drivers/rtc/rtc.c"                   -o "$BINARIES_DIR/rtc.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/drivers/keyboard/keyboard.c"         -o "$BINARIES_DIR/keyboard.o" $KFLAGS
+echo -e "${GREEN}âœ“ All drivers compiled${NC}"
+
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# LAYER 2: Kernel Managers
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+echo -e "\n${YELLOW}[2/17] Compiling Kernel Managers...${NC}"
+
+# Boot + core
 i686-elf-as "$SRC_DIR/loader/boot.s" -o "$BINARIES_DIR/boot.o"
-echo -e "${GREEN}✓ boot.o created${NC}"
+i686-elf-gcc -c "$SRC_DIR/loader/kernel.c"                              -o "$BINARIES_DIR/kernel.o" $KFLAGS -I"$SRC_DIR"
 
-echo -e "\n${YELLOW}[2/5] Compiling kernel.c...${NC}"
-i686-elf-gcc -c "$SRC_DIR/loader/kernel.c" -o "$BINARIES_DIR/kernel.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -I"$SRC_DIR"
-echo -e "${GREEN}✓ kernel.o created${NC}"
+# CPU
+i686-elf-gcc -c "$SRC_DIR/managers/gdt/gdt.c"                           -o "$BINARIES_DIR/gdt.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/interrupt/idt.c"                      -o "$BINARIES_DIR/idt.o" $KFLAGS
+i686-elf-as "$SRC_DIR/managers/interrupt/interrupt_stubs.s"              -o "$BINARIES_DIR/interrupt_stubs.o"
+i686-elf-gcc -c "$SRC_DIR/managers/interrupt/exception_handler.c"        -o "$BINARIES_DIR/exception_handler.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/irq/irq_manager.c"                   -o "$BINARIES_DIR/irq_manager.o" $KFLAGS
 
-echo -e "\n${YELLOW}[2b/5] Compiling vga.c...${NC}"
-i686-elf-gcc -c "$SRC_DIR/drivers/vga.c" -o "$BINARIES_DIR/vga.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ vga.o created${NC}"
+# Memory
+i686-elf-gcc -c "$SRC_DIR/managers/memory/pmm.c"                        -o "$BINARIES_DIR/pmm.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/memory/paging.c"                     -o "$BINARIES_DIR/paging.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/memory/kheap.c"                      -o "$BINARIES_DIR/kheap.o" $KFLAGS
 
-echo -e "\n${YELLOW}[2b2/5] Compiling bga.c (BGA graphics driver)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/drivers/bga.c" -o "$BINARIES_DIR/bga.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ bga.o created${NC}"
+# Process + Scheduler
+i686-elf-gcc -c "$SRC_DIR/managers/process/process_manager.c"           -o "$BINARIES_DIR/process_manager.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/scheduler/scheduler.c"               -o "$BINARIES_DIR/scheduler.o" $KFLAGS
+i686-elf-as "$SRC_DIR/managers/scheduler/switch_osdev.s"                -o "$BINARIES_DIR/switch.o"
+i686-elf-gcc -c "$SRC_DIR/managers/timer/pit.c"                         -o "$BINARIES_DIR/pit.o" $KFLAGS
 
-echo -e "\n${YELLOW}[2b3/5] Compiling bga_mouse.c (BGA hardware cursor driver)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/drivers/bga_mouse.c" -o "$BINARIES_DIR/bga_mouse.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ bga_mouse.o created${NC}"
+# Services
+i686-elf-gcc -c "$SRC_DIR/managers/device/device_manager.c"             -o "$BINARIES_DIR/device_manager.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/klog/klog.c"                         -o "$BINARIES_DIR/klog.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/shm/shm_manager.c"                   -o "$BINARIES_DIR/shm_manager.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/cell/cell_manager.c"                  -o "$BINARIES_DIR/cell_manager.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/grub_module/grub_module_manager.c"    -o "$BINARIES_DIR/grub_module_manager.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/time/time_manager.c"                  -o "$BINARIES_DIR/time_manager.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/ring3/ring3.c"                       -o "$BINARIES_DIR/ring3.o" $KFLAGS
 
-echo -e "\n${YELLOW}[2b4b/5] Compiling gfx.c (Graphics abstraction layer)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/drivers/gfx.c" -o "$BINARIES_DIR/gfx.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ gfx.o created${NC}"
+# Syscall manager + 9 handler files
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/syscall_manager.c"            -o "$BINARIES_DIR/syscall_manager.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/core_handlers.c"     -o "$BINARIES_DIR/syscall_core_handlers.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/process_handlers.c"  -o "$BINARIES_DIR/syscall_process_handlers.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/memory_handlers.c"   -o "$BINARIES_DIR/syscall_memory_handlers.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/shm_handlers.c"      -o "$BINARIES_DIR/syscall_shm_handlers.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/cell_handlers.c"     -o "$BINARIES_DIR/syscall_cell_handlers.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/device_handlers.c"   -o "$BINARIES_DIR/syscall_device_handlers.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/module_handlers.c"   -o "$BINARIES_DIR/syscall_module_handlers.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/time_handlers.c"     -o "$BINARIES_DIR/syscall_time_handlers.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/debug_handlers.c"    -o "$BINARIES_DIR/syscall_debug_handlers.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/fs_handlers.c"       -o "$BINARIES_DIR/syscall_fs_handlers.o" $KFLAGS
+echo -e "${GREEN}✓ All managers compiled${NC}"
 
-echo -e "\n${YELLOW}[2b5/5] Compiling mouse.c (PS/2 mouse driver)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/drivers/mouse.c" -o "$BINARIES_DIR/mouse.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ mouse.o created${NC}"
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# LINK KERNEL
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+echo -e "\n${YELLOW}[3/17] Linking kernel...${NC}"
 
-echo -e "\n${YELLOW}[2b6/5] Compiling pci.c (PCI access)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/drivers/pci.c" -o "$BINARIES_DIR/pci.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ pci.o created${NC}"
-
-echo -e "\n${YELLOW}[2b7/5] Compiling usb.c (USB HID driver)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/drivers/usb.c" -o "$BINARIES_DIR/usb.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ usb.o created${NC}"
-
-echo -e "\n${YELLOW}[2b8/5] Compiling ata.c (ATA/ATAPI disk driver)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/drivers/disk/ata.c" -o "$BINARIES_DIR/ata.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ ata.o created${NC}"
-
-echo -e "\n${YELLOW}[2b9/5] Compiling disk_subsystem.c (Disk subsystem)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/drivers/disk/disk_subsystem.c" -o "$BINARIES_DIR/disk_subsystem.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ disk_subsystem.o created${NC}"
-
-echo -e "\n${YELLOW}[2b9b/5] Compiling iso9660.c (ISO filesystem driver)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/drivers/disk/iso9660.c" -o "$BINARIES_DIR/iso9660.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ iso9660.o created${NC}"
-
-echo -e "\n${YELLOW}[2b10/5] Compiling guimanager.c (GUI manager - UI controls framework)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/gui/guimanager.c" -o "$BINARIES_DIR/guimanager.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ guimanager.o created${NC}"
-
-echo -e "\n${YELLOW}[2c/5] Compiling gdt.c...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/gdt/gdt.c" -o "$BINARIES_DIR/gdt.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ gdt.o created${NC}"
-
-echo -e "\n${YELLOW}[2d/5] Compiling idt.c...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/interrupt/idt.c" -o "$BINARIES_DIR/idt.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ idt.o created${NC}"
-
-echo -e "\n${YELLOW}[2d2/5] Assembling interrupt_stubs.s...${NC}"
-i686-elf-as "$SRC_DIR/managers/interrupt/interrupt_stubs.s" -o "$BINARIES_DIR/interrupt_stubs.o"
-echo -e "${GREEN}✓ interrupt_stubs.o created${NC}"
-
-echo -e "\n${YELLOW}[2d3/5] Compiling exception_handler.c...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/interrupt/exception_handler.c" -o "$BINARIES_DIR/exception_handler.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ exception_handler.o created${NC}"
-
-echo -e "\n${YELLOW}[2e/5] Compiling ring3.c...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/ring3/ring3.c" -o "$BINARIES_DIR/ring3.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ ring3.o created${NC}"
-
-echo -e "\n${YELLOW}[2h/5] Compiling syscall modules...${NC}"
-# Compile syscall dispatcher
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/kernel/syscall_dispatcher.c" -o "$BINARIES_DIR/syscall_dispatcher.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ syscall_dispatcher.o created${NC}"
-
-# Compile process syscalls
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/kernel/process.c" -o "$BINARIES_DIR/syscall_process.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ syscall_process.o created${NC}"
-
-# Compile memory syscalls
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/kernel/memory.c" -o "$BINARIES_DIR/syscall_memory.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ syscall_memory.o created${NC}"
-
-# Compile UI syscalls (split into components)
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/kernel/ui.c" -o "$BINARIES_DIR/syscall_ui.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ syscall_ui.o created${NC}"
-
-# Compile UI component syscalls
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/kernel/ui/text_vga.c" -o "$BINARIES_DIR/syscall_ui_text_vga.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ syscall_ui_text_vga.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/kernel/ui/graphics.c" -o "$BINARIES_DIR/syscall_ui_graphics.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ syscall_ui_graphics.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/kernel/ui/window.c" -o "$BINARIES_DIR/syscall_ui_window.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ syscall_ui_window.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/kernel/ui/controls.c" -o "$BINARIES_DIR/syscall_ui_controls.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ syscall_ui_controls.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/kernel/ui/control_framework.c" -o "$BINARIES_DIR/syscall_ui_control_framework.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ syscall_ui_control_framework.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/kernel/ui/mouse_input.c" -o "$BINARIES_DIR/syscall_ui_mouse_input.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ syscall_ui_mouse_input.o created${NC}"
-
-# Compile I/O syscalls
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/kernel/io.c" -o "$BINARIES_DIR/syscall_io.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ syscall_io.o created${NC}"
-
-# Compile user syscalls (split into components)
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/user/ui/io.c" -o "$BINARIES_DIR/user_syscall_io.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ user_syscall_io.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/user/ui/memory.c" -o "$BINARIES_DIR/user_syscall_memory.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ user_syscall_memory.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/user/ui/process.c" -o "$BINARIES_DIR/user_syscall_process.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ user_syscall_process.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/user/ui/graphics.c" -o "$BINARIES_DIR/user_syscall_graphics.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ user_syscall_graphics.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/user/ui/mouse.c" -o "$BINARIES_DIR/user_syscall_mouse.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ user_syscall_mouse.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/user/ui/window.c" -o "$BINARIES_DIR/user_syscall_window.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ user_syscall_window.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/user/ui/controls.c" -o "$BINARIES_DIR/user_syscall_controls.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ user_syscall_controls.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/user/ui/iso_fs.c" -o "$BINARIES_DIR/user_syscall_iso_fs.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ user_syscall_iso_fs.o created${NC}"
-
-
-echo -e "\n${YELLOW}[2i/5] Compiling pmm.c...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/memory/pmm.c" -o "$BINARIES_DIR/pmm.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ pmm.o created${NC}"
-
-echo -e "\n${YELLOW}[2j/5] Compiling paging.c...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/memory/paging.c" -o "$BINARIES_DIR/paging.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ paging.o created${NC}"
-
-echo -e "\n${YELLOW}[2j2/5] Compiling kheap.c (kernel heap)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/lib/kheap.c" -o "$BINARIES_DIR/kheap.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ kheap.o created${NC}"
-
-echo -e "\n${YELLOW}[2j3/5] Compiling process_manager.c...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/process/process_manager.c" -o "$BINARIES_DIR/process_manager.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ process_manager.o created${NC}"
-
-echo -e "\n${YELLOW}[2k/5] Compiling pit.c (timer)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/timer/pit.c" -o "$BINARIES_DIR/pit.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ pit.o created${NC}"
-
-echo -e "\n${YELLOW}[2l/5] Compiling scheduler.c...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/scheduler/scheduler.c" -o "$BINARIES_DIR/scheduler.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ scheduler.o created${NC}"
-
-echo -e "\n${YELLOW}[2m/5] Assembling switch_osdev.s (context switch - OSDev approach)...${NC}"
-i686-elf-as "$SRC_DIR/managers/scheduler/switch_osdev.s" -o "$BINARIES_DIR/switch.o"
-echo -e "${GREEN}✓ switch.o created (OSDev approach)${NC}"
-
-echo -e "\n${YELLOW}[2n/5] Compiling irq_manager.c...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/irq/irq_manager.c" -o "$BINARIES_DIR/irq_manager.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ irq_manager.o created${NC}"
-
-echo -e "\n${YELLOW}[2o/5] Compiling klog.c (kernel logger manager)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/klog/klog.c" -o "$BINARIES_DIR/klog.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ klog.o created${NC}"
-
-echo -e "\n${YELLOW}[2o2/5] Compiling test_dummy.c (test file)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/lib/test_dummy.c" -o "$BINARIES_DIR/test_dummy.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ test_dummy.o created${NC}"
-
-echo -e "\n${YELLOW}[2p/5] Compiling keyboard.c (keyboard driver)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/drivers/keyboard.c" -o "$BINARIES_DIR/keyboard.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ keyboard.o created${NC}"
-
-echo -e "\n${YELLOW}[2q/5] Compiling font_manager.c (TrueType font rendering)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/gui/font/font_manager.c" -o "$BINARIES_DIR/font_manager.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ font_manager.o created${NC}"
-
-echo -e "\n${YELLOW}[2r/5] Compiling windows_mgmt.c (Window management system)...${NC}"
-i686-elf-gcc -c "$SRC_DIR/managers/gui/windows/windows_mgmt.c" -o "$BINARIES_DIR/windows_mgmt.o" \
-    -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32
-echo -e "${GREEN}✓ windows_mgmt.o created${NC}"
-
-echo -e "\n${YELLOW}[3/5] Linking kernel...${NC}"
-# keyboard.o ENABLED
 i686-elf-ld -T "$SRC_DIR/loader/linker/linker.ld" -o "$BUILD_DIR/kernel.bin" \
-    "$BINARIES_DIR/boot.o" "$BINARIES_DIR/kernel.o" "$BINARIES_DIR/vga.o" "$BINARIES_DIR/bga.o" "$BINARIES_DIR/bga_mouse.o" "$BINARIES_DIR/gfx.o" "$BINARIES_DIR/mouse.o" "$BINARIES_DIR/pci.o" "$BINARIES_DIR/usb.o" "$BINARIES_DIR/ata.o" "$BINARIES_DIR/iso9660.o" "$BINARIES_DIR/disk_subsystem.o" "$BINARIES_DIR/guimanager.o" "$BINARIES_DIR/gdt.o" "$BINARIES_DIR/idt.o" "$BINARIES_DIR/interrupt_stubs.o" "$BINARIES_DIR/exception_handler.o" "$BINARIES_DIR/ring3.o" "$BINARIES_DIR/syscall_dispatcher.o" "$BINARIES_DIR/syscall_process.o" "$BINARIES_DIR/syscall_memory.o" "$BINARIES_DIR/syscall_ui.o" "$BINARIES_DIR/syscall_ui_text_vga.o" "$BINARIES_DIR/syscall_ui_graphics.o" "$BINARIES_DIR/syscall_ui_window.o" "$BINARIES_DIR/syscall_ui_controls.o" "$BINARIES_DIR/syscall_ui_control_framework.o" "$BINARIES_DIR/syscall_ui_mouse_input.o" "$BINARIES_DIR/syscall_io.o" "$BINARIES_DIR/pmm.o" "$BINARIES_DIR/paging.o" "$BINARIES_DIR/kheap.o" "$BINARIES_DIR/process_manager.o" "$BINARIES_DIR/pit.o" "$BINARIES_DIR/scheduler.o" "$BINARIES_DIR/switch.o" "$BINARIES_DIR/irq_manager.o" "$BINARIES_DIR/klog.o" "$BINARIES_DIR/keyboard.o" "$BINARIES_DIR/font_manager.o" "$BINARIES_DIR/windows_mgmt.o"
-echo -e "${GREEN}✓ kernel.bin created${NC}"
+    "$BINARIES_DIR/boot.o" "$BINARIES_DIR/kernel.o" \
+    "$BINARIES_DIR/vga.o" "$BINARIES_DIR/bga.o" "$BINARIES_DIR/bga_mouse.o" "$BINARIES_DIR/display.o" \
+    "$BINARIES_DIR/mouse.o" "$BINARIES_DIR/pci.o" "$BINARIES_DIR/ata.o" "$BINARIES_DIR/iso9660.o" \
+    "$BINARIES_DIR/disk_subsystem.o" "$BINARIES_DIR/rtc.o" "$BINARIES_DIR/keyboard.o" \
+    "$BINARIES_DIR/gdt.o" "$BINARIES_DIR/idt.o" "$BINARIES_DIR/interrupt_stubs.o" \
+    "$BINARIES_DIR/exception_handler.o" "$BINARIES_DIR/irq_manager.o" \
+    "$BINARIES_DIR/pmm.o" "$BINARIES_DIR/paging.o" "$BINARIES_DIR/kheap.o" \
+    "$BINARIES_DIR/process_manager.o" "$BINARIES_DIR/scheduler.o" "$BINARIES_DIR/switch.o" "$BINARIES_DIR/pit.o" \
+    "$BINARIES_DIR/device_manager.o" "$BINARIES_DIR/klog.o" \
+    "$BINARIES_DIR/shm_manager.o" "$BINARIES_DIR/cell_manager.o" \
+    "$BINARIES_DIR/grub_module_manager.o" "$BINARIES_DIR/time_manager.o" "$BINARIES_DIR/ring3.o" \
+    "$BINARIES_DIR/syscall_manager.o" \
+    "$BINARIES_DIR/syscall_core_handlers.o" "$BINARIES_DIR/syscall_process_handlers.o" \
+    "$BINARIES_DIR/syscall_memory_handlers.o" "$BINARIES_DIR/syscall_shm_handlers.o" \
+    "$BINARIES_DIR/syscall_cell_handlers.o" "$BINARIES_DIR/syscall_device_handlers.o" \
+    "$BINARIES_DIR/syscall_module_handlers.o" "$BINARIES_DIR/syscall_time_handlers.o" \
+    "$BINARIES_DIR/syscall_debug_handlers.o" \
+    "$BINARIES_DIR/syscall_fs_handlers.o"
+echo -e "${GREEN}âœ“ kernel.bin linked${NC}"
 
-echo -e "\n${YELLOW}[4a/7] Building sysman (Ring 3 System Manager)...${NC}"
-# Assemble sysman entry
-i686-elf-as "$SRC_DIR/sysman/sysman_entry.s" -o "$BINARIES_DIR/sysman_entry.o"
-echo -e "${GREEN}✓ sysman_entry.o created${NC}"
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# BUILD SYSMAN (Ring 3 - PID 1)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+echo -e "\n${YELLOW}[4/17] Building sysman + liblog + libcell + libprocess + libmemory...${NC}"
 
-# Compile sysman C code (position-independent)
-i686-elf-gcc -c "$SRC_DIR/sysman/sysman.c" -o "$BINARIES_DIR/sysman.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ sysman.o created (position-independent)${NC}"
+i686-elf-as "$SRC_DIR/system/systemprograms/sysman/sysman_entry.s" -o "$BINARIES_DIR/sysman_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/systemprograms/sysman/sysman.c" -o "$BINARIES_DIR/sysman.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/liblog/liblog.c" -o "$BINARIES_DIR/liblog.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libcell/libcell.c" -o "$BINARIES_DIR/libcell.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libprocess/libprocess.c" -o "$BINARIES_DIR/libprocess.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libmemory/libmemory.c" -o "$BINARIES_DIR/libmemory.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/executives/common/executive_queue.c" -o "$BINARIES_DIR/executive_queue.o" $UFLAGS
 
-# Compile user syscalls (position-independent) - STUB FILE
-i686-elf-gcc -c "$SRC_DIR/system/syscalls/user/user_syscalls.c" -o "$BINARIES_DIR/user_syscalls.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ user_syscalls.o created (position-independent stub)${NC}"
+i686-elf-ld -T "$SRC_DIR/system/systemprograms/sysman/sysman_linker.ld" -o "$BUILD_DIR/sysman.elf" \
+    "$BINARIES_DIR/sysman_entry.o" "$BINARIES_DIR/sysman.o" "$BINARIES_DIR/liblog.o" \
+    "$BINARIES_DIR/libcell.o" "$BINARIES_DIR/libprocess.o" "$BINARIES_DIR/libmemory.o" \
+    "$BINARIES_DIR/executive_queue.o"
 
-# Compile Libraries (MaahiOS Application API)
-echo -e "\n${YELLOW}Compiling Libraries (App API library components)...${NC}"
-
-# GUI components
-i686-elf-gcc -c "$SRC_DIR/Libraries/gui/window/window.c" -o "$BINARIES_DIR/lib_window.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_window.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/Libraries/gui/button/button.c" -o "$BINARIES_DIR/lib_button.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_button.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/Libraries/gui/label/label.c" -o "$BINARIES_DIR/lib_label.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_label.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/Libraries/gui/icon/icon.c" -o "$BINARIES_DIR/lib_icon.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_icon.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/Libraries/gui/list/list.c" -o "$BINARIES_DIR/lib_list.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_list.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/Libraries/gui/graphics/graphics.c" -o "$BINARIES_DIR/lib_graphics.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_graphics.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/Libraries/gui/text/text.c" -o "$BINARIES_DIR/lib_text.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_text.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/Libraries/gui/event/event.c" -o "$BINARIES_DIR/lib_event.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_event.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/Libraries/gui/menu/menu.c" -o "$BINARIES_DIR/lib_menu.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_menu.o created${NC}"
-
-# Core components
-i686-elf-gcc -c "$SRC_DIR/Libraries/process/process.c" -o "$BINARIES_DIR/lib_process.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_process.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/Libraries/filesystem/filesystem.c" -o "$BINARIES_DIR/lib_filesystem.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_filesystem.o created${NC}"
-
-i686-elf-gcc -c "$SRC_DIR/Libraries/debug/debug.c" -o "$BINARIES_DIR/lib_debug.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ lib_debug.o created${NC}"
-
-# Link sysman as ELF (using Libraries + split user syscalls)
-# Link sysman as ELF (using Libraries + split user syscalls)
-i686-elf-ld -T "$SRC_DIR/sysman_linker.ld" -o "$BUILD_DIR/sysman.elf" \
-    "$BINARIES_DIR/sysman_entry.o" "$BINARIES_DIR/sysman.o" \
-    "$BINARIES_DIR/lib_window.o" "$BINARIES_DIR/lib_button.o" "$BINARIES_DIR/lib_label.o" "$BINARIES_DIR/lib_icon.o" "$BINARIES_DIR/lib_list.o" \
-    "$BINARIES_DIR/lib_graphics.o" "$BINARIES_DIR/lib_text.o" "$BINARIES_DIR/lib_event.o" "$BINARIES_DIR/lib_menu.o" \
-    "$BINARIES_DIR/lib_process.o" "$BINARIES_DIR/lib_filesystem.o" "$BINARIES_DIR/lib_debug.o" \
-    "$BINARIES_DIR/user_syscall_io.o" "$BINARIES_DIR/user_syscall_memory.o" "$BINARIES_DIR/user_syscall_process.o" \
-    "$BINARIES_DIR/user_syscall_graphics.o" "$BINARIES_DIR/user_syscall_mouse.o" "$BINARIES_DIR/user_syscall_window.o" \
-    "$BINARIES_DIR/user_syscall_controls.o" "$BINARIES_DIR/user_syscall_iso_fs.o"
-echo -e "${GREEN}✓ sysman.elf created (with Libraries + split syscalls)${NC}"
-
-# Convert ELF to flat binary for position-independence
 i686-elf-objcopy -O binary "$BUILD_DIR/sysman.elf" "$BUILD_DIR/sysman.bin"
-echo -e "${GREEN}✓ sysman.bin created${NC}"
+echo -e "${GREEN}âœ“ sysman.bin built (with liblog + libcell + libprocess + libmemory)${NC}"
 
-echo -e "\n${YELLOW}[4b/7] Building orbit (Ring 3 Shell)...${NC}"
-# Assemble orbit entry
-i686-elf-as "$SRC_DIR/orbit/orbit_entry.s" -o "$BINARIES_DIR/orbit_entry.o"
-echo -e "${GREEN}✓ orbit_entry.o created${NC}"
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# BUILD LOG EXECUTIVE (Ring 3 - Started by sysman)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+echo -e "\n${YELLOW}[5/17] Building Log Executive...${NC}"
 
-# Compile orbit C code (position-independent)
-i686-elf-gcc -c "$SRC_DIR/orbit/orbit.c" -o "$BINARIES_DIR/orbit.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ orbit.o created (position-independent)${NC}"
+i686-elf-as "$SRC_DIR/system/executives/logexecutive/log_executive_entry.s" -o "$BINARIES_DIR/log_executive_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/executives/logexecutive/logexecutive.c" -o "$BINARIES_DIR/logexecutive.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/executives/common/executive_queue.c" -o "$BINARIES_DIR/executive_queue.o" $UFLAGS
 
-# Link orbit (with Libraries library and split user syscalls)
-i686-elf-ld -T "$SRC_DIR/orbit/orbit_linker.ld" -o "$BUILD_DIR/orbit.elf" \
+i686-elf-ld -T "$SRC_DIR/system/executives/logexecutive/log_executive_linker.ld" -o "$BUILD_DIR/logexec.elf" \
+    "$BINARIES_DIR/log_executive_entry.o" "$BINARIES_DIR/logexecutive.o" "$BINARIES_DIR/executive_queue.o"
+
+i686-elf-objcopy -O binary "$BUILD_DIR/logexec.elf" "$BUILD_DIR/logexec.bin"
+echo -e "${GREEN}âœ“ logexec.bin built${NC}"
+
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# BUILD CELL EXECUTIVE (Ring 3 - Started by sysman after Log Executive)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+echo -e "\n${YELLOW}[6/17] Building Cell Executive...${NC}"
+
+i686-elf-as "$SRC_DIR/system/executives/cellexecutive/cell_executive_entry.s" -o "$BINARIES_DIR/cell_executive_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/executives/cellexecutive/cellexecutive.c" -o "$BINARIES_DIR/cellexecutive.o" $UFLAGS
+# executive_queue.o already compiled above, reuse it
+
+i686-elf-ld -T "$SRC_DIR/system/executives/cellexecutive/cell_executive_linker.ld" -o "$BUILD_DIR/cellexec.elf" \
+    "$BINARIES_DIR/cell_executive_entry.o" "$BINARIES_DIR/cellexecutive.o" \
+    "$BINARIES_DIR/executive_queue.o" "$BINARIES_DIR/liblog.o"
+
+i686-elf-objcopy -O binary "$BUILD_DIR/cellexec.elf" "$BUILD_DIR/cellexec.bin"
+echo -e "${GREEN}âœ“ cellexec.bin built${NC}"
+
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# BUILD PROCESS EXECUTIVE (Ring 3 - Started by sysman after Cell Executive)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+echo -e "\n${YELLOW}[7/17] Building Process Executive...${NC}"
+
+i686-elf-as "$SRC_DIR/system/executives/processexecutive/process_executive_entry.s" -o "$BINARIES_DIR/process_executive_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/executives/processexecutive/process_executive.c" -o "$BINARIES_DIR/processexecutive.o" $UFLAGS
+# executive_queue.o, liblog.o, libcell.o already compiled above, reuse them
+
+i686-elf-ld -T "$SRC_DIR/system/executives/processexecutive/process_executive_linker.ld" -o "$BUILD_DIR/procexec.elf" \
+    "$BINARIES_DIR/process_executive_entry.o" "$BINARIES_DIR/processexecutive.o" \
+    "$BINARIES_DIR/executive_queue.o" "$BINARIES_DIR/liblog.o" "$BINARIES_DIR/libcell.o"
+
+i686-elf-objcopy -O binary "$BUILD_DIR/procexec.elf" "$BUILD_DIR/procexec.bin"
+echo -e "${GREEN}âœ“ procexec.bin built${NC}"
+
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# BUILD MEMORY EXECUTIVE (Ring 3 - Started by sysman after Process Executive)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+echo -e "\n${YELLOW}[8/17] Building Memory Executive...${NC}"
+
+i686-elf-as "$SRC_DIR/system/executives/memoryexecutive/memory_executive_entry.s" -o "$BINARIES_DIR/memory_executive_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/executives/memoryexecutive/memory_executive.c" -o "$BINARIES_DIR/memoryexecutive.o" $UFLAGS
+# executive_queue.o, liblog.o, libcell.o already compiled above, reuse them
+
+i686-elf-ld -T "$SRC_DIR/system/executives/memoryexecutive/memory_executive_linker.ld" -o "$BUILD_DIR/memexec.elf" \
+    "$BINARIES_DIR/memory_executive_entry.o" "$BINARIES_DIR/memoryexecutive.o" \
+    "$BINARIES_DIR/executive_queue.o" "$BINARIES_DIR/liblog.o" "$BINARIES_DIR/libcell.o"
+
+i686-elf-objcopy -O binary "$BUILD_DIR/memexec.elf" "$BUILD_DIR/memexec.bin"
+echo -e "${GREEN}âœ“ memexec.bin built${NC}"
+
+# 
+# BUILD DISK EXECUTIVE (Ring 3 - Started by sysman after Memory Executive)
+# 
+echo -e "\n${YELLOW}[9/17] Building Disk Executive...${NC}"
+
+i686-elf-as "$SRC_DIR/system/executives/diskexecutive/disk_executive_entry.s" -o "$BINARIES_DIR/disk_executive_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/executives/diskexecutive/disk_executive.c" -o "$BINARIES_DIR/diskexecutive.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libdisk/libdisk.c" -o "$BINARIES_DIR/libdisk.o" $UFLAGS
+# executive_queue.o, liblog.o, libcell.o already compiled above, reuse them
+
+i686-elf-ld -T "$SRC_DIR/system/executives/diskexecutive/disk_executive_linker.ld" -o "$BUILD_DIR/diskexec.elf" \
+    "$BINARIES_DIR/disk_executive_entry.o" "$BINARIES_DIR/diskexecutive.o" \
+    "$BINARIES_DIR/executive_queue.o" "$BINARIES_DIR/liblog.o" "$BINARIES_DIR/libcell.o"
+
+i686-elf-objcopy -O binary "$BUILD_DIR/diskexec.elf" "$BUILD_DIR/diskexec.bin"
+echo -e "${GREEN} diskexec.bin built${NC}"
+
+# 
+# BUILD FS EXECUTIVE (Ring 3 - Started by sysman after Disk Executive)
+# 
+echo -e "\n${YELLOW}[10/17] Building FS Executive...${NC}"
+
+i686-elf-as "$SRC_DIR/system/executives/fsexecutive/fs_executive_entry.s" -o "$BINARIES_DIR/fs_executive_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/executives/fsexecutive/fs_executive.c" -o "$BINARIES_DIR/fsexecutive.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libfs/libfs.c" -o "$BINARIES_DIR/libfs.o" $UFLAGS
+# executive_queue.o, liblog.o, libcell.o already compiled above, reuse them
+
+i686-elf-ld -T "$SRC_DIR/system/executives/fsexecutive/fs_executive_linker.ld" -o "$BUILD_DIR/fsexec.elf" \
+    "$BINARIES_DIR/fs_executive_entry.o" "$BINARIES_DIR/fsexecutive.o" \
+    "$BINARIES_DIR/executive_queue.o" "$BINARIES_DIR/liblog.o" "$BINARIES_DIR/libcell.o"
+
+i686-elf-objcopy -O binary "$BUILD_DIR/fsexec.elf" "$BUILD_DIR/fsexec.bin"
+echo -e "${GREEN} fsexec.bin built${NC}"
+
+# BUILD GUI EXECUTIVE + LIBGUI (Ring 3 - Started by sysman after FS Executive)
+echo -e "\n${YELLOW}[11/17] Building GUI Executive + libgui...${NC}"
+
+# Compile libgui library files (shared by GUI Executive, Orbit, Terminal)
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libgui/libgui.c"               -o "$BINARIES_DIR/libgui.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libgui/printgui/printgui.c"    -o "$BINARIES_DIR/printgui.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libgui/fonts/font8x16.c"       -o "$BINARIES_DIR/font8x16.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libgui/keyboard/keyboard.c"    -o "$BINARIES_DIR/kbd.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libgui/console/console.c"     -o "$BINARIES_DIR/console.o" $UFLAGS
+
+# Compile GUI Executive
+i686-elf-as "$SRC_DIR/system/executives/guiexecutive/gui_executive_entry.s" -o "$BINARIES_DIR/gui_executive_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/executives/guiexecutive/gui_executive.c"   -o "$BINARIES_DIR/guiexecutive.o" $UFLAGS
+# executive_queue.o, liblog.o, libcell.o already compiled above
+
+i686-elf-ld -T "$SRC_DIR/system/executives/guiexecutive/gui_executive_linker.ld" -o "$BUILD_DIR/guiexec.elf" \
+    "$BINARIES_DIR/gui_executive_entry.o" "$BINARIES_DIR/guiexecutive.o" \
+    "$BINARIES_DIR/executive_queue.o" "$BINARIES_DIR/liblog.o" "$BINARIES_DIR/libcell.o"
+
+i686-elf-objcopy -O binary "$BUILD_DIR/guiexec.elf" "$BUILD_DIR/guiexec.bin"
+echo -e "${GREEN} guiexec.bin + libgui built${NC}"
+
+# BUILD I/O EXECUTIVE + LIBIO (Ring 3 - Started by sysman after GUI Executive)
+echo -e "\n${YELLOW}[12/17] Building I/O Executive + libio...${NC}"
+
+# Compile libio library file (shared by Terminal and any app using device input)
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libio/libio.c" -o "$BINARIES_DIR/libio.o" $UFLAGS
+
+# Compile I/O Executive
+i686-elf-as "$SRC_DIR/system/executives/ioexecutive/io_executive_entry.s" -o "$BINARIES_DIR/io_executive_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/executives/ioexecutive/io_executive.c" -o "$BINARIES_DIR/ioexecutive.o" $UFLAGS
+# executive_queue.o, liblog.o, libcell.o already compiled above
+
+i686-elf-ld -T "$SRC_DIR/system/executives/ioexecutive/io_executive_linker.ld" -o "$BUILD_DIR/ioexec.elf" \
+    "$BINARIES_DIR/io_executive_entry.o" "$BINARIES_DIR/ioexecutive.o" \
+    "$BINARIES_DIR/executive_queue.o" "$BINARIES_DIR/liblog.o" "$BINARIES_DIR/libcell.o"
+
+i686-elf-objcopy -O binary "$BUILD_DIR/ioexec.elf" "$BUILD_DIR/ioexec.bin"
+echo -e "${GREEN} ioexec.bin + libio built${NC}"
+
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# BUILD ORBIT (Ring 3 - Desktop Shell, started by sysman)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+echo -e "\n${YELLOW}[13/17] Building Orbit...${NC}"
+
+i686-elf-as "$SRC_DIR/system/systemprograms/orbit/orbit_entry.s" -o "$BINARIES_DIR/orbit_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/systemprograms/orbit/orbit.c" -o "$BINARIES_DIR/orbit.o" $UFLAGS
+# liblog.o, libcell.o, libprocess.o, executive_queue.o already compiled above
+
+i686-elf-ld -T "$SRC_DIR/system/systemprograms/orbit/orbit_linker.ld" -o "$BUILD_DIR/orbit.elf" \
     "$BINARIES_DIR/orbit_entry.o" "$BINARIES_DIR/orbit.o" \
-    "$BINARIES_DIR/user_syscall_io.o" "$BINARIES_DIR/user_syscall_memory.o" "$BINARIES_DIR/user_syscall_process.o" \
-    "$BINARIES_DIR/user_syscall_graphics.o" "$BINARIES_DIR/user_syscall_mouse.o" "$BINARIES_DIR/user_syscall_window.o" \
-    "$BINARIES_DIR/user_syscall_controls.o" "$BINARIES_DIR/user_syscall_iso_fs.o" \
-    "$BINARIES_DIR/lib_window.o" "$BINARIES_DIR/lib_button.o" "$BINARIES_DIR/lib_label.o" "$BINARIES_DIR/lib_icon.o" "$BINARIES_DIR/lib_list.o" \
-    "$BINARIES_DIR/lib_graphics.o" "$BINARIES_DIR/lib_text.o" "$BINARIES_DIR/lib_event.o" "$BINARIES_DIR/lib_menu.o" \
-    "$BINARIES_DIR/lib_process.o" "$BINARIES_DIR/lib_filesystem.o" "$BINARIES_DIR/lib_debug.o"
-echo -e "${GREEN}✓ orbit.elf created (with Libraries and split syscalls)${NC}"
+    "$BINARIES_DIR/executive_queue.o" "$BINARIES_DIR/liblog.o" \
+    "$BINARIES_DIR/libcell.o" "$BINARIES_DIR/libprocess.o" \
+    "$BINARIES_DIR/libgui.o" "$BINARIES_DIR/printgui.o" "$BINARIES_DIR/font8x16.o"
 
-# Convert ELF to flat binary
 i686-elf-objcopy -O binary "$BUILD_DIR/orbit.elf" "$BUILD_DIR/orbit.bin"
-echo -e "${GREEN}✓ orbit.bin created${NC}"
+echo -e "${GREEN} orbit.bin built${NC}"
 
-echo -e "\n${YELLOW}[4c/7] Building UIManager (Window Server)...${NC}"
-# Compile cursor data
-i686-elf-gcc -c "$SRC_DIR/libgui/cursor_data.c" -o "$BINARIES_DIR/cursor_data.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ cursor_data.o created${NC}"
+# BUILD TERMINAL (Ring 3 - Command line, launched by Orbit)
+echo -e "\n${YELLOW}[14/17] Building Terminal + Console Apps...${NC}"
 
-# Compile BMP renderer (needed for cursor)
-i686-elf-gcc -c "$SRC_DIR/libgui/bmp_renderer.c" -o "$BINARIES_DIR/bmp_renderer.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ bmp_renderer.o created${NC}"
+i686-elf-as "$SRC_DIR/system/systemprograms/terminal/terminal_entry.s" -o "$BINARIES_DIR/terminal_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/systemprograms/terminal/terminal.c" -o "$BINARIES_DIR/terminal.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libmex/libmex.c" -o "$BINARIES_DIR/libmex.o" $UFLAGS
+# Console apps
+i686-elf-gcc -c "$SRC_DIR/system/systemprograms/terminal/apps/app_shutdown.c" -o "$BINARIES_DIR/app_shutdown.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/systemprograms/terminal/apps/app_restart.c" -o "$BINARIES_DIR/app_restart.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/systemprograms/terminal/apps/app_procman.c" -o "$BINARIES_DIR/app_procman.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/systemprograms/terminal/apps/app_diskman.c" -o "$BINARIES_DIR/app_diskman.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/systemprograms/terminal/apps/app_fileman.c" -o "$BINARIES_DIR/app_fileman.o" $UFLAGS
+# liblog.o, libfs.o, libcell.o, libprocess.o, libdisk.o, executive_queue.o already compiled above
 
-# Compile themed button renderer
-i686-elf-gcc -c "$SRC_DIR/uimanager/render/button/button_render.c" -o "$BINARIES_DIR/button_render.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ button_render.o created (themed button renderer)${NC}"
+i686-elf-ld -T "$SRC_DIR/system/systemprograms/terminal/terminal_linker.ld" -o "$BUILD_DIR/terminal.elf" \
+    "$BINARIES_DIR/terminal_entry.o" "$BINARIES_DIR/terminal.o" \
+    "$BINARIES_DIR/app_shutdown.o" "$BINARIES_DIR/app_restart.o" \
+    "$BINARIES_DIR/app_procman.o" "$BINARIES_DIR/app_diskman.o" "$BINARIES_DIR/app_fileman.o" \
+    "$BINARIES_DIR/executive_queue.o" "$BINARIES_DIR/liblog.o" \
+    "$BINARIES_DIR/libfs.o" "$BINARIES_DIR/libcell.o" \
+    "$BINARIES_DIR/libmex.o" "$BINARIES_DIR/libprocess.o" "$BINARIES_DIR/libdisk.o" \
+    "$BINARIES_DIR/libgui.o" "$BINARIES_DIR/printgui.o" "$BINARIES_DIR/font8x16.o" "$BINARIES_DIR/kbd.o" "$BINARIES_DIR/console.o" "$BINARIES_DIR/libio.o"
 
-# Compile mouse cursor handler
-i686-elf-gcc -c "$SRC_DIR/uimanager/events/mouse_cursor.c" -o "$BINARIES_DIR/mouse_cursor.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ mouse_cursor.o created (mouse cursor handler)${NC}"
+i686-elf-objcopy -O binary "$BUILD_DIR/terminal.elf" "$BUILD_DIR/terminal.bin"
+echo -e "${GREEN} terminal.bin built${NC}"
 
-# Assemble UIManager entry
-i686-elf-as "$SRC_DIR/uimanager/uimanager_entry.s" -o "$BINARIES_DIR/uimanager_entry.o" --32
-echo -e "${GREEN}✓ uimanager_entry.o created${NC}"
+# BUILD HELLO.MEX (first .mex test application)
+echo -e "\n${YELLOW}[15/17] Building hello.mex...${NC}"
 
-# Compile UIManager C code (position-independent)
-i686-elf-gcc -c "$SRC_DIR/uimanager/uimanager.c" -o "$BINARIES_DIR/uimanager.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ uimanager.o created (position-independent)${NC}"
+i686-elf-gcc -c "$SRC_DIR/apps/mex_entry.s" -o "$BINARIES_DIR/mex_entry.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/apps/hello/hello.c" -o "$BINARIES_DIR/hello.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/liblog/liblog.c" -o "$BINARIES_DIR/hello_liblog.o" $UFLAGS
+i686-elf-ld -T "$SRC_DIR/apps/mex_app.ld" -o "$BUILD_DIR/hello.elf" \
+    "$BINARIES_DIR/mex_entry.o" "$BINARIES_DIR/hello.o" "$BINARIES_DIR/hello_liblog.o"
+i686-elf-objcopy -O binary "$BUILD_DIR/hello.elf" "$BUILD_DIR/hello.bin"
+python3 ../tools/mex_pack.py "$BUILD_DIR/hello.bin" "$BUILD_DIR/hello.mex" \
+    --name "hello" --type app --flags console -v || \
+    /c/Users/panrai/AppData/Local/Programs/Python/Launcher/py.exe ../tools/mex_pack.py "$BUILD_DIR/hello.bin" "$BUILD_DIR/hello.mex" \
+    --name "hello" --type app --flags console -v
+echo -e "${GREEN} hello.mex built${NC}"
 
-# Link UIManager - MINIMAL VERSION with proper mouse cursor module and split syscalls
-i686-elf-ld -T "$SRC_DIR/uimanager/uimanager_linker.ld" -o "$BUILD_DIR/uimanager.elf" \
-    "$BINARIES_DIR/uimanager_entry.o" "$BINARIES_DIR/uimanager.o" \
-    "$BINARIES_DIR/mouse_cursor.o" "$BINARIES_DIR/cursor_data.o" \
-    "$BINARIES_DIR/bmp_renderer.o" \
-    "$BINARIES_DIR/user_syscall_io.o" "$BINARIES_DIR/user_syscall_memory.o" "$BINARIES_DIR/user_syscall_process.o" \
-    "$BINARIES_DIR/user_syscall_graphics.o" "$BINARIES_DIR/user_syscall_mouse.o" "$BINARIES_DIR/user_syscall_window.o" \
-    "$BINARIES_DIR/user_syscall_controls.o" "$BINARIES_DIR/user_syscall_iso_fs.o"
-echo -e "${GREEN}✓ uimanager.elf created (minimal with mouse cursor module and split syscalls)${NC}"
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# CREATE ISO
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+echo -e "\n${YELLOW}[16/17] Creating ISO...${NC}"
 
-# Convert ELF to flat binary
-i686-elf-objcopy -O binary "$BUILD_DIR/uimanager.elf" "$BUILD_DIR/uimanager.bin"
-echo -e "${GREEN}✓ uimanager.bin created${NC}"
-
-echo -e "\n${YELLOW}[4d/7] Building File Manager (Application)...${NC}"
-# Assemble file_manager entry
-i686-elf-as "$SRC_DIR/apps/file_manager/file_manager_entry.s" -o "$BINARIES_DIR/file_manager_entry.o"
-echo -e "${GREEN}✓ file_manager_entry.o created${NC}"
-
-# Compile file_manager C code (position-independent)
-i686-elf-gcc -c "$SRC_DIR/apps/file_manager/file_manager.c" -o "$BINARIES_DIR/file_manager.o" \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ file_manager.o created (position-independent)${NC}"
-
-# Link file_manager (reuse split user_syscalls and Libraries)
-i686-elf-ld -T "$SRC_DIR/apps/file_manager/file_manager_linker.ld" -o "$BUILD_DIR/file_manager.elf" \
-    "$BINARIES_DIR/file_manager_entry.o" "$BINARIES_DIR/file_manager.o" \
-    "$BINARIES_DIR/user_syscall_io.o" "$BINARIES_DIR/user_syscall_memory.o" "$BINARIES_DIR/user_syscall_process.o" \
-    "$BINARIES_DIR/user_syscall_graphics.o" "$BINARIES_DIR/user_syscall_mouse.o" "$BINARIES_DIR/user_syscall_window.o" \
-    "$BINARIES_DIR/user_syscall_controls.o" "$BINARIES_DIR/user_syscall_iso_fs.o" \
-    "$BINARIES_DIR/lib_window.o" "$BINARIES_DIR/lib_button.o" "$BINARIES_DIR/lib_label.o" "$BINARIES_DIR/lib_icon.o" "$BINARIES_DIR/lib_list.o" \
-    "$BINARIES_DIR/lib_graphics.o" "$BINARIES_DIR/lib_text.o" "$BINARIES_DIR/lib_event.o" "$BINARIES_DIR/lib_menu.o" \
-    "$BINARIES_DIR/lib_process.o" "$BINARIES_DIR/lib_filesystem.o" "$BINARIES_DIR/lib_debug.o"
-echo -e "${GREEN}✓ file_manager.elf created (with split syscalls and Libraries)${NC}"
-
-# Convert ELF to flat binary
-i686-elf-objcopy -O binary "$BUILD_DIR/file_manager.elf" "$BUILD_DIR/file_manager.bin"
-echo -e "${GREEN}✓ file_manager.bin created${NC}"
-
-# Build disk_manager.bin (ring 3 process)
-echo -e "\n${YELLOW}Building disk_manager.bin...${NC}"
-i686-elf-as "$SRC_DIR/apps/disk_manager/disk_manager_entry.s" -o "$BINARIES_DIR/disk_manager_entry.o" --32
-echo -e "${GREEN}✓ disk_manager_entry.o created${NC}"
-
-# Compile disk_manager.c
-i686-elf-gcc -c "$SRC_DIR/apps/disk_manager/disk_manager.c" -o "$BINARIES_DIR/disk_manager.o" \
-    -std=gnu99 -ffreestanding -O2 -Wall -Wextra -nostdlib -nodefaultlibs \
-    -ffreestanding -fno-stack-protector -fPIC -m32
-echo -e "${GREEN}✓ disk_manager.o created (position-independent)${NC}"
-
-# Link disk_manager (reuse split user_syscalls)
-i686-elf-ld -T "$SRC_DIR/apps/disk_manager/disk_manager_linker.ld" -o "$BUILD_DIR/disk_manager.elf" \
-    "$BINARIES_DIR/disk_manager_entry.o" "$BINARIES_DIR/disk_manager.o" \
-    "$BINARIES_DIR/user_syscall_io.o" "$BINARIES_DIR/user_syscall_memory.o" "$BINARIES_DIR/user_syscall_process.o" \
-    "$BINARIES_DIR/user_syscall_graphics.o" "$BINARIES_DIR/user_syscall_mouse.o" "$BINARIES_DIR/user_syscall_window.o" \
-    "$BINARIES_DIR/user_syscall_controls.o" "$BINARIES_DIR/user_syscall_iso_fs.o"
-echo -e "${GREEN}✓ disk_manager.elf created (with split syscalls)${NC}"
-
-# Convert ELF to flat binary
-i686-elf-objcopy -O binary "$BUILD_DIR/disk_manager.elf" "$BUILD_DIR/disk_manager.bin"
-echo -e "${GREEN}✓ disk_manager.bin created${NC}"
-
-echo -e "\n${YELLOW}[5/7] Copying files to ISO directory...${NC}"
 cp "$BUILD_DIR/kernel.bin" "$ISODIR/boot/kernel.bin"
-echo -e "${GREEN}✓ kernel.bin copied${NC}"
-
 cp "$BUILD_DIR/sysman.bin" "$ISODIR/boot/sysman.bin"
-echo -e "${GREEN}✓ sysman.bin copied${NC}"
-
-cp "$BUILD_DIR/uimanager.bin" "$ISODIR/boot/uimanager.bin"
-echo -e "${GREEN}✓ uimanager.bin copied${NC}"
-
+cp "$BUILD_DIR/logexec.bin" "$ISODIR/boot/logexec.bin"
+cp "$BUILD_DIR/cellexec.bin" "$ISODIR/boot/cellexec.bin"
+cp "$BUILD_DIR/procexec.bin" "$ISODIR/boot/procexec.bin"
+cp "$BUILD_DIR/memexec.bin" "$ISODIR/boot/memexec.bin"
+cp "$BUILD_DIR/diskexec.bin" "$ISODIR/boot/diskexec.bin"
+cp "$BUILD_DIR/fsexec.bin" "$ISODIR/boot/fsexec.bin"
+cp "$BUILD_DIR/guiexec.bin" "$ISODIR/boot/guiexec.bin"
+cp "$BUILD_DIR/ioexec.bin" "$ISODIR/boot/ioexec.bin"
 cp "$BUILD_DIR/orbit.bin" "$ISODIR/boot/orbit.bin"
-echo -e "${GREEN}✓ orbit.bin copied${NC}"
+cp "$BUILD_DIR/terminal.bin" "$ISODIR/boot/terminal.bin"
+cp "$BUILD_DIR/hello.mex" "$ISODIR/hello.mex"
 
-cp "$BUILD_DIR/file_manager.bin" "$ISODIR/boot/file_manager.bin"
-echo -e "${GREEN}✓ file_manager.bin copied${NC}"
-
-cp "$BUILD_DIR/disk_manager.bin" "$ISODIR/boot/disk_manager.bin"
-echo -e "${GREEN}✓ disk_manager.bin copied${NC}"
-
-# Copy icons to ISO for runtime loading
-mkdir -p "$ISODIR/icons"
-cp "$SRC_DIR/images/icons/folder_32.bmp" "$ISODIR/icons/folder_32.bmp"
-cp "$SRC_DIR/images/icons/file_32.bmp" "$ISODIR/icons/file_32.bmp"
-cp "$SRC_DIR/images/icons/window_32.bmp" "$ISODIR/icons/window_32.bmp"
-cp "$SRC_DIR/images/icons/folder_16.bmp" "$ISODIR/icons/folder_16.bmp"
-cp "$SRC_DIR/images/icons/file_16.bmp" "$ISODIR/icons/file_16.bmp"
-echo -e "${GREEN}✓ Icons copied to /icons/ (folder_32, file_32, window_32, folder_16, file_16)${NC}"
-
-echo -e "\n${YELLOW}[6/7] Creating GRUB configuration...${NC}"
-
-echo -e "\n${YELLOW}[6/7] Creating grub.cfg...${NC}"
 cat > "$ISODIR/boot/grub/grub.cfg" << 'EOF'
 set default=0
 set timeout=0
@@ -510,27 +369,35 @@ set timeout=0
 menuentry "MaahiOS" {
     multiboot /boot/kernel.bin
     module /boot/sysman.bin
-    module /boot/uimanager.bin
+    module /boot/logexec.bin
+    module /boot/cellexec.bin
+    module /boot/procexec.bin
+    module /boot/memexec.bin
+    module /boot/diskexec.bin
+    module /boot/fsexec.bin
+    module /boot/guiexec.bin
+    module /boot/ioexec.bin
     module /boot/orbit.bin
-    module /boot/file_manager.bin
-    module /boot/disk_manager.bin
+    module /boot/terminal.bin
 }
 EOF
-echo -e "${GREEN}✓ grub.cfg created (kernel + sysman + uimanager + orbit + file_manager + disk_manager)${NC}"
 
-echo -e "\n${YELLOW}[7/7] Creating ISO image...${NC}"
+echo -e "\n${YELLOW}[17/17] Building ISO image...${NC}"
 
-grub-mkrescue -o "$BUILD_DIR/boot.iso" "$ISODIR" 2>&1
-echo -e "${GREEN}✓ boot.iso created${NC}"
-
-# Clean up .o files from build root - disabled for debugging
-# rm -f "$BINARIES_DIR"/*.o
-echo -e "${GREEN}✓ Object files kept for debugging${NC}"
+if command -v grub-mkrescue &> /dev/null; then
+    grub-mkrescue -o "$BUILD_DIR/boot.iso" "$ISODIR" 2>&1
+elif command -v xorrisofs &> /dev/null; then
+    xorrisofs -R -J \
+        -b boot/grub/i386-pc/eltorito.img \
+        -no-emul-boot -boot-load-size 4 -boot-info-table \
+        -o "$BUILD_DIR/boot.iso" "$ISODIR" 2>&1
+else
+    echo -e "${RED}ERROR: Neither grub-mkrescue nor xorrisofs found!${NC}"
+    exit 1
+fi
+echo -e "${GREEN}âœ“ boot.iso created${NC}"
 
 echo -e "\n${YELLOW}======================================${NC}"
-echo -e "${GREEN}Build Complete!${NC}"
-echo -e "${GREEN}ISO Image: $BUILD_DIR/boot.iso${NC}"
+echo -e "${GREEN}Build Complete! (Kernel + Sysman + Log + Cell + Process + Memory + Disk + FS + GUI + I/O Executives + Orbit + Terminal)${NC}"
+echo -e "${GREEN}ISO: $BUILD_DIR/boot.iso${NC}"
 echo -e "${YELLOW}======================================${NC}"
-echo ""
-echo -e "${YELLOW}To test in QEMU (with default PS/2 mouse):${NC}"
-echo "  qemu-system-i386 -cdrom $BUILD_DIR/boot.iso -serial stdio"

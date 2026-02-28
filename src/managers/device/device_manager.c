@@ -1,16 +1,60 @@
 /**
  * MaahiOS Device Manager
  * Central registry for all device drivers.
+ * 
+ * Acts as a HAL-like abstraction layer:
+ * - Auto-discovers and initializes all registered drivers
+ * - Provides unified device API (open/close/read/write/ioctl)
+ * - Manages device lifecycle
+ * 
+ * NOTE: Display driver is initialized separately in kernel.c STEP 5
+ *       because graphics must be available before Device Manager.
  */
 
 #include "device_manager.h"
 #include "../../managers/klog/klog.h"
+
+/* Driver headers for auto-initialization */
+#include "../../drivers/drive/disk/disk_subsystem.h"
+#include "../../drivers/display/display.h"
+#include "../../drivers/mouse/mouse.h"
+#include "../../drivers/keyboard/keyboard.h"
+#include "../../drivers/rtc/rtc.h"
 
 /* ===========================================================================
  * INTERNAL: Configuration & Data Structures
  * =========================================================================== */
 
 #define MAX_DEVICES 32
+
+/* ===========================================================================
+ * DRIVER TABLE: All drivers that Device Manager auto-initializes
+ * 
+ * Format: { "name", init_function, device_id }
+ * 
+ * Order matters! Dependencies should be initialized first:
+ *   - Disk first (filesystem access)
+ *   - Input devices (mouse, keyboard)
+ *   - Utility devices (RTC)
+ * 
+ * NOTE: Display hardware is initialized in STEP 5 (kernel.c) because
+ *       graphics must be available before klog/gfx. Its device_manager
+ *       registration happens here via display_register_device().
+ * =========================================================================== */
+typedef struct {
+    const char *name;
+    int (*init)(void);
+    int device_id;
+} driver_entry_t;
+
+static driver_entry_t g_driver_table[] = {
+    { "disk",     disk_subsystem_init,     DEV_DISK     },
+    { "display",  display_register_device, DEV_DISPLAY  },
+    { "mouse",    mouse_init,              DEV_MOUSE    },
+    { "keyboard", keyboard_init,           DEV_KEYBOARD },
+    { "rtc",      rtc_init,                DEV_RTC      },
+    { NULL, NULL, 0 }  /* Terminator */
+};
 
 typedef struct {
     int id;
@@ -59,9 +103,22 @@ static device_entry_t* find_empty_slot(void) {
  * INIT: Initialization Functions
  * =========================================================================== */
 
+/**
+ * Initialize the Device Manager and auto-discover all drivers.
+ * 
+ * This is the single entry point for driver initialization:
+ *   1. Clear device registry
+ *   2. Loop through driver table
+ *   3. Call each driver's init() function
+ *   4. Drivers register themselves via register_device()
+ */
 int device_manager_init(void) {
-    /* Clear all entries */
-    for (int i = 0; i < MAX_DEVICES; i++) {
+    int i;
+    int success_count = 0;
+    int fail_count = 0;
+    
+    /* Clear all entries first */
+    for (i = 0; i < MAX_DEVICES; i++) {
         devices[i].id = 0;
         devices[i].name[0] = '\0';
         devices[i].active = 0;
@@ -77,8 +134,37 @@ int device_manager_init(void) {
     device_count = 0;
     initialized = 1;
     
-    KLOG_INFO("DEVMGR", "Device Manager initialized");
-    return 0;  /* Success */
+    KLOG_INFO("DEVMGR", "=== Device Manager Auto-Init ===");
+    
+    /* Auto-initialize all drivers from table */
+    for (i = 0; g_driver_table[i].name != (void*)0; i++) {
+        driver_entry_t *drv = &g_driver_table[i];
+        
+        KLOG_INFO("DEVMGR", "Initializing driver:");
+        KLOG_INFO("DEVMGR", drv->name);
+        
+        if (drv->init) {
+            int result = drv->init();
+            if (result == 0) {
+                KLOG_INFO("DEVMGR", "  -> OK");
+                success_count++;
+            } else {
+                KLOG_WARN_HEX("DEVMGR", "  -> FAILED err=", result);
+                fail_count++;
+            }
+        } else {
+            KLOG_WARN("DEVMGR", "  -> No init function!");
+            fail_count++;
+        }
+    }
+    
+    KLOG_INFO_HEX("DEVMGR", "Drivers initialized: ", success_count);
+    if (fail_count > 0) {
+        KLOG_WARN_HEX("DEVMGR", "Drivers failed: ", fail_count);
+    }
+    KLOG_INFO("DEVMGR", "=== Device Manager Ready ===");
+    
+    return (fail_count == 0) ? 0 : -1;
 }
 
 /* ===========================================================================
@@ -264,7 +350,6 @@ int kernel_device_read(int device_id, void* buffer, size_t size) {
     /* Note: For simplicity, using handle=0 (single handle per device)
      * Future: Track handles per-process */
     int result = dev->ops.read(0, buffer, size);
-    KLOG_DEBUG_HEX2("DEVMGR", "read: id=", device_id, result);
     return result;
 }
 

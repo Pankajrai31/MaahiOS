@@ -1,11 +1,23 @@
 /**
  * MaahiOS User-Space Logging Library (liblog) - Implementation
  * 
+ * Description:
+ *   User-space library for logging via Log Executive.
+ *   Auto-initializes on first call (discovers SHM, attaches).
+ *   Falls back to direct SYS_KLOG kernel syscall if Log Executive
+ *   is not yet running.
+ * 
+ * Usage:
+ *   liblog(LOG_INFO, "MYAPP", "Hello");       // just call it
+ *   liblog_hex(LOG_INFO, "MYAPP", "val:", 42); // just call it
+ *   No init() needed — handled automatically.
+ * 
  * Author: MaahiOS Team
  * Date: February 2026
  */
 
 #include "liblog.h"
+#include "../core/syscall_helpers.h"
 
 /*=============================================================================
  * INTERNAL TYPES (must match executive_common.h request structure)
@@ -46,32 +58,6 @@ typedef struct {
 } liblog_hex_entry_t;
 
 /*=============================================================================
- * SYSCALL WRAPPERS
- *===========================================================================*/
-
-#define SYS_SHM_ATTACH  49
-#define SYS_CELL_READ   65   /* Fixed: was 69, should be 65 per syscall_numbers.h */
-#define SYS_GETPID      100
-
-static inline int syscall1(int num, uint32_t a) {
-    int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num), "b"(a) : "memory");
-    return ret;
-}
-
-static inline int syscall3(int num, uint32_t a, uint32_t b, uint32_t c) {
-    int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num), "b"(a), "c"(b), "d"(c) : "memory");
-    return ret;
-}
-
-static inline int syscall0(int num) {
-    int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num) : "memory");
-    return ret;
-}
-
-/*=============================================================================
  * LIBRARY STATE
  *===========================================================================*/
 
@@ -104,26 +90,36 @@ static void spinlock_release(volatile uint32_t *lock) {
 }
 
 /*=============================================================================
- * PUBLIC API IMPLEMENTATION
+ * INTERNAL: AUTO-INIT (lazy, called on first use)
  *===========================================================================*/
 
-int liblog_init(void) {
+/**
+ * _liblog_try_init - Try to connect to Log Executive's SHM queue.
+ * Called automatically on first use. Non-fatal if executive not ready.
+ * Returns: 0 on success, -1 if executive not available yet.
+ */
+static int _liblog_try_init(void) {
     if (g_initialized) return 0;
     
-    /* Get our PID */
-    g_my_pid = (uint32_t)syscall0(SYS_GETPID);
+    /* Get our PID (only once) and seed msg_id to avoid collisions.
+     * Multiple processes share the same executive response queue,
+     * so msg_ids must be unique per process. */
+    if (g_my_pid == 0) {
+        g_my_pid = (uint32_t)syscall0(SYS_GETPID);
+        g_msg_id = (g_my_pid << 16) | 1;
+    }
     
-    /* Read Log Executive's queue SHM ID from cell */
+    /* Read Log Executive's queue SHM ID from cell registry */
     int shm_id = -1;
     int result = syscall3(SYS_CELL_READ, 
                           (uint32_t)"system.exec.log.req_shm", 
                           (uint32_t)&shm_id, sizeof(int));
     if (result < 0 || shm_id < 0) {
-        return -1;
+        return -1;  /* Executive not registered yet */
     }
     
-    /* Attach to queue SHM */
-    g_queue = (liblog_queue_t *)syscall1(SYS_SHM_ATTACH, shm_id);
+    /* Attach to queue SHM (virt_addr=0 lets kernel pick address) */
+    g_queue = (liblog_queue_t *)syscall2(SYS_SHM_ATTACH, shm_id, 0);
     if (!g_queue || (uint32_t)g_queue == 0xFFFFFFFF) {
         g_queue = (void*)0;
         return -1;
@@ -133,59 +129,100 @@ int liblog_init(void) {
     return 0;
 }
 
+/*=============================================================================
+ * INTERNAL: DIRECT KLOG FALLBACK
+ * Used when Log Executive is not yet running.
+ *===========================================================================*/
+
+static void _liblog_direct_klog(int level, const char *tag, const char *msg) {
+    syscall3(SYS_KLOG, level, (int)tag, (int)msg);
+}
+
+static void _liblog_direct_klog_hex(int level, const char *tag, const char *msg, uint32_t value) {
+    syscall4(SYS_KLOG_HEX, level, (int)tag, (int)msg, (int)value);
+}
+
+/*=============================================================================
+ * PUBLIC API IMPLEMENTATION
+ *===========================================================================*/
+
+int liblog_init(void) {
+    return _liblog_try_init();
+}
+
 int liblog_ready(void) {
     return g_initialized;
 }
 
 void liblog(int level, const char *tag, const char *msg) {
-    if (!g_queue) return;
-    
-    spinlock_acquire(&g_queue->lock);
-    
-    if (g_queue->count < LIBLOG_QUEUE_SIZE) {
-        liblog_request_t *req = &g_queue->requests[g_queue->tail];
-        req->msg_id = g_msg_id++;
-        req->sender_pid = g_my_pid;
-        req->exec_id = EXEC_ID_LOG;
-        req->func_id = LOG_FUNC_LOG;
-        req->flags = 0;
-        
-        liblog_entry_t *entry = (liblog_entry_t *)req->payload;
-        entry->level = (uint8_t)level;
-        str_copy(entry->tag, tag, LIBLOG_MAX_TAG_LEN);
-        str_copy(entry->msg, msg, LIBLOG_MAX_MSG_LEN);
-        req->payload_size = sizeof(liblog_entry_t);
-        
-        g_queue->tail = (g_queue->tail + 1) % LIBLOG_QUEUE_SIZE;
-        g_queue->count++;
+    /* Auto-init on first call */
+    if (!g_initialized) {
+        _liblog_try_init();
     }
     
-    spinlock_release(&g_queue->lock);
+    /* If connected to Log Executive, use SHM queue */
+    if (g_queue) {
+        spinlock_acquire(&g_queue->lock);
+        
+        if (g_queue->count < LIBLOG_QUEUE_SIZE) {
+            liblog_request_t *req = &g_queue->requests[g_queue->tail];
+            req->msg_id = g_msg_id++;
+            req->sender_pid = g_my_pid;
+            req->exec_id = EXEC_ID_LOG;
+            req->func_id = LOG_FUNC_LOG;
+            req->flags = 0;
+            
+            liblog_entry_t *entry = (liblog_entry_t *)req->payload;
+            entry->level = (uint8_t)level;
+            str_copy(entry->tag, tag, LIBLOG_MAX_TAG_LEN);
+            str_copy(entry->msg, msg, LIBLOG_MAX_MSG_LEN);
+            req->payload_size = sizeof(liblog_entry_t);
+            
+            g_queue->tail = (g_queue->tail + 1) % LIBLOG_QUEUE_SIZE;
+            g_queue->count++;
+        }
+        
+        spinlock_release(&g_queue->lock);
+        return;
+    }
+    
+    /* Fallback: Log Executive not ready, use direct kernel klog */
+    _liblog_direct_klog(level, tag, msg);
 }
 
 void liblog_hex(int level, const char *tag, const char *msg, uint32_t value) {
-    if (!g_queue) return;
-    
-    spinlock_acquire(&g_queue->lock);
-    
-    if (g_queue->count < LIBLOG_QUEUE_SIZE) {
-        liblog_request_t *req = &g_queue->requests[g_queue->tail];
-        req->msg_id = g_msg_id++;
-        req->sender_pid = g_my_pid;
-        req->exec_id = EXEC_ID_LOG;
-        req->func_id = LOG_FUNC_LOG_HEX;
-        req->flags = 0;
-        
-        liblog_hex_entry_t *entry = (liblog_hex_entry_t *)req->payload;
-        entry->level = (uint8_t)level;
-        str_copy(entry->tag, tag, LIBLOG_MAX_TAG_LEN);
-        str_copy(entry->msg, msg, LIBLOG_MAX_MSG_LEN);
-        entry->value = value;
-        req->payload_size = sizeof(liblog_hex_entry_t);
-        
-        g_queue->tail = (g_queue->tail + 1) % LIBLOG_QUEUE_SIZE;
-        g_queue->count++;
+    /* Auto-init on first call */
+    if (!g_initialized) {
+        _liblog_try_init();
     }
     
-    spinlock_release(&g_queue->lock);
+    /* If connected to Log Executive, use SHM queue */
+    if (g_queue) {
+        spinlock_acquire(&g_queue->lock);
+        
+        if (g_queue->count < LIBLOG_QUEUE_SIZE) {
+            liblog_request_t *req = &g_queue->requests[g_queue->tail];
+            req->msg_id = g_msg_id++;
+            req->sender_pid = g_my_pid;
+            req->exec_id = EXEC_ID_LOG;
+            req->func_id = LOG_FUNC_LOG_HEX;
+            req->flags = 0;
+            
+            liblog_hex_entry_t *entry = (liblog_hex_entry_t *)req->payload;
+            entry->level = (uint8_t)level;
+            str_copy(entry->tag, tag, LIBLOG_MAX_TAG_LEN);
+            str_copy(entry->msg, msg, LIBLOG_MAX_MSG_LEN);
+            entry->value = value;
+            req->payload_size = sizeof(liblog_hex_entry_t);
+            
+            g_queue->tail = (g_queue->tail + 1) % LIBLOG_QUEUE_SIZE;
+            g_queue->count++;
+        }
+        
+        spinlock_release(&g_queue->lock);
+        return;
+    }
+    
+    /* Fallback: Log Executive not ready, use direct kernel klog */
+    _liblog_direct_klog_hex(level, tag, msg, value);
 }

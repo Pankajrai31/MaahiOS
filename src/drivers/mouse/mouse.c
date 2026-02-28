@@ -7,6 +7,16 @@
 
 #include "mouse.h"
 #include "../../managers/device/device_manager.h"
+#include "../../managers/klog/klog.h"
+
+/* Forward declarations for IRQ setup */
+extern int idt_install_mouse_handler(void);
+extern void irq_enable_mouse(void);
+
+/* Forward declarations for cursor */
+extern void bga_cursor_init(void);
+extern int bga_cursor_is_supported(void);
+extern void bga_cursor_enable(int enable);
 
 /* ============================================
  * PS/2 Controller Ports
@@ -48,18 +58,8 @@ volatile int irq_total = 0;
 static int screen_width = 1024;
 static int screen_height = 768;
 
-/* ============================================
- * Port I/O Helpers
- * ============================================ */
-static inline uint8_t inb(uint16_t port) {
-    uint8_t ret;
-    __asm__ volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
-
-static inline void outb(uint16_t port, uint8_t val) {
-    __asm__ volatile("outb %0, %1" : : "a"(val), "Nd"(port));
-}
+/* Port I/O */
+#include "../../system/libraries/shared/io.h"
 
 /* ============================================
  * PS/2 Controller Helpers
@@ -263,6 +263,13 @@ void mouse_handler(void) {
  * Driver Initialization
  * ============================================ */
 int mouse_init(void) {
+    KLOG_INFO("MOUSE", "Initializing PS/2 mouse driver");
+    
+    /* Step 1: Install IRQ handler first */
+    KLOG_DEBUG("MOUSE", "Installing IRQ12 handler");
+    idt_install_mouse_handler();
+    irq_enable_mouse();
+    
     pkt_i = 0;
     head = tail = 0;
     irq_total = 0;
@@ -298,6 +305,15 @@ int mouse_init(void) {
 
     /* Register with Device Manager */
     register_device(DEV_MOUSE, "mouse", &mouse_ops);
-
-    return 1;
+    
+    /* Initialize hardware cursor (follows mouse) */
+    KLOG_DEBUG("MOUSE", "Initializing hardware cursor");
+    bga_cursor_init();
+    if (bga_cursor_is_supported()) {
+        bga_cursor_enable(1);
+        KLOG_INFO("MOUSE", "Hardware cursor enabled");
+    }
+    
+    KLOG_INFO("MOUSE", "Driver initialized and registered");
+    return 0;
 }

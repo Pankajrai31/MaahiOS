@@ -5,8 +5,9 @@ ENTRY(_start)
 
 SECTIONS
 {
-    /* Load at 0x00800000 (8MB mark) */
-    . = 0x00800000;
+    /* All user processes load at this virtual address.
+     * Per-process page directories ensure each process has its own mapping. */
+    . = 0x10000000;
     
     .text : {
         *(.text*)
@@ -20,8 +21,20 @@ SECTIONS
         *(.data*)
     }
     
+    /* PIC-generated sections - must be placed BEFORE .bss
+     * so that .bss zeroing doesn't destroy the GOT */
+    .got : {
+        *(.got)
+    }
+    
+    .got.plt : {
+        *(.got.plt)
+    }
+    
     .bss : {
+        __bss_start = .;
         *(COMMON)
         *(.bss*)
+        __bss_end = .;
     }
 }

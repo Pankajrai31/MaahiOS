@@ -33,35 +33,51 @@
 #define CELL_TYPE_INT       1
 #define CELL_FLAG_SYSTEM    (1 << 2)
 
-/* Function IDs for Log Executive */
-#define LOG_FUNC_LOG        1
-#define LOG_FUNC_LOG_HEX    2
-
 /*=============================================================================
  * SYSCALL WRAPPERS
+ * NOTE: The kernel syscall handler does NOT preserve ECX or EDX.
+ * Only EBX, ESI, EDI, EBP are callee-saved. EAX is the return value.
  *===========================================================================*/
 
 static inline int syscall0(int num) {
     int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num) : "memory");
+    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num) : "memory", "ecx", "edx");
     return ret;
 }
 
 static inline int syscall1(int num, int a1) {
     int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num), "b"(a1) : "memory");
+    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num), "b"(a1) : "memory", "ecx", "edx");
+    return ret;
+}
+
+static inline int syscall2(int num, int a1, int a2) {
+    int ret;
+    int _ecx;
+    __asm__ volatile("int $0x80"
+        : "=a"(ret), "=c"(_ecx)
+        : "a"(num), "b"(a1), "1"(a2)
+        : "memory", "edx");
     return ret;
 }
 
 static inline int syscall3(int num, int a1, int a2, int a3) {
     int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num), "b"(a1), "c"(a2), "d"(a3) : "memory");
+    int _ecx, _edx;
+    __asm__ volatile("int $0x80"
+        : "=a"(ret), "=c"(_ecx), "=d"(_edx)
+        : "a"(num), "b"(a1), "1"(a2), "2"(a3)
+        : "memory");
     return ret;
 }
 
 static inline int syscall4(int num, int a1, int a2, int a3, int a4) {
     int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num), "b"(a1), "c"(a2), "d"(a3), "S"(a4) : "memory");
+    int _ecx, _edx;
+    __asm__ volatile("int $0x80"
+        : "=a"(ret), "=c"(_ecx), "=d"(_edx)
+        : "a"(num), "b"(a1), "1"(a2), "2"(a3), "S"(a4)
+        : "memory");
     return ret;
 }
 
@@ -74,7 +90,7 @@ static inline int exe_shm_create(uint32_t size) {
 }
 
 static inline void* exe_shm_attach(int shm_id) {
-    return (void*)syscall1(SYS_SHM_ATTACH, shm_id);
+    return (void*)syscall2(SYS_SHM_ATTACH, shm_id, 0);
 }
 
 /* cell_write auto-creates if key doesn't exist, so no need for register */
@@ -137,11 +153,11 @@ static void exe_log_process_request(const exec_request_t *req, exec_response_t *
     exe_memset(resp, 0, sizeof(exec_response_t));
     
     switch (req->func_id) {
-        case LOG_FUNC_LOG:
+        case LOG_OP_LOG:
             exe_log_handle_log(req, resp);
             break;
             
-        case LOG_FUNC_LOG_HEX:
+        case LOG_OP_LOG_HEX:
             exe_log_handle_log_hex(req, resp);
             break;
             

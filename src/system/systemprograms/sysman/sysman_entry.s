@@ -18,6 +18,16 @@ sysman_main:
     movw %ax, %fs
     movw %ax, %gs
     
+    /* Zero .bss section using direct addresses.
+     * Sysman is linked at 0x10000000 with per-process page directory.
+     * __bss_start/__bss_end are absolute runtime virtual addresses. */
+    movl $__bss_start, %edi
+    movl $__bss_end, %ecx
+    subl %edi, %ecx
+    shrl $2, %ecx                               /* count in dwords */
+    xorl %eax, %eax
+    rep stosl
+    
     /* Set up stack frame and call C code */
     push %ebp
     mov %esp, %ebp

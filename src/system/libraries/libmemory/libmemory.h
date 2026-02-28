@@ -3,16 +3,17 @@
  * 
  * Description:
  *   User library for memory management.
- *   Applications include this header for heap allocation and SHM.
- *   Internally communicates with Memory Executive via SHM queues.
+ *   Auto-initializes on first call (discovers SHM, attaches).
+ *   Falls back to direct SYS_MEM_* kernel syscalls if
+ *   Memory Executive is not yet running.
  * 
  * Usage:
- *   #include <libmemory.h>
+ *   #include "libmemory.h"
  *   
- *   libmemory_init();
- *   void *ptr = libmem_alloc(1024);
- *   libmem_free(ptr);
- *   libmemory_shutdown();
+ *   void *page = libmem_alloc_page();     // just call it
+ *   libmem_free_page(page);
+ *   void *block = libmem_alloc(1024);
+ *   No init() needed - handled automatically.
  * 
  * Author: MaahiOS Team
  * Date: February 2026
@@ -29,57 +30,52 @@
  *===========================================================================*/
 
 /**
- * libmemory_init - Initialize memory library
+ * libmemory_init - Explicitly initialize memory library (optional)
  * 
- * Connects to Memory Executive's SHM queues.
- * Must be called before any other libmemory functions.
+ * Auto-called on first use of any libmemory function.
+ * Falls back to direct kernel syscalls if executive not ready.
  * 
- * Returns: 0 on success, negative on error
+ * Returns: 0 on success, negative if executive not available
  */
 int libmemory_init(void);
 
 /**
  * libmemory_shutdown - Cleanup memory library
+ * 
+ * Detaches from SHM queues.
  */
 void libmemory_shutdown(void);
 
 /*=============================================================================
- * HEAP OPERATIONS
+ * PAGE OPERATIONS
  *===========================================================================*/
 
 /**
- * libmem_alloc - Allocate memory
+ * libmem_alloc_page - Allocate a 4KB page
+ * 
+ * Returns: Pointer to page on success, NULL on failure
+ */
+void *libmem_alloc_page(void);
+
+/**
+ * libmem_free_page - Free a 4KB page
+ * @ptr: Pointer to page
+ * 
+ * Returns: 0 on success, negative on error
+ */
+int libmem_free_page(void *ptr);
+
+/*=============================================================================
+ * BLOCK ALLOCATION
+ *===========================================================================*/
+
+/**
+ * libmem_alloc - Allocate a memory block
  * @size: Size in bytes
  * 
  * Returns: Pointer to memory on success, NULL on failure
  */
 void *libmem_alloc(uint32_t size);
-
-/**
- * libmem_alloc_aligned - Allocate aligned memory
- * @size: Size in bytes
- * @alignment: Alignment (must be power of 2)
- * 
- * Returns: Pointer to memory on success, NULL on failure
- */
-void *libmem_alloc_aligned(uint32_t size, uint32_t alignment);
-
-/**
- * libmem_free - Free memory
- * @ptr: Pointer to memory
- * 
- * Returns: 0 on success, negative on error
- */
-int libmem_free(void *ptr);
-
-/**
- * libmem_realloc - Reallocate memory
- * @ptr: Pointer to existing memory
- * @new_size: New size in bytes
- * 
- * Returns: Pointer to memory on success, NULL on failure
- */
-void *libmem_realloc(void *ptr, uint32_t new_size);
 
 /*=============================================================================
  * SHARED MEMORY OPERATIONS
@@ -87,13 +83,11 @@ void *libmem_realloc(void *ptr, uint32_t new_size);
 
 /**
  * libmem_shm_create - Create shared memory segment
- * @name: Segment name (for lookup)
  * @size: Size in bytes
- * @flags: Creation flags
  * 
  * Returns: SHM ID on success, negative on error
  */
-int libmem_shm_create(const char *name, uint32_t size, uint32_t flags);
+int libmem_shm_create(uint32_t size);
 
 /**
  * libmem_shm_attach - Attach to shared memory segment
@@ -130,12 +124,5 @@ int libmem_shm_delete(int shm_id);
  * Returns: 0 on success, negative on error
  */
 int libmem_get_info(memory_info_t *info);
-
-/**
- * libmem_get_usage - Get current process memory usage
- * 
- * Returns: Bytes used on success, negative on error
- */
-int libmem_get_usage(void);
 
 #endif /* LIBMEMORY_H */

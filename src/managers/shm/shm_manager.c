@@ -7,6 +7,7 @@
 #include "../klog/klog.h"
 #include "../memory/paging.h"
 #include "../memory/pmm.h"
+#include "../process/process_manager.h"
 #include <stdint.h>
 
 /* ===========================================================================
@@ -95,25 +96,13 @@ int kernel_shm_create(size_t size, int owner_pid) {
         return SHM_NO_MEMORY;
     }
     
-    /* Allocate physical pages */
-    unsigned int pages_needed = size / 4096;
-    unsigned int phys_addr = (unsigned int)pmm_alloc_page();
+    /* Allocate contiguous physical pages */
+    unsigned int phys_addr = (unsigned int)pmm_alloc_size(size);
     
     if (!phys_addr) {
         spinlock_release(&shm_global_lock);
         KLOG_ERROR("SHM", "Failed to allocate physical pages");
         return SHM_NO_MEMORY;
-    }
-    
-    /* Allocate additional pages if needed */
-    for (unsigned int i = 1; i < pages_needed; i++) {
-        unsigned int page = (unsigned int)pmm_alloc_page();
-        if (!page) {
-            /* TODO: Free already allocated pages */
-            spinlock_release(&shm_global_lock);
-            KLOG_ERROR("SHM", "Failed to allocate all pages");
-            return SHM_NO_MEMORY;
-        }
     }
     
     /* Initialize SHM descriptor */
@@ -189,12 +178,25 @@ unsigned int kernel_shm_attach(int shm_id, int pid, unsigned int virt_addr) {
         virt_addr = 0x80000000 + (shm_id * 0x100000);
     }
     
+    /* Map SHM pages into the process's page directory.
+     * For processes using kernel_page_directory (executives), this maps
+     * into the shared address space. For .mex apps with their own page
+     * directory, this maps into their private address space. */
     extern uint32_t *kernel_page_directory;
+    uint32_t *target_dir = kernel_page_directory;  /* Default fallback */
+    
+    if (pid > 0) {
+        process_t *proc = process_get_by_pid(pid);
+        if (proc && proc->page_directory) {
+            target_dir = proc->page_directory;
+        }
+    }
+    
     unsigned int pages = region->size / 4096;
     for (unsigned int i = 0; i < pages; i++) {
         unsigned int phys = region->phys_addr + (i * 4096);
         unsigned int virt = virt_addr + (i * 4096);
-        paging_map_page(kernel_page_directory, virt, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+        paging_map_page(target_dir, virt, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
     }
     
     region->attached_pids[attach_slot] = pid;
@@ -247,17 +249,27 @@ int kernel_shm_detach(int shm_id, int pid) {
     unsigned int virt_addr = region->virt_addrs[attach_slot];
     unsigned int pages = region->size / 4096;
     
-    /* TODO: Implement paging_unmap_page() for proper cleanup */
-    /* For now, just clear mappings manually */
+    /* Unmap pages from the process's page directory */
     extern uint32_t *kernel_page_directory;
+    uint32_t *target_dir = kernel_page_directory;
+    
+    if (pid > 0) {
+        process_t *proc = process_get_by_pid(pid);
+        if (proc && proc->page_directory) {
+            target_dir = proc->page_directory;
+        }
+    }
+    
     for (unsigned int i = 0; i < pages; i++) {
         unsigned int virt = virt_addr + (i * 4096);
         unsigned int pd_index = virt >> 22;
         unsigned int pt_index = (virt >> 12) & 0x3FF;
         
-        uint32_t *page_table = (uint32_t *)(kernel_page_directory[pd_index] & 0xFFFFF000);
-        if (page_table) {
-            page_table[pt_index] = 0;  /* Clear page table entry */
+        if (target_dir[pd_index] & PAGE_PRESENT) {
+            uint32_t *page_table = (uint32_t *)(target_dir[pd_index] & 0xFFFFF000);
+            if (page_table) {
+                page_table[pt_index] = 0;
+            }
         }
     }
     
@@ -304,8 +316,8 @@ int kernel_shm_destroy(int shm_id) {
     
     /* Free physical pages */
     unsigned int pages = region->size / 4096;
+    extern void pmm_free_page(void *addr);
     for (unsigned int i = 0; i < pages; i++) {
-        extern int pmm_free_page(void *addr);
         pmm_free_page((void *)(region->phys_addr + (i * 4096)));
     }
     

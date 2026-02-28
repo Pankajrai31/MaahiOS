@@ -2,8 +2,15 @@
  * MaahiOS Process Executive Header
  * 
  * Description:
- *   Process Executive provides process management services.
- *   Handles process creation, termination, and information queries.
+ *   Process Executive manages user-space process lifecycle — creating,
+ *   terminating, and querying processes. Acts as a policy gatekeeper
+ *   between user apps and the kernel process_manager.
+ * 
+ *   PID 4 — loaded 3rd by sysman (after Log Executive, Cell Executive)
+ *   Uses liblog for logging (auto-init)
+ *   Uses libcell for cell registration (auto-init)
+ *   Direct SYS_PROCESS_* syscalls for its own service operations
+ *   Dual SHM queues (request + response)
  * 
  * Author: MaahiOS Team
  * Date: February 2026
@@ -15,39 +22,25 @@
 #include "../common/executive_common.h"
 
 /*=============================================================================
- * PROCESS EXECUTIVE OPCODES
+ * PROCESS EXECUTIVE OPCODES (starting at EXEC_OP_CUSTOM_BASE = 16)
  *===========================================================================*/
 
-#define PROC_OP_CREATE          (EXEC_OP_CUSTOM_BASE + 0)   /* Create process */
-#define PROC_OP_TERMINATE       (EXEC_OP_CUSTOM_BASE + 1)   /* Terminate process */
-#define PROC_OP_GET_INFO        (EXEC_OP_CUSTOM_BASE + 2)   /* Get process info */
-#define PROC_OP_LIST            (EXEC_OP_CUSTOM_BASE + 3)   /* List processes */
-#define PROC_OP_GET_PID         (EXEC_OP_CUSTOM_BASE + 4)   /* Get current PID */
-#define PROC_OP_GET_PARENT_PID  (EXEC_OP_CUSTOM_BASE + 5)   /* Get parent PID */
-#define PROC_OP_SET_PRIORITY    (EXEC_OP_CUSTOM_BASE + 6)   /* Set priority */
-#define PROC_OP_GET_PRIORITY    (EXEC_OP_CUSTOM_BASE + 7)   /* Get priority */
-#define PROC_OP_WAIT            (EXEC_OP_CUSTOM_BASE + 8)   /* Wait for process */
+#define PROC_OP_CREATE      (EXEC_OP_CUSTOM_BASE + 0)   /* Create a process */
+#define PROC_OP_KILL        (EXEC_OP_CUSTOM_BASE + 1)   /* Kill a process */
+#define PROC_OP_GET_INFO    (EXEC_OP_CUSTOM_BASE + 2)   /* Get process info */
+#define PROC_OP_GET_COUNT   (EXEC_OP_CUSTOM_BASE + 3)   /* Get process count */
+#define PROC_OP_EXEC        (EXEC_OP_CUSTOM_BASE + 4)   /* Exec binary in new address space */
+#define PROC_OP_LIST        (EXEC_OP_CUSTOM_BASE + 5)   /* List all active processes */
+#define PROC_OP_SYS_SHUTDOWN (EXEC_OP_CUSTOM_BASE + 6)  /* System power off */
+#define PROC_OP_SYS_RESTART  (EXEC_OP_CUSTOM_BASE + 7)  /* System restart */
 
 /*=============================================================================
- * CONFIGURATION
- *===========================================================================*/
-
-#define PROC_NAME_MAX       64
-#define PROC_MAX_ARGS       256
-
-/*=============================================================================
- * PROCESS INFO STRUCTURE
+ * PROCESS INFO STRUCTURE (returned to callers)
  *===========================================================================*/
 
 typedef struct {
-    uint32_t pid;
-    uint32_t parent_pid;
-    uint32_t state;         /* 0=ready, 1=running, 2=blocked, 3=terminated */
-    uint32_t priority;      /* 0=low, 1=medium, 2=high */
-    char name[PROC_NAME_MAX];
-    uint32_t start_time;
-    uint32_t cpu_time;
-    uint32_t memory_used;
+    int32_t  pid;
+    uint32_t state;         /* PROCESS_STATE_READY=1, RUNNING=2 */
 } process_info_t;
 
 /*=============================================================================
@@ -56,66 +49,49 @@ typedef struct {
 
 /* Create process request */
 typedef struct {
-    char name[PROC_NAME_MAX];
-    uint32_t module_index;      /* GRUB module index to load */
-    uint32_t priority;
-    uint32_t flags;
+    uint32_t module_index;      /* GRUB module index to load from */
+    uint32_t load_address;      /* Target address to copy module to */
 } proc_create_req_t;
 
-/* Terminate process request */
+/* Exec binary request (load .mex app in new address space) */
 typedef struct {
-    uint32_t pid;
-    int32_t exit_code;
-} proc_terminate_req_t;
+    uint32_t base_address;      /* Virtual load address (e.g. 0x10000000) */
+    int32_t  binary_shm_id;     /* SHM region containing binary data */
+    uint32_t binary_size;       /* Size of binary in bytes */
+    uint32_t entry_offset;      /* Entry point offset from base */
+} proc_exec_req_t;
+
+/* Kill process request */
+typedef struct {
+    int32_t pid;                /* PID of process to terminate */
+} proc_kill_req_t;
 
 /* Get info request */
 typedef struct {
-    uint32_t pid;
+    int32_t pid;                /* PID to query */
 } proc_info_req_t;
 
-/* Set priority request */
-typedef struct {
-    uint32_t pid;
-    uint32_t priority;
-} proc_priority_req_t;
-
-/* List processes request */
-typedef struct {
-    uint32_t offset;
-    uint32_t max_count;
-} proc_list_req_t;
-
-/* Wait request */
-typedef struct {
-    uint32_t pid;
-    uint32_t timeout_ms;
-} proc_wait_req_t;
+/* Get count request — no payload needed */
 
 /*=============================================================================
  * RESPONSE PAYLOADS
  *===========================================================================*/
 
-/* Create process response */
-typedef struct {
-    uint32_t pid;
-} proc_create_resp_t;
+/* Create process response — result field = new PID */
 
 /* Get info response */
 typedef struct {
     process_info_t info;
 } proc_info_resp_t;
 
-/* List processes response */
+/* Get count response — result field = count */
+
+/* List processes response — SHM-based */
 typedef struct {
-    uint32_t total_count;
-    uint32_t returned_count;
-    process_info_t processes[4];
+    int32_t shm_id;             /* SHM ID containing process_info_t array */
 } proc_list_resp_t;
 
-/* Wait response */
-typedef struct {
-    int32_t exit_code;
-} proc_wait_resp_t;
+/* Shutdown/Restart requests — no payload needed */
 
 /*=============================================================================
  * EXECUTIVE ENTRY POINT

@@ -5,7 +5,7 @@
  * Convention:
  *   - Numbers grouped by domain (16 syscalls per domain = room to grow)
  *   - Handlers: sys_<name>() in managers/syscall/handlers/
- *   - Manager APIs: kernel_<name>() in respective managers
+ *   - Manager APIs: called via extern in respective handlers
  * 
  * ONLY add syscalls for managers that EXIST!
  */
@@ -33,6 +33,8 @@
 #define SYS_YIELD               1   /* yield() - Yield CPU to scheduler */
 #define SYS_GETPID              2   /* getpid() - Get current process ID */
 #define SYS_SLEEP               3   /* sleep(ticks) - Sleep for N ticks */
+#define SYS_SHUTDOWN            4   /* shutdown() - Power off system (ACPI) */
+#define SYS_RESTART             5   /* restart() - Reset CPU (keyboard ctrl) */
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * DOMAIN 16-31: PROCESS management
@@ -40,7 +42,10 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 #define SYS_PROCESS_CREATE      16  /* process_create(entry) - Create process */
 #define SYS_PROCESS_KILL        17  /* process_kill(pid) - Terminate process */
-#define SYS_PROCESS_INFO        19  /* process_info(pid, info) - Get process info */
+#define SYS_PROCESS_INFO        18  /* process_info(pid, info) - Get process info */
+#define SYS_PROCESS_GET_COUNT   19  /* process_get_count() - Get total process count */
+#define SYS_PROCESS_EXEC        20  /* process_exec(base, data, size, entry_off) - Exec binary */
+#define SYS_PROCESS_LIST        21  /* process_list(buf, max) - List all processes */
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * DOMAIN 32-47: MEMORY management
@@ -102,6 +107,18 @@
 #define SYS_TIME_GET_UNIX       113 /* time_get_unix() - Get Unix timestamp */
 #define SYS_TIME_GET_UPTIME     114 /* time_get_uptime(up) - Get uptime struct */
 #define SYS_TIME_GET_TICKS      115 /* time_get_ticks() - Get raw tick count */
+#define SYS_TIME_GET_TICK_FREQ  116 /* time_get_tick_freq() - Get tick frequency (Hz) */
+#define SYS_TIME_GET_SHM_ID     117 /* time_get_shm_id() - Get shared time SHM ID */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * DOMAIN 128-143: FILESYSTEM (File & directory operations)
+ * Manager: ISO9660 driver (+ future MFS driver)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define SYS_FS_LIST_DIR         128 /* fs_list_dir(path, entries, max) - List directory */
+#define SYS_FS_READ_FILE        129 /* fs_read_file(dir_path, name, buf, max) - Read file */
+#define SYS_FS_FILE_COUNT       130 /* fs_file_count(path) - Get file count */
+#define SYS_FS_FIND_DIR         131 /* fs_find_dir(name, out_lba, out_size) - Find subdir */
+#define SYS_FS_GET_ROOT_INFO    132 /* fs_get_root_info(out_lba, out_size) - Get root LBA/size */
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * DOMAIN 240-255: DEBUG/KLOG
@@ -113,8 +130,6 @@
 #define SYS_GET_CPU_INFO        243 /* get_cpu_info() - Get CPU information */
 #define SYS_GET_MEM_INFO        244 /* get_mem_info() - Get memory information */
 #define SYS_GET_PIC_MASK        245 /* get_pic_mask() - Get PIC interrupt mask */
-#define SYS_ULOG                246 /* ulog(level, tag, msg) - User log message [U] */
-#define SYS_ULOG_HEX            247 /* ulog_hex(level, tag, msg, val) - User log with hex [U] */
 
 /* Maximum syscall number */
 #define SYSCALL_MAX             255

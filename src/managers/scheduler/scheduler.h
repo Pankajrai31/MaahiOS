@@ -5,8 +5,9 @@
 
 /**
  * Initialize the scheduler
+ * Returns: 0 on success
  */
-void scheduler_init(void);
+int scheduler_init(void);
 
 /**
  * Called by timer interrupt - switches between processes

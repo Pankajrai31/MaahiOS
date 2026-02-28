@@ -3,16 +3,16 @@
  * 
  * Description:
  *   User library for process management.
- *   Applications include this header to create/manage processes.
- *   Internally communicates with Process Executive via SHM queues.
+ *   Auto-initializes on first call (discovers SHM, attaches).
+ *   Falls back to direct SYS_PROCESS_* kernel syscalls if
+ *   Process Executive is not yet running.
  * 
  * Usage:
- *   #include <libprocess.h>
+ *   #include "libprocess.h"
  *   
- *   libprocess_init();
- *   int pid = libprocess_create("app.bin", 4, PRIORITY_MEDIUM, 0);
- *   libprocess_wait(pid, &exit_code, 0);
- *   libprocess_shutdown();
+ *   int pid = libprocess_create(4, 0);  // just call it
+ *   int count = libprocess_get_count();
+ *   No init() needed — handled automatically.
  * 
  * Author: MaahiOS Team
  * Date: February 2026
@@ -29,17 +29,19 @@
  *===========================================================================*/
 
 /**
- * libprocess_init - Initialize process library
+ * libprocess_init - Explicitly initialize process library (optional)
  * 
- * Connects to Process Executive's SHM queues.
- * Must be called before any other libprocess functions.
+ * Auto-called on first use of any libprocess function.
+ * Falls back to direct kernel syscalls if executive not ready.
  * 
- * Returns: 0 on success, negative on error
+ * Returns: 0 on success, negative if executive not available
  */
 int libprocess_init(void);
 
 /**
  * libprocess_shutdown - Cleanup process library
+ * 
+ * Detaches from SHM queues.
  */
 void libprocess_shutdown(void);
 
@@ -48,78 +50,74 @@ void libprocess_shutdown(void);
  *===========================================================================*/
 
 /**
- * libprocess_create - Create a new process
- * @name: Process name (for display)
+ * libprocess_create - Create a new process from a GRUB module
  * @module_index: GRUB module index containing the binary
- * @priority: Process priority (PRIORITY_*)
- * @flags: Creation flags
+ * @load_address: Target address to load the module into
+ * 
+ * Process Executive copies the module and creates the process.
+ * Fallback: caller must have already copied module; direct syscall.
  * 
  * Returns: PID on success, negative on error
  */
-int libprocess_create(const char *name, uint32_t module_index, 
-                      uint32_t priority, uint32_t flags);
+int libprocess_create(uint32_t module_index, uint32_t load_address);
 
 /**
- * libprocess_terminate - Terminate a process
+ * libprocess_exec - Load and execute a binary in a new address space
+ * @base_address:  Virtual address to load at (e.g. 0x10000000)
+ * @binary_data:   Pointer to binary code+data
+ * @binary_size:   Size of binary in bytes
+ * @entry_offset:  Entry point offset from base
+ * 
+ * Routes through Process Executive for validation and security.
+ * The executive clones a page directory and maps the binary privately.
+ * 
+ * Returns: PID on success, negative on error
+ */
+int libprocess_exec(uint32_t base_address, const void *binary_data,
+                    uint32_t binary_size, uint32_t entry_offset);
+
+/**
+ * libprocess_kill - Terminate a process
  * @pid: Process ID to terminate
- * @exit_code: Exit code
  * 
  * Returns: 0 on success, negative on error
  */
-int libprocess_terminate(uint32_t pid, int32_t exit_code);
-
-/**
- * libprocess_get_pid - Get current process ID
- * 
- * Returns: PID on success, negative on error
- */
-int libprocess_get_pid(void);
-
-/**
- * libprocess_get_parent_pid - Get parent process ID
- * 
- * Returns: Parent PID on success, negative on error
- */
-int libprocess_get_parent_pid(void);
+int libprocess_kill(int32_t pid);
 
 /**
  * libprocess_get_info - Get process information
- * @pid: Process ID
- * @info: Output structure
+ * @pid: Process ID to query
+ * @info: Output structure (pid + state)
  * 
  * Returns: 0 on success, negative on error
  */
-int libprocess_get_info(uint32_t pid, process_info_t *info);
+int libprocess_get_info(int32_t pid, process_info_t *info);
 
 /**
- * libprocess_list - List all processes
- * @offset: Starting index
- * @processes: Output array
- * @max_count: Maximum processes to return
- * @total_count: Output total count (can be NULL)
+ * libprocess_get_count - Get total number of active processes
  * 
- * Returns: Number returned on success, negative on error
+ * Returns: count on success, negative on error
  */
-int libprocess_list(uint32_t offset, process_info_t *processes, 
-                    uint32_t max_count, uint32_t *total_count);
+int libprocess_get_count(void);
 
 /**
- * libprocess_set_priority - Set process priority
- * @pid: Process ID
- * @priority: New priority
- * 
- * Returns: 0 on success, negative on error
+ * List all active processes.
+ * @param infos   Output array of process_info_t
+ * @param max     Maximum entries to fill
+ * @return        Number of entries written, or negative on error
  */
-int libprocess_set_priority(uint32_t pid, uint32_t priority);
+int libprocess_list(process_info_t *infos, int max);
 
 /**
- * libprocess_wait - Wait for process to exit
- * @pid: Process ID to wait for
- * @exit_code: Output exit code (can be NULL)
- * @timeout_ms: Timeout in milliseconds (0 = no wait, -1 = forever)
- * 
- * Returns: 0 on success, negative on error/timeout
+ * Request system power off (via Process Executive → SYS_SHUTDOWN).
+ * Does not return on success.
  */
-int libprocess_wait(uint32_t pid, int32_t *exit_code, uint32_t timeout_ms);
+void libprocess_system_shutdown(void);
+
+/**
+ * Request system restart (via Process Executive → SYS_RESTART).
+ * Does not return on success.
+ */
+void libprocess_system_restart(void);
 
 #endif /* LIBPROCESS_H */

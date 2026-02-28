@@ -3,16 +3,15 @@
  * 
  * Description:
  *   User library for cell registry access.
- *   Applications include this header to read/write cells.
- *   Internally communicates with Cell Executive via SHM queues.
+ *   Auto-initializes on first call. Falls back to direct kernel
+ *   cell syscalls if Cell Executive is not yet running.
  * 
  * Usage:
  *   #include <libcell.h>
  *   
- *   libcell_init();
- *   libcell_write_int("app.settings.volume", 80);
- *   int vol = libcell_read_int("app.settings.volume");
- *   libcell_shutdown();
+ *   libcell_write_int("app.settings.volume", 80);  // just call it
+ *   int32_t vol;
+ *   libcell_read_int("app.settings.volume", &vol);
  * 
  * Author: MaahiOS Team
  * Date: February 2026
@@ -30,12 +29,12 @@
  *===========================================================================*/
 
 /**
- * libcell_init - Initialize cell library
+ * libcell_init - Explicitly initialize cell library (optional)
  * 
- * Connects to Cell Executive's SHM queues.
- * Must be called before any other libcell functions.
+ * Auto-called on first use of any libcell function.
+ * Falls back to direct kernel syscalls if executive not ready.
  * 
- * Returns: 0 on success, negative on error
+ * Returns: 0 on success, negative if executive not available
  */
 int libcell_init(void);
 

@@ -21,7 +21,6 @@
 #define DEV_KEYBOARD    2
 #define DEV_DISPLAY     3
 #define DEV_DISK        4   /* Base ID, actual disks are DEV_DISK + index */
-#define DEV_SERIAL      5
 #define DEV_TIMER       6
 #define DEV_RTC         7   /* Real-Time Clock */
 

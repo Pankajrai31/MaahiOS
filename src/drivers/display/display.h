@@ -51,6 +51,13 @@ typedef struct {
 int gfx_init(uint16_t width, uint16_t height, uint16_t bpp);
 
 /**
+ * Register display with Device Manager.
+ * Called from g_driver_table[] after device_manager_init clears entries.
+ * BGA hardware must already be initialized via gfx_init().
+ */
+int display_register_device(void);
+
+/**
  * Get current driver type.
  */
 display_driver_t gfx_get_driver(void);

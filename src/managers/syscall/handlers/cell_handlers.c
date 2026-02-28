@@ -27,6 +27,8 @@ static int sys_cell_write(uint32_t key_ptr, uint32_t value_ptr, uint32_t size,
     const char *key = (const char *)key_ptr;
     const void *value = (const void *)value_ptr;
     
+    KLOG_DEBUG("SYSCALL", "cell_write: key=%s", key);
+    
     /* Call kernel API */
     extern int kernel_cell_write(const char *key, const void *value, size_t size);
     return kernel_cell_write(key, value, (size_t)size);
@@ -36,8 +38,8 @@ static int sys_cell_write(uint32_t key_ptr, uint32_t value_ptr, uint32_t size,
  * sys_cell_read - Read a cell value
  */
 static int sys_cell_read(uint32_t key_ptr, uint32_t buffer_ptr, uint32_t buffer_size,
-                         uint32_t actual_size_ptr, uint32_t arg5) {
-    (void)arg5;
+                         uint32_t arg4, uint32_t arg5) {
+    (void)arg4; (void)arg5;
     
     if (!key_ptr || !buffer_ptr) {
         return CELL_INVALID_KEY;
@@ -45,11 +47,12 @@ static int sys_cell_read(uint32_t key_ptr, uint32_t buffer_ptr, uint32_t buffer_
     
     const char *key = (const char *)key_ptr;
     void *buffer = (void *)buffer_ptr;
-    size_t *actual_size = (size_t *)actual_size_ptr;
     
-    /* Call kernel API */
+    /* Call kernel API — returns bytes read on success, negative on error.
+     * Do NOT use arg4 as actual_size_ptr: callers use syscall3 (3 args),
+     * so arg4 (from ESI) contains garbage and would corrupt memory. */
     extern int kernel_cell_read(const char *key, void *buffer, size_t buffer_size, size_t *actual_size);
-    return kernel_cell_read(key, buffer, (size_t)buffer_size, actual_size);
+    return kernel_cell_read(key, buffer, (size_t)buffer_size, NULL);
 }
 
 /**
@@ -64,6 +67,8 @@ static int sys_cell_delete(uint32_t key_ptr, uint32_t arg2, uint32_t arg3,
     }
     
     const char *key = (const char *)key_ptr;
+    
+    KLOG_DEBUG("SYSCALL", "cell_delete: key=%s", key);
     
     /* Call kernel API */
     extern int kernel_cell_delete(const char *key);

@@ -2,8 +2,19 @@
  * MaahiOS Disk Executive Header
  * 
  * Description:
- *   Disk Executive provides storage access services.
- *   Handles disk I/O, filesystem operations, and file access.
+ *   Disk Executive provides block-level storage access services.
+ *   Manages physical disks: enumerate, query info, read/write raw sectors.
+ *   Does NOT handle filesystems — that's a future FS Executive.
+ * 
+ *   PID 7 - loaded 5th by sysman (after Log, Cell, Process, Memory)
+ *   Uses liblog for logging (auto-init)
+ *   Uses libcell for cell registration (auto-init)
+ *   Uses SYS_DEV_* syscalls to talk to kernel Device Manager
+ *   Dual SHM queues (request + response)
+ * 
+ * Data Flow:
+ *   App -> libdisk -> SHM queue -> Disk Executive -> SYS_DEV_* syscalls
+ *     -> Device Manager -> disk_subsystem -> ATA driver -> hardware
  * 
  * Author: MaahiOS Team
  * Date: February 2026
@@ -15,109 +26,113 @@
 #include "../common/executive_common.h"
 
 /*=============================================================================
- * DISK EXECUTIVE OPCODES
+ * DISK EXECUTIVE OPCODES (starting at EXEC_OP_CUSTOM_BASE = 16)
+ *
+ * These are BLOCK DEVICE operations only. No filesystem ops here.
  *===========================================================================*/
 
-#define DISK_OP_READ_SECTOR     (EXEC_OP_CUSTOM_BASE + 0)   /* Read raw sector */
-#define DISK_OP_WRITE_SECTOR    (EXEC_OP_CUSTOM_BASE + 1)   /* Write raw sector */
-#define DISK_OP_READ_FILE       (EXEC_OP_CUSTOM_BASE + 2)   /* Read file */
-#define DISK_OP_WRITE_FILE      (EXEC_OP_CUSTOM_BASE + 3)   /* Write file */
-#define DISK_OP_LIST_DIR        (EXEC_OP_CUSTOM_BASE + 4)   /* List directory */
-#define DISK_OP_FILE_EXISTS     (EXEC_OP_CUSTOM_BASE + 5)   /* Check if file exists */
-#define DISK_OP_FILE_INFO       (EXEC_OP_CUSTOM_BASE + 6)   /* Get file info */
-#define DISK_OP_GET_DISK_INFO   (EXEC_OP_CUSTOM_BASE + 7)   /* Get disk info */
-#define DISK_OP_LIST_DISKS      (EXEC_OP_CUSTOM_BASE + 8)   /* List available disks */
+#define DISK_OP_LIST_DISKS      (EXEC_OP_CUSTOM_BASE + 0)   /* List all disks */
+#define DISK_OP_GET_INFO        (EXEC_OP_CUSTOM_BASE + 1)   /* Get disk info */
+#define DISK_OP_GET_STATUS      (EXEC_OP_CUSTOM_BASE + 2)   /* Get disk status */
+#define DISK_OP_READ_SECTOR     (EXEC_OP_CUSTOM_BASE + 3)   /* Read raw sector */
+#define DISK_OP_WRITE_SECTOR    (EXEC_OP_CUSTOM_BASE + 4)   /* Write raw sector */
+#define DISK_OP_GET_SECTOR_SIZE (EXEC_OP_CUSTOM_BASE + 5)   /* Get sector size */
 
 /*=============================================================================
- * CONFIGURATION
+ * CONSTANTS
  *===========================================================================*/
 
-#define DISK_PATH_MAX       256
-#define DISK_NAME_MAX       64
-#define DISK_SECTOR_SIZE    2048    /* CD-ROM sector size */
-#define DISK_MAX_READ       4096    /* Max bytes per read */
+#define DISK_NAME_MAX           32
+#define DISK_MAX_DISKS          8
+
+/* Disk types (matches disk_subsystem.h) */
+#define DISK_TYPE_UNKNOWN       0
+#define DISK_TYPE_HDD           1
+#define DISK_TYPE_CDROM         2
+#define DISK_TYPE_FLOPPY        3
+
+/* Disk status */
+#define DISK_STATUS_OFFLINE     0
+#define DISK_STATUS_ONLINE      1
+#define DISK_STATUS_ERROR       2
 
 /*=============================================================================
- * DISK INFO STRUCTURE
+ * DISK INFO STRUCTURE (returned to callers)
  *===========================================================================*/
 
 typedef struct {
-    char name[DISK_NAME_MAX];
-    uint32_t disk_id;
-    uint32_t type;          /* 0=ATA, 1=ATAPI (CD-ROM), etc. */
-    uint32_t sector_size;
-    uint32_t total_sectors;
-    uint32_t flags;
-} disk_info_t;
-
-/*=============================================================================
- * FILE INFO STRUCTURE
- *===========================================================================*/
-
-typedef struct {
-    char name[DISK_NAME_MAX];
-    char path[DISK_PATH_MAX];
-    uint32_t size;
-    uint32_t type;          /* 0=file, 1=directory */
-    uint32_t flags;
-} file_info_t;
+    uint8_t  index;             /* Disk index (0-based) */
+    uint8_t  disk_type;         /* DISK_TYPE_* */
+    uint8_t  status;            /* DISK_STATUS_* */
+    uint8_t  reserved;
+    uint32_t sector_size;       /* Bytes per sector */
+    uint32_t size_mb;           /* Size in MB */
+    char     name[DISK_NAME_MAX]; /* Human-readable name */
+} disk_exec_info_t;
 
 /*=============================================================================
  * REQUEST PAYLOADS
  *===========================================================================*/
 
-/* Read sector request */
+/* LIST_DISKS request — no payload needed, result = count */
+
+/* GET_INFO request */
 typedef struct {
-    uint32_t disk_id;
-    uint32_t sector;
-    uint32_t count;
+    uint8_t disk_index;         /* Which disk (0-based) */
+} disk_get_info_req_t;
+
+/* GET_STATUS request */
+typedef struct {
+    uint8_t disk_index;         /* Which disk (0-based) */
+} disk_get_status_req_t;
+
+/* READ_SECTOR request
+ * NOTE: The executive reads the sector via SYS_DEV_READ and puts
+ * the data into a SHM block. The response result = SHM ID.
+ * Caller must SHM_ATTACH to read the data, then SHM_DETACH. */
+typedef struct {
+    uint8_t  disk_index;        /* Which disk */
+    uint8_t  reserved[3];
+    uint32_t lba;               /* Starting LBA */
+    uint32_t count;             /* Number of sectors (currently max 1) */
 } disk_read_sector_req_t;
 
-/* Read file request */
+/* WRITE_SECTOR request — future */
 typedef struct {
-    char path[DISK_PATH_MAX];
-    uint32_t offset;
-    uint32_t size;
-} disk_read_file_req_t;
+    uint8_t  disk_index;        /* Which disk */
+    uint8_t  reserved[3];
+    uint32_t lba;               /* Starting LBA */
+    uint32_t count;             /* Number of sectors (max 1) */
+    int32_t  data_shm_id;      /* SHM ID containing sector data to write */
+} disk_write_sector_req_t;
 
-/* List directory request */
+/* GET_SECTOR_SIZE request */
 typedef struct {
-    char path[DISK_PATH_MAX];
-    uint32_t offset;
-    uint32_t max_entries;
-} disk_list_dir_req_t;
-
-/* File exists/info request */
-typedef struct {
-    char path[DISK_PATH_MAX];
-} disk_path_req_t;
+    uint8_t disk_index;         /* Which disk */
+} disk_get_sector_size_req_t;
 
 /*=============================================================================
  * RESPONSE PAYLOADS
  *===========================================================================*/
 
-/* Read sector response */
+/* LIST_DISKS response — fits in payload (each info is ~44 bytes, 8 max = 352)
+ * Since EXEC_MSG_MAX_PAYLOAD = 256, we limit to 5 disks per response.
+ * result = total disk count. */
 typedef struct {
-    uint32_t bytes_read;
-    uint8_t data[DISK_MAX_READ];
-} disk_read_resp_t;
-
-/* List directory response */
-typedef struct {
-    uint32_t total_entries;
-    uint32_t returned_count;
-    file_info_t entries[4];  /* Up to 4 entries per response */
+    uint32_t count;
+    disk_exec_info_t disks[5];  /* Up to 5 disk infos in payload */
 } disk_list_resp_t;
 
-/* File info response */
+/* GET_INFO response */
 typedef struct {
-    file_info_t info;
-} disk_file_info_resp_t;
-
-/* Disk info response */
-typedef struct {
-    disk_info_t info;
+    disk_exec_info_t info;
 } disk_info_resp_t;
+
+/* GET_STATUS response — result = status code (DISK_STATUS_*) */
+
+/* READ_SECTOR response — result = SHM ID containing sector data */
+
+/* GET_SECTOR_SIZE response — result = sector size in bytes */
 
 /*=============================================================================
  * EXECUTIVE ENTRY POINT

@@ -1,187 +1,264 @@
 /**
  * MaahiOS System Manager (sysman)
  * 
- * First ring-3 process (PID 1). Responsible for:
- *   - Loading executives one by one
- *   - Loading Orbit (desktop shell)
- *   - Then idling forever (timer handles multitasking)
+ * First ring-3 process (PID 1).
+ * Loads executives and manages system lifecycle.
+ * 
+ * Boot sequence:
+ *   1. Start Log Executive (PID 2) — handles all user-space logging
+ *   2. Start Cell Executive (PID 3) — manages cell registry
+ *   3. Start GUI Executive — manages display/framebuffer access
+ *   4. Start I/O Executive — manages device input (keyboard, future: mouse)
+ *   5. Start Process Executive (PID 4) — manages process lifecycle
+ *   6. Start Memory Executive (PID 5) — manages heap & SHM
+ *   7. Start Disk Executive (PID 7) — manages block-level disk access
+ *   8. Start Filesystem Executive — manages file I/O (ISO9660 + future MFS)
+ *   9. Prepare & launch Orbit desktop shell
+ *      - Publish terminal module index cell
+ *      - Launch Orbit (which launches Terminal itself)
+ *  10. Idle
+ * 
+ * All executives are loaded with per-process page directories via SYS_PROCESS_EXEC.
+ * Each process gets its own address space mapped at 0x10000000.
+ * Libraries (liblog, libcell, libprocess, libmemory) auto-initialize on first use.
+ * No explicit init calls needed.
  */
 
 #include <stdint.h>
+#include "../../libraries/core/syscall_helpers.h"
 #include "../../libraries/liblog/liblog.h"
+#include "../../libraries/libcell/libcell.h"
+#include "../../libraries/libprocess/libprocess.h"
+#include "../../libraries/libmemory/libmemory.h"
+
+/* All user processes are linked at this virtual address.
+ * Per-process page directories provide isolated address spaces. */
+#define PROCESS_VIRTUAL_BASE    0x10000000
+
+/* GRUB module indices (must match grub.cfg order) */
+#define GRUB_MOD_SYSMAN         0
+#define GRUB_MOD_LOGEXEC        1
+#define GRUB_MOD_CELLEXEC       2
+#define GRUB_MOD_PROCEXEC       3
+#define GRUB_MOD_MEMEXEC        4
+#define GRUB_MOD_DISKEXEC       5
+#define GRUB_MOD_FSEXEC         6
+#define GRUB_MOD_GUIEXEC        7
+#define GRUB_MOD_IOEXEC         8
+#define GRUB_MOD_ORBIT          9
+#define GRUB_MOD_TERMINAL       10
 
 /*=============================================================================
- * Syscall Numbers
+ * Convenience wrappers (thin layer over syscall_helpers)
  *===========================================================================*/
-#define SYS_YIELD               1
-#define SYS_PROCESS_CREATE      16
-#define SYS_MOD_GET_COUNT       96
-#define SYS_MOD_GET_ADDR        98
-#define SYS_KLOG                240
-#define SYS_KLOG_HEX            241
-
-/* Log levels */
-#define LOG_INFO    3
-#define LOG_WARN    2
-#define LOG_ERROR   1
-
-/*=============================================================================
- * Syscall Wrappers
- *===========================================================================*/
-
-static inline int syscall0(int num) {
-    int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num) : "memory");
-    return ret;
-}
-
-static inline int syscall1(int num, uint32_t a) {
-    int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num), "b"(a) : "memory");
-    return ret;
-}
-
-static inline int syscall3(int num, uint32_t a, uint32_t b, uint32_t c) {
-    int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num), "b"(a), "c"(b), "d"(c) : "memory");
-    return ret;
-}
-
-static inline int syscall4(int num, uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
-    int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(num), "b"(a), "c"(b), "d"(c), "S"(d) : "memory");
-    return ret;
-}
-
-/*=============================================================================
- * KLOG Wrapper
- *===========================================================================*/
-
-static void klog(int level, const char *tag, const char *msg) {
-    syscall3(SYS_KLOG, level, (uint32_t)tag, (uint32_t)msg);
-}
-
-static void klog_hex(int level, const char *tag, const char *msg, uint32_t value) {
-    syscall4(SYS_KLOG_HEX, level, (uint32_t)tag, (uint32_t)msg, value);
-}
-
-/*=============================================================================
- * Helper Functions
- *===========================================================================*/
-
-static uint32_t get_module_addr(int index) {
-    return syscall1(SYS_MOD_GET_ADDR, index);
-}
-
-static int get_module_count(void) {
-    return syscall0(SYS_MOD_GET_COUNT);
-}
-
-static int create_process(uint32_t entry_addr) {
-    return syscall1(SYS_PROCESS_CREATE, entry_addr);
-}
 
 static void yield(void) {
     syscall0(SYS_YIELD);
 }
 
-static void delay(int count) {
-    for (int i = 0; i < count; i++) {
-        yield();
+static void sleep_ticks(int ticks) {
+    syscall1(SYS_SLEEP, ticks);
+}
+
+/**
+ * Create a process from a GRUB module with per-process page directory.
+ * Uses SYS_PROCESS_EXEC (which calls process_create_from_memory in kernel).
+ * Each process gets its own page directory with binary mapped at PROCESS_VIRTUAL_BASE.
+ */
+static int create_process_from_module(int module_index, const char *name) {
+    uint32_t mod_addr = (uint32_t)syscall1(SYS_MOD_GET_ADDR, module_index);
+    if (mod_addr == 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Module not found!");
+        liblog_hex(LOG_ERROR, "SYSMAN", "Module index:", (uint32_t)module_index);
+        return -1;
     }
+    
+    uint32_t mod_size = (uint32_t)syscall1(SYS_MOD_GET_SIZE, module_index);
+    if (mod_size == 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Module has zero size!");
+        return -1;
+    }
+    
+    liblog_hex(LOG_INFO, "SYSMAN", "Module GRUB addr:", mod_addr);
+    liblog_hex(LOG_INFO, "SYSMAN", "Module size:", mod_size);
+    
+    int pid = syscall4(SYS_PROCESS_EXEC, PROCESS_VIRTUAL_BASE,
+                       (int)mod_addr, (int)mod_size, 0);
+    if (pid < 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Failed to create process!");
+        return -1;
+    }
+    
+    liblog_hex(LOG_INFO, "SYSMAN", "Process started, PID:", (uint32_t)pid);
+    return pid;
 }
 
 /*=============================================================================
  * Main Entry Point
  *===========================================================================*/
 
-#define MOD_SYSMAN          0
-#define MOD_CELLEXEC        1
-#define MOD_LOGEXEC         2
-#define MOD_UIMANAGER       3
-#define MOD_ORBIT           4
-
 void sysman_main_c(void) {
-    klog(LOG_INFO, "SYSMAN", "========================================");
-    klog(LOG_INFO, "SYSMAN", "  MaahiOS System Manager v2.0");
-    klog(LOG_INFO, "SYSMAN", "========================================");
-    klog(LOG_INFO, "SYSMAN", "Starting system initialization...");
-    
-    /* Get module count */
-    int mod_count = get_module_count();
-    klog_hex(LOG_INFO, "SYSMAN", "GRUB modules available:", mod_count);
+    /* Early log via liblog — will fallback to direct klog since
+     * Log Executive isn't running yet. That's fine. */
+    liblog(LOG_INFO, "SYSMAN", "========================================");
+    liblog(LOG_INFO, "SYSMAN", "  Welcome to Sysman (PID 1)");
+    liblog(LOG_INFO, "SYSMAN", "========================================");
     
     /*=========================================================================
-     * STEP 1: Load Cell Executive
+     * STEP 1: Start Log Executive
      *=======================================================================*/
-    klog(LOG_INFO, "SYSMAN", "Loading Cell Executive...");
+    liblog(LOG_INFO, "SYSMAN", "Starting Log Executive...");
     
-    uint32_t cellexec_addr = get_module_addr(MOD_CELLEXEC);
-    if (cellexec_addr == 0) {
-        klog(LOG_ERROR, "SYSMAN", "Cell Executive not found!");
-        while(1) __asm__ volatile("pause");
+    int log_pid = create_process_from_module(GRUB_MOD_LOGEXEC, "LogExec");
+    if (log_pid < 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Failed to start Log Executive!");
+        while (1) yield();
     }
     
-    klog_hex(LOG_INFO, "SYSMAN", "  Address:", cellexec_addr);
-    
-    int cellexec_pid = create_process(cellexec_addr);
-    if (cellexec_pid < 0) {
-        klog(LOG_ERROR, "SYSMAN", "Failed to start Cell Executive!");
-        while(1) __asm__ volatile("pause");
-    }
-    
-    klog_hex(LOG_INFO, "SYSMAN", "  Started as PID:", cellexec_pid);
-    delay(10);
+    /* Give Log Executive a moment to initialize its SHM queues */
+    sleep_ticks(5);
     
     /*=========================================================================
-     * STEP 2: Load Log Executive
+     * STEP 2: Start Cell Executive
      *=======================================================================*/
-    klog(LOG_INFO, "SYSMAN", "Loading Log Executive...");
+    liblog(LOG_INFO, "SYSMAN", "Starting Cell Executive...");
     
-    uint32_t logexec_addr = get_module_addr(MOD_LOGEXEC);
-    if (logexec_addr == 0) {
-        klog(LOG_ERROR, "SYSMAN", "Log Executive not found!");
-        /* Continue anyway - logging will fall back to klog */
-    } else {
-        klog_hex(LOG_INFO, "SYSMAN", "  Address:", logexec_addr);
-        
-        int logexec_pid = create_process(logexec_addr);
-        if (logexec_pid < 0) {
-            klog(LOG_ERROR, "SYSMAN", "Failed to start Log Executive!");
-        } else {
-            klog_hex(LOG_INFO, "SYSMAN", "  Started as PID:", logexec_pid);
-        }
+    int cell_pid = create_process_from_module(GRUB_MOD_CELLEXEC, "CellExec");
+    if (cell_pid < 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Failed to start Cell Executive!");
+        while (1) yield();
     }
-    delay(20);  /* Give Log Executive time to initialize */
     
-    /* Try to switch to user logging via Log Executive */
-    if (liblog_init() == 0) {
-        liblog(LOG_INFO, "SYSMAN", "Switched to Log Executive for logging");
-    } else {
-        klog(LOG_WARN, "SYSMAN", "Could not connect to Log Executive");
-    }
+    /* Give Cell Executive a moment to initialize */
+    sleep_ticks(5);
     
     /*=========================================================================
-     * STEP 3: Skip UIManager and Orbit for now
+     * STEP 3: Start GUI Executive
+     *   - No executive dependencies (uses kernel SYS_SHM_*, SYS_CELL_WRITE,
+     *     SYS_DEV_* syscalls directly; libcell falls back to kernel syscall)
+     *   - Started early so framebuffer cells are published well before
+     *     Orbit/Terminal need them
      *=======================================================================*/
-    if (liblog_ready()) {
-        liblog(LOG_WARN, "SYSMAN", "UIManager and Orbit disabled for testing");
-    } else {
-        klog(LOG_WARN, "SYSMAN", "UIManager and Orbit disabled for testing");
+    liblog(LOG_INFO, "SYSMAN", "Starting GUI Executive...");
+    
+    int gui_pid = create_process_from_module(GRUB_MOD_GUIEXEC, "GUIExec");
+    if (gui_pid < 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Failed to start GUI Executive!");
+        while (1) yield();
     }
+    
+    /* Give GUI Executive a moment to initialize and publish cells */
+    sleep_ticks(5);
     
     /*=========================================================================
-     * IDLE LOOP
+     * STEP 4: Start I/O Executive
+     *   - No executive dependencies (uses kernel SYS_SHM_*, SYS_CELL_WRITE,
+     *     SYS_DEV_* syscalls directly; libcell falls back to kernel syscall)
+     *   - Started early so keyboard input is available before apps launch
      *=======================================================================*/
-    if (liblog_ready()) {
-        liblog(LOG_INFO, "SYSMAN", "Initialization complete. Entering idle.");
-        liblog(LOG_INFO, "SYSMAN", "========================================");
-    } else {
-        klog(LOG_INFO, "SYSMAN", "Initialization complete. Entering idle.");
-        klog(LOG_INFO, "SYSMAN", "========================================");
+    liblog(LOG_INFO, "SYSMAN", "Starting I/O Executive...");
+    
+    int io_pid = create_process_from_module(GRUB_MOD_IOEXEC, "IOExec");
+    if (io_pid < 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Failed to start I/O Executive!");
+        while (1) yield();
     }
     
-    while(1) {
+    /* Give I/O Executive a moment to initialize and publish cells */
+    sleep_ticks(5);
+    
+    /*=========================================================================
+     * STEP 5: Start Process Executive
+     *=======================================================================*/
+    liblog(LOG_INFO, "SYSMAN", "Starting Process Executive...");
+    
+    int proc_pid = create_process_from_module(GRUB_MOD_PROCEXEC, "ProcExec");
+    if (proc_pid < 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Failed to start Process Executive!");
+        while (1) yield();
+    }
+    
+    /* Give Process Executive a moment to initialize and register cells */
+    sleep_ticks(5);
+    
+    /*=========================================================================
+     * STEP 6: Start Memory Executive
+     *=======================================================================*/
+    liblog(LOG_INFO, "SYSMAN", "Starting Memory Executive...");
+    
+    int mem_pid = create_process_from_module(GRUB_MOD_MEMEXEC, "MemExec");
+    if (mem_pid < 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Failed to start Memory Executive!");
+        while (1) yield();
+    }
+    
+    /* Give Memory Executive a moment to initialize and register cells */
+    sleep_ticks(5);
+    
+    /*=========================================================================
+     * STEP 7: Start Disk Executive
+     *=======================================================================*/
+    liblog(LOG_INFO, "SYSMAN", "Starting Disk Executive...");
+    
+    int disk_pid = create_process_from_module(GRUB_MOD_DISKEXEC, "DiskExec");
+    if (disk_pid < 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Failed to start Disk Executive!");
+        while (1) yield();
+    }
+    
+    /* Give Disk Executive a moment to initialize and scan disks */
+    sleep_ticks(5);
+    
+    /*=========================================================================
+     * STEP 8: Start Filesystem Executive
+     *=======================================================================*/
+    liblog(LOG_INFO, "SYSMAN", "Starting Filesystem Executive...");
+    
+    int fs_pid = create_process_from_module(GRUB_MOD_FSEXEC, "FSExec");
+    if (fs_pid < 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Failed to start FS Executive!");
+        while (1) yield();
+    }
+    
+    /* Give FS Executive a moment to initialize */
+    sleep_ticks(5);
+    
+    /*=========================================================================
+     * STEP 9: Prepare & Launch Orbit Desktop Shell
+     *       - Publish terminal module index so Orbit can discover it
+     *       - Launch Orbit with per-process page directory
+     *       - Orbit will spawn Terminal itself via Process Executive
+     *=======================================================================*/
+    liblog(LOG_INFO, "SYSMAN", "Preparing Orbit + Terminal...");
+    
+    /* Publish terminal module index so Orbit can discover it via cells.
+     * No need to pre-copy terminal — Orbit will use libprocess_create
+     * which now goes through Process Executive → SYS_PROCESS_EXEC. */
+    uint32_t term_mod_val = GRUB_MOD_TERMINAL;
+    
+    libcell_write("system.app.terminal.module",
+                  &term_mod_val, sizeof(uint32_t));
+    liblog(LOG_INFO, "SYSMAN", "Terminal module cell published");
+    
+    /* Launch Orbit with per-process page directory */
+    int orbit_pid = create_process_from_module(GRUB_MOD_ORBIT, "Orbit");
+    if (orbit_pid < 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Failed to start Orbit!");
+        while (1) yield();
+    }
+    liblog_hex(LOG_INFO, "SYSMAN", "Orbit started, PID:", (uint32_t)orbit_pid);
+    
+    /*=========================================================================
+     * STEP 10: All loaded — report and idle
+     *=======================================================================*/
+    int total = libprocess_get_count();
+    liblog(LOG_INFO, "SYSMAN", "========================================");
+    liblog_hex(LOG_INFO, "SYSMAN", "  All loaded. Process count:", (uint32_t)total);
+    liblog(LOG_INFO, "SYSMAN", "  Executives + Orbit running");
+    liblog(LOG_INFO, "SYSMAN", "========================================");
+    
+    /* Idle forever */
+    while (1) {
         yield();
     }
 }

@@ -2,13 +2,13 @@
  * MaahiOS User-Space Logging Library (liblog)
  * 
  * User-space apps use this library to log via Log Executive.
- * Log Executive writes to KLOG buffer with [U] prefix.
+ * Auto-initializes on first call. Falls back to direct klog
+ * syscall if Log Executive is not yet running.
  * 
  * Usage:
  *   #include "liblog.h"
  *   
- *   liblog_init();  // Call once after Log Executive is running
- *   liblog(LOG_INFO, "MYAPP", "Hello world");
+ *   liblog(LOG_INFO, "MYAPP", "Hello world");     // just call it
  *   liblog_hex(LOG_INFO, "MYAPP", "Value:", 0x1234);
  * 
  * Author: MaahiOS Team
@@ -31,24 +31,24 @@
 /* Executive ID for Log Executive */
 #define EXEC_ID_LOG             6
 
-/* Function IDs for Log Executive */
-#define LOG_FUNC_LOG            1   /* Log a message */
-#define LOG_FUNC_LOG_HEX        2   /* Log a message with hex value */
+/* Function IDs for Log Executive (must match log_executive.h) */
+#define LOG_FUNC_LOG            16  /* LOG_OP_LOG = EXEC_OP_CUSTOM_BASE + 0 */
+#define LOG_FUNC_LOG_HEX        17  /* LOG_OP_LOG_HEX = EXEC_OP_CUSTOM_BASE + 1 */
 
 /* Configuration */
 #define LIBLOG_QUEUE_SIZE        32
 #define LIBLOG_MSG_MAX_PAYLOAD   256
-#define LIBLOG_MAX_TAG_LEN       12
-#define LIBLOG_MAX_MSG_LEN       80
+#define LIBLOG_MAX_TAG_LEN       16   /* Must match LOG_MAX_TAG_LEN */
+#define LIBLOG_MAX_MSG_LEN       128  /* Must match LOG_MAX_MSG_LEN */
 
 /*=============================================================================
  * PUBLIC API
  *===========================================================================*/
 
 /**
- * liblog_init - Initialize liblog
- * Call after Log Executive is running.
- * Returns: 0 on success, -1 on failure
+ * liblog_init - Explicitly initialize liblog (optional)
+ * Auto-called on first use of liblog()/liblog_hex().
+ * Returns: 0 on success, -1 if executive not ready
  */
 int liblog_init(void);
 

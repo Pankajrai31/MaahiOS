@@ -2,8 +2,15 @@
  * MaahiOS Memory Executive Header
  * 
  * Description:
- *   Memory Executive provides heap management services for user processes.
- *   Handles memory allocation, deallocation, and memory info queries.
+ *   Memory Executive manages heap allocation and shared memory services
+ *   for user-space processes. Acts as a policy gatekeeper between user
+ *   apps and the kernel PMM/paging/SHM managers.
+ * 
+ *   PID 5 - loaded 4th by sysman (after Log, Cell, Process Executives)
+ *   Uses liblog for logging (auto-init)
+ *   Uses libcell for cell registration (auto-init)
+ *   Direct SYS_MEM_* and SYS_SHM_* syscalls for its own service operations
+ *   Dual SHM queues (request + response)
  * 
  * Author: MaahiOS Team
  * Date: February 2026
@@ -15,90 +22,80 @@
 #include "../common/executive_common.h"
 
 /*=============================================================================
- * MEMORY EXECUTIVE OPCODES
+ * MEMORY EXECUTIVE OPCODES (starting at EXEC_OP_CUSTOM_BASE = 16)
  *===========================================================================*/
 
-#define MEM_OP_ALLOC            (EXEC_OP_CUSTOM_BASE + 0)   /* Allocate memory */
-#define MEM_OP_FREE             (EXEC_OP_CUSTOM_BASE + 1)   /* Free memory */
-#define MEM_OP_REALLOC          (EXEC_OP_CUSTOM_BASE + 2)   /* Reallocate memory */
+#define MEM_OP_ALLOC_PAGE       (EXEC_OP_CUSTOM_BASE + 0)   /* Allocate 4KB page */
+#define MEM_OP_FREE_PAGE        (EXEC_OP_CUSTOM_BASE + 1)   /* Free 4KB page */
+#define MEM_OP_ALLOC            (EXEC_OP_CUSTOM_BASE + 2)   /* Allocate memory block */
 #define MEM_OP_GET_INFO         (EXEC_OP_CUSTOM_BASE + 3)   /* Get memory info */
-#define MEM_OP_GET_USAGE        (EXEC_OP_CUSTOM_BASE + 4)   /* Get memory usage */
-#define MEM_OP_SHM_CREATE       (EXEC_OP_CUSTOM_BASE + 5)   /* Create shared memory */
-#define MEM_OP_SHM_ATTACH       (EXEC_OP_CUSTOM_BASE + 6)   /* Attach to shared memory */
-#define MEM_OP_SHM_DETACH       (EXEC_OP_CUSTOM_BASE + 7)   /* Detach from shared memory */
-#define MEM_OP_SHM_DELETE       (EXEC_OP_CUSTOM_BASE + 8)   /* Delete shared memory */
+#define MEM_OP_SHM_CREATE       (EXEC_OP_CUSTOM_BASE + 4)   /* Create shared memory */
+#define MEM_OP_SHM_ATTACH       (EXEC_OP_CUSTOM_BASE + 5)   /* Attach to shared memory */
+#define MEM_OP_SHM_DETACH       (EXEC_OP_CUSTOM_BASE + 6)   /* Detach from shared memory */
+#define MEM_OP_SHM_DELETE       (EXEC_OP_CUSTOM_BASE + 7)   /* Delete shared memory */
 
 /*=============================================================================
- * MEMORY INFO STRUCTURE
+ * MEMORY INFO STRUCTURE (returned to callers)
  *===========================================================================*/
 
 typedef struct {
-    uint32_t total_memory;      /* Total system memory */
-    uint32_t free_memory;       /* Available memory */
-    uint32_t used_memory;       /* Used memory */
-    uint32_t heap_size;         /* User heap size */
-    uint32_t heap_used;         /* User heap used */
-    uint32_t shm_count;         /* Active SHM segments */
-    uint32_t shm_total_size;    /* Total SHM size */
+    uint32_t total_memory;      /* Total system memory (bytes) */
+    uint32_t free_memory;       /* Available memory (bytes) */
+    uint32_t used_memory;       /* Used memory (bytes) */
 } memory_info_t;
 
 /*=============================================================================
  * REQUEST PAYLOADS
  *===========================================================================*/
 
-/* Allocate memory request */
+/* Allocate page request - no payload, result = address */
+
+/* Free page request */
 typedef struct {
-    uint32_t size;
-    uint32_t alignment;     /* 0 = default alignment */
-    uint32_t flags;
+    uint32_t address;           /* Page address to free */
+} mem_free_page_req_t;
+
+/* Allocate memory block request */
+typedef struct {
+    uint32_t size;              /* Size in bytes */
 } mem_alloc_req_t;
-
-/* Free memory request */
-typedef struct {
-    uint32_t address;
-} mem_free_req_t;
-
-/* Realloc request */
-typedef struct {
-    uint32_t address;
-    uint32_t new_size;
-} mem_realloc_req_t;
 
 /* SHM create request */
 typedef struct {
-    uint32_t size;
-    uint32_t flags;
-    char name[32];
+    uint32_t size;              /* Segment size */
 } mem_shm_create_req_t;
 
 /* SHM attach request */
 typedef struct {
-    int32_t shm_id;
+    int32_t shm_id;             /* SHM ID to attach */
 } mem_shm_attach_req_t;
+
+/* SHM detach request */
+typedef struct {
+    uint32_t address;           /* Attached address to detach */
+} mem_shm_detach_req_t;
+
+/* SHM delete request */
+typedef struct {
+    int32_t shm_id;             /* SHM ID to delete */
+} mem_shm_delete_req_t;
 
 /*=============================================================================
  * RESPONSE PAYLOADS
  *===========================================================================*/
 
-/* Allocate response */
-typedef struct {
-    uint32_t address;
-} mem_alloc_resp_t;
+/* Alloc page response - result field = page address */
 
-/* Memory info response */
+/* Alloc memory response - result field = address */
+
+/* SHM create response - result field = shm_id */
+
+/* SHM attach response - result field = address */
+
+/* Get info response */
 typedef struct {
     memory_info_t info;
 } mem_info_resp_t;
-
-/* SHM create response */
-typedef struct {
-    int32_t shm_id;
-} mem_shm_create_resp_t;
-
-/* SHM attach response */
-typedef struct {
-    uint32_t address;
-} mem_shm_attach_resp_t;
 
 /*=============================================================================
  * EXECUTIVE ENTRY POINT

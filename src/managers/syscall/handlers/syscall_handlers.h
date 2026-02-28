@@ -51,6 +51,12 @@ void syscall_register_device_handlers(void);
 void syscall_register_module_handlers(void);
 
 /**
+ * Time handlers (112-127)
+ * Manager: Time Manager
+ */
+void syscall_register_time_handlers(void);
+
+/**
  * Debug handlers (240-255)
  * Manager: Klog Manager
  */

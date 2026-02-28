@@ -89,8 +89,23 @@ static int sys_get_cpu_info(uint32_t info_ptr, uint32_t arg2, uint32_t arg3,
 
 static int sys_get_mem_info(uint32_t info_ptr, uint32_t arg2, uint32_t arg3,
                             uint32_t arg4, uint32_t arg5) {
-    (void)info_ptr; (void)arg2; (void)arg3; (void)arg4; (void)arg5;
-    return SYSCALL_ERR_NOSYS;
+    (void)arg2; (void)arg3; (void)arg4; (void)arg5;
+    
+    if (!info_ptr) return SYSCALL_ERR_INVALID;
+    
+    extern uint32_t pmm_get_total_pages(void);
+    extern uint32_t pmm_get_used_pages(void);
+    
+    uint32_t total = pmm_get_total_pages();
+    uint32_t used  = pmm_get_used_pages();
+    uint32_t free  = total - used;
+    
+    uint32_t *info = (uint32_t *)info_ptr;
+    info[0] = total * 4096;   /* total_memory (bytes) */
+    info[1] = free  * 4096;   /* free_memory  (bytes) */
+    info[2] = used  * 4096;   /* used_memory  (bytes) */
+    
+    return SYSCALL_OK;
 }
 
 static int sys_get_pic_mask(uint32_t arg1, uint32_t arg2, uint32_t arg3,
@@ -110,7 +125,6 @@ void syscall_register_debug_handlers(void) {
     syscall_register(SYS_GET_CPU_INFO, sys_get_cpu_info);
     syscall_register(SYS_GET_MEM_INFO, sys_get_mem_info);
     syscall_register(SYS_GET_PIC_MASK, sys_get_pic_mask);
-    /* SYS_ULOG removed - SYS_KLOG now outputs [U] for ring 3 callers */
     
     KLOG_INFO("SYSCALL", "Debug handlers registered (240-255)");
 }

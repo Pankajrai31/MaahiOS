@@ -68,6 +68,8 @@ static int sys_mod_copy(uint32_t index, uint32_t target_addr, uint32_t arg3,
         return SYSCALL_ERR_INVALID;
     }
     
+    KLOG_INFO_HEX2("SYSCALL", "mod_copy: idx/target: ", index, target_addr);
+    
     return kernel_grub_copy_module((int)index, target_addr);
 }
 

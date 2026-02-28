@@ -3,7 +3,11 @@
  * 
  * Description:
  *   Memory Executive provides heap and SHM management services.
- *   Makes syscalls to kernel memory managers.
+ *   Makes syscalls to kernel memory/SHM managers for actual operations.
+ *   Uses liblog for logging (Log Executive must be running first).
+ *   Uses libcell for cell registration (Cell Executive must be running first).
+ * 
+ * PID 5 - loaded 4th by sysman (after Log PID 2, Cell PID 3, Process PID 4)
  * 
  * Author: MaahiOS Team
  * Date: February 2026
@@ -11,59 +15,13 @@
 
 #include "memory_executive.h"
 #include "../common/executive_queue.h"
+#include "../../libraries/core/syscall_helpers.h"
+#include "../../libraries/liblog/liblog.h"
+#include "../../libraries/libcell/libcell.h"
 
 /*=============================================================================
- * SYSCALL INTERFACE
+ * CONVENIENCE WRAPPERS (thin layer over syscall_helpers.h)
  *===========================================================================*/
-
-#define SYS_YIELD           1
-#define SYS_MEM_ALLOC       32
-#define SYS_MEM_FREE        33
-#define SYS_MEM_REALLOC     34
-#define SYS_MEM_INFO        35
-#define SYS_SHM_CREATE      48
-#define SYS_SHM_ATTACH      49
-#define SYS_SHM_DETACH      50
-#define SYS_SHM_DELETE      51
-#define SYS_CELL_WRITE      64
-#define SYS_KLOG            240
-#define SYS_KLOG_HEX        241
-
-/* Log levels */
-#define LOG_INFO    3
-#define LOG_WARN    2
-#define LOG_ERROR   1
-
-static inline int syscall5(int num, int a1, int a2, int a3, int a4, int a5) {
-    int ret;
-    __asm__ volatile(
-        "int $0x80"
-        : "=a"(ret)
-        : "a"(num), "b"(a1), "c"(a2), "d"(a3), "S"(a4), "D"(a5)
-        : "memory"
-    );
-    return ret;
-}
-
-static inline int syscall4(int num, int a1, int a2, int a3, int a4) {
-    return syscall5(num, a1, a2, a3, a4, 0);
-}
-
-static inline int syscall3(int num, int a1, int a2, int a3) {
-    return syscall5(num, a1, a2, a3, 0, 0);
-}
-
-static inline int syscall2(int num, int a1, int a2) {
-    return syscall5(num, a1, a2, 0, 0, 0);
-}
-
-static inline int syscall1(int num, int a1) {
-    return syscall5(num, a1, 0, 0, 0, 0);
-}
-
-static inline int syscall0(int num) {
-    return syscall5(num, 0, 0, 0, 0, 0);
-}
 
 static inline void exe_yield(void) {
     syscall0(SYS_YIELD);
@@ -74,36 +32,31 @@ static inline int exe_shm_create(uint32_t size) {
 }
 
 static inline void* exe_shm_attach(int shm_id) {
-    return (void*)syscall1(SYS_SHM_ATTACH, shm_id);
+    return (void*)syscall2(SYS_SHM_ATTACH, shm_id, 0);
 }
 
-static inline int exe_shm_detach(void *addr) {
-    return syscall1(SYS_SHM_DETACH, (int)addr);
+/*=============================================================================
+ * MEMORY KERNEL SYSCALLS (direct - this executive owns memory ops)
+ *===========================================================================*/
+
+static inline void* exe_mem_alloc_page(void) {
+    return (void*)syscall0(SYS_MEM_ALLOC_PAGE);
 }
 
-static inline int exe_shm_delete(int shm_id) {
-    return syscall1(SYS_SHM_DELETE, shm_id);
-}
-
-static inline int exe_cell_write(const char *name, const void *data, uint32_t size) {
-    return syscall3(SYS_CELL_WRITE, (int)name, (int)data, (int)size);
-}
-
-/* Klog syscalls - output [U] since we're ring 3 calling via syscall */
-static inline void exe_klog(int level, const char *tag, const char *msg) {
-    syscall3(SYS_KLOG, level, (int)tag, (int)msg);
-}
-
-static inline void exe_klog_hex(int level, const char *tag, const char *msg, uint32_t value) {
-    syscall4(SYS_KLOG_HEX, level, (int)tag, (int)msg, (int)value);
+static inline int exe_mem_free_page(void *addr) {
+    return syscall1(SYS_MEM_FREE_PAGE, (int)addr);
 }
 
 static inline void* exe_mem_alloc(uint32_t size) {
     return (void*)syscall1(SYS_MEM_ALLOC, (int)size);
 }
 
-static inline int exe_mem_free(void *addr) {
-    return syscall1(SYS_MEM_FREE, (int)addr);
+static inline int exe_shm_detach(void *addr) {
+    return syscall1(SYS_SHM_DETACH, (int)addr);
+}
+
+static inline int exe_shm_destroy(int shm_id) {
+    return syscall1(SYS_SHM_DESTROY, shm_id);
 }
 
 /*=============================================================================
@@ -120,28 +73,29 @@ static int g_resp_queue_shm_id = -1;
  * REQUEST HANDLERS
  *===========================================================================*/
 
-static void exe_memory_handle_alloc(const exec_request_t *req, exec_response_t *resp) {
-    mem_alloc_req_t *payload = (mem_alloc_req_t *)req->payload;
-    mem_alloc_resp_t *resp_data = (mem_alloc_resp_t *)resp->payload;
+static void exe_memory_handle_alloc_page(const exec_request_t *req, exec_response_t *resp) {
+    (void)req;
     
-    void *addr = exe_mem_alloc(payload->size);
+    void *page = exe_mem_alloc_page();
     
     resp->msg_id = req->msg_id;
-    resp->status = (addr != NULL) ? EXEC_OK : EXEC_ERR_NO_MEMORY;
-    resp->result = 0;
+    resp->status = (page != NULL) ? EXEC_OK : EXEC_ERR_NO_MEMORY;
+    resp->result = (uint32_t)page;
+    resp->payload_size = 0;
     
-    if (addr) {
-        resp_data->address = (uint32_t)addr;
-        resp->payload_size = sizeof(mem_alloc_resp_t);
+    if (page) {
+        liblog_hex(LOG_DEBUG, "MEMEXEC", "Allocated page at:", (uint32_t)page);
     } else {
-        resp->payload_size = 0;
+        liblog(LOG_ERROR, "MEMEXEC", "Failed to allocate page!");
     }
 }
 
-static void exe_memory_handle_free(const exec_request_t *req, exec_response_t *resp) {
-    mem_free_req_t *payload = (mem_free_req_t *)req->payload;
+static void exe_memory_handle_free_page(const exec_request_t *req, exec_response_t *resp) {
+    mem_free_page_req_t *payload = (mem_free_page_req_t *)req->payload;
     
-    int result = exe_mem_free((void *)payload->address);
+    liblog_hex(LOG_DEBUG, "MEMEXEC", "Free page at:", payload->address);
+    
+    int result = exe_mem_free_page((void *)payload->address);
     
     resp->msg_id = req->msg_id;
     resp->status = (result >= 0) ? EXEC_OK : result;
@@ -149,40 +103,92 @@ static void exe_memory_handle_free(const exec_request_t *req, exec_response_t *r
     resp->payload_size = 0;
 }
 
-static void exe_memory_handle_shm_create(const exec_request_t *req, exec_response_t *resp) {
-    mem_shm_create_req_t *payload = (mem_shm_create_req_t *)req->payload;
-    mem_shm_create_resp_t *resp_data = (mem_shm_create_resp_t *)resp->payload;
+static void exe_memory_handle_alloc(const exec_request_t *req, exec_response_t *resp) {
+    mem_alloc_req_t *payload = (mem_alloc_req_t *)req->payload;
     
-    int shm_id = exe_shm_create(payload->size);
+    void *addr = exe_mem_alloc(payload->size);
     
     resp->msg_id = req->msg_id;
-    resp->status = (shm_id >= 0) ? EXEC_OK : EXEC_ERR_NO_MEMORY;
+    resp->status = (addr != NULL) ? EXEC_OK : EXEC_ERR_NO_MEMORY;
+    resp->result = (uint32_t)addr;
+    resp->payload_size = 0;
+    
+    if (addr) {
+        liblog_hex(LOG_DEBUG, "MEMEXEC", "Allocated block at:", (uint32_t)addr);
+    } else {
+        liblog(LOG_ERROR, "MEMEXEC", "Failed to allocate block!");
+    }
+}
+
+static void exe_memory_handle_get_info(const exec_request_t *req, exec_response_t *resp) {
+    mem_info_resp_t *resp_data = (mem_info_resp_t *)resp->payload;
+    
+    /* Use debug syscall to get memory info */
+    uint32_t info_buf[3] = {0, 0, 0};
+    int result = syscall1(SYS_GET_MEM_INFO, (int)info_buf);
+    
+    resp->msg_id = req->msg_id;
+    resp->status = (result >= 0) ? EXEC_OK : result;
     resp->result = 0;
     
-    if (shm_id >= 0) {
-        resp_data->shm_id = shm_id;
-        resp->payload_size = sizeof(mem_shm_create_resp_t);
+    if (result >= 0) {
+        resp_data->info.total_memory = info_buf[0];
+        resp_data->info.free_memory  = info_buf[1];
+        resp_data->info.used_memory  = info_buf[2];
+        resp->payload_size = sizeof(mem_info_resp_t);
     } else {
         resp->payload_size = 0;
     }
 }
 
+static void exe_memory_handle_shm_create(const exec_request_t *req, exec_response_t *resp) {
+    mem_shm_create_req_t *payload = (mem_shm_create_req_t *)req->payload;
+    
+    int shm_id = exe_shm_create(payload->size);
+    
+    resp->msg_id = req->msg_id;
+    resp->status = (shm_id >= 0) ? EXEC_OK : EXEC_ERR_NO_MEMORY;
+    resp->result = (shm_id >= 0) ? (uint32_t)shm_id : 0;
+    resp->payload_size = 0;
+    
+    if (shm_id >= 0) {
+        liblog_hex(LOG_DEBUG, "MEMEXEC", "SHM created, ID:", (uint32_t)shm_id);
+    } else {
+        liblog(LOG_ERROR, "MEMEXEC", "SHM create failed!");
+    }
+}
+
 static void exe_memory_handle_shm_attach(const exec_request_t *req, exec_response_t *resp) {
     mem_shm_attach_req_t *payload = (mem_shm_attach_req_t *)req->payload;
-    mem_shm_attach_resp_t *resp_data = (mem_shm_attach_resp_t *)resp->payload;
     
     void *addr = exe_shm_attach(payload->shm_id);
     
     resp->msg_id = req->msg_id;
     resp->status = (addr != NULL) ? EXEC_OK : EXEC_ERR_INVALID;
-    resp->result = 0;
+    resp->result = (uint32_t)addr;
+    resp->payload_size = 0;
+}
+
+static void exe_memory_handle_shm_detach(const exec_request_t *req, exec_response_t *resp) {
+    mem_shm_detach_req_t *payload = (mem_shm_detach_req_t *)req->payload;
     
-    if (addr) {
-        resp_data->address = (uint32_t)addr;
-        resp->payload_size = sizeof(mem_shm_attach_resp_t);
-    } else {
-        resp->payload_size = 0;
-    }
+    int result = exe_shm_detach((void *)payload->address);
+    
+    resp->msg_id = req->msg_id;
+    resp->status = (result >= 0) ? EXEC_OK : result;
+    resp->result = 0;
+    resp->payload_size = 0;
+}
+
+static void exe_memory_handle_shm_delete(const exec_request_t *req, exec_response_t *resp) {
+    mem_shm_delete_req_t *payload = (mem_shm_delete_req_t *)req->payload;
+    
+    int result = exe_shm_destroy(payload->shm_id);
+    
+    resp->msg_id = req->msg_id;
+    resp->status = (result >= 0) ? EXEC_OK : result;
+    resp->result = 0;
+    resp->payload_size = 0;
 }
 
 static void exe_memory_handle_ping(const exec_request_t *req, exec_response_t *resp) {
@@ -196,10 +202,10 @@ static void exe_memory_handle_ping(const exec_request_t *req, exec_response_t *r
  * REQUEST DISPATCHER
  *===========================================================================*/
 
-static void exe_memory_process_request(const exec_request_t *req, exec_response_t *resp) {
+static void exe_memory_dispatch(const exec_request_t *req, exec_response_t *resp) {
     exe_memset(resp, 0, sizeof(exec_response_t));
     
-    switch (req->opcode) {
+    switch (req->func_id) {
         case EXEC_OP_PING:
             exe_memory_handle_ping(req, resp);
             break;
@@ -210,12 +216,20 @@ static void exe_memory_process_request(const exec_request_t *req, exec_response_
             resp->status = EXEC_OK;
             break;
             
+        case MEM_OP_ALLOC_PAGE:
+            exe_memory_handle_alloc_page(req, resp);
+            break;
+            
+        case MEM_OP_FREE_PAGE:
+            exe_memory_handle_free_page(req, resp);
+            break;
+            
         case MEM_OP_ALLOC:
             exe_memory_handle_alloc(req, resp);
             break;
             
-        case MEM_OP_FREE:
-            exe_memory_handle_free(req, resp);
+        case MEM_OP_GET_INFO:
+            exe_memory_handle_get_info(req, resp);
             break;
             
         case MEM_OP_SHM_CREATE:
@@ -224,6 +238,14 @@ static void exe_memory_process_request(const exec_request_t *req, exec_response_
             
         case MEM_OP_SHM_ATTACH:
             exe_memory_handle_shm_attach(req, resp);
+            break;
+            
+        case MEM_OP_SHM_DETACH:
+            exe_memory_handle_shm_detach(req, resp);
+            break;
+            
+        case MEM_OP_SHM_DELETE:
+            exe_memory_handle_shm_delete(req, resp);
             break;
             
         default:
@@ -244,36 +266,40 @@ static void exe_memory_process_request(const exec_request_t *req, exec_response_
  *===========================================================================*/
 
 static int exe_memory_init(void) {
-    exe_klog(LOG_INFO, "MEMEXEC", "Memory Executive initializing...");
+    /* liblog auto-inits: if Log Executive is ready, uses SHM queue;
+     * if not ready yet, falls back to direct klog syscall. */
+    liblog(LOG_INFO, "MEMEXEC", "Memory Executive initializing...");
     
+    /* Create SHM queues */
     g_req_queue_shm_id = exe_shm_create(sizeof(exec_request_queue_t));
     if (g_req_queue_shm_id < 0) {
-        exe_klog(LOG_ERROR, "MEMEXEC", "Failed to create request queue SHM");
+        liblog(LOG_ERROR, "MEMEXEC", "Failed to create request queue SHM");
         return -1;
     }
     
     g_req_queue = (exec_request_queue_t *)exe_shm_attach(g_req_queue_shm_id);
     if (!g_req_queue) {
-        exe_klog(LOG_ERROR, "MEMEXEC", "Failed to attach request queue SHM");
+        liblog(LOG_ERROR, "MEMEXEC", "Failed to attach request queue SHM");
         return -1;
     }
     exe_request_queue_init(g_req_queue);
-    exe_klog_hex(LOG_INFO, "MEMEXEC", "Request queue SHM ID:", g_req_queue_shm_id);
+    liblog_hex(LOG_INFO, "MEMEXEC", "Request queue SHM ID:", g_req_queue_shm_id);
     
     g_resp_queue_shm_id = exe_shm_create(sizeof(exec_response_queue_t));
     if (g_resp_queue_shm_id < 0) {
-        exe_klog(LOG_ERROR, "MEMEXEC", "Failed to create response queue SHM");
+        liblog(LOG_ERROR, "MEMEXEC", "Failed to create response queue SHM");
         return -1;
     }
     
     g_resp_queue = (exec_response_queue_t *)exe_shm_attach(g_resp_queue_shm_id);
     if (!g_resp_queue) {
-        exe_klog(LOG_ERROR, "MEMEXEC", "Failed to attach response queue SHM");
+        liblog(LOG_ERROR, "MEMEXEC", "Failed to attach response queue SHM");
         return -1;
     }
     exe_response_queue_init(g_resp_queue);
-    exe_klog_hex(LOG_INFO, "MEMEXEC", "Response queue SHM ID:", g_resp_queue_shm_id);
+    liblog_hex(LOG_INFO, "MEMEXEC", "Response queue SHM ID:", g_resp_queue_shm_id);
     
+    /* Set up control block */
     static exec_control_block_t local_ecb;
     g_ecb = &local_ecb;
     exe_str_copy(g_ecb->name, "memory_executive", EXEC_NAME_MAX);
@@ -283,29 +309,29 @@ static int exe_memory_init(void) {
     g_ecb->request_queue_shm_id = g_req_queue_shm_id;
     g_ecb->response_queue_shm_id = g_resp_queue_shm_id;
     
-    /* Publish SHM IDs to cells for discovery */
-    exe_cell_write("system.exec.memory.req_shm", &g_req_queue_shm_id, sizeof(int));
-    exe_cell_write("system.exec.memory.resp_shm", &g_resp_queue_shm_id, sizeof(int));
+    /* Write queue SHM IDs to cells for discovery (via libcell - auto-inits) */
+    libcell_write("system.exec.memory.req_shm", &g_req_queue_shm_id, sizeof(int));
+    libcell_write("system.exec.memory.resp_shm", &g_resp_queue_shm_id, sizeof(int));
     
-    exe_klog(LOG_INFO, "MEMEXEC", "Memory Executive initialized successfully");
+    liblog(LOG_INFO, "MEMEXEC", "Memory Executive initialized successfully");
     return 0;
 }
 
 void exe_memory_main(void) {
     if (exe_memory_init() != 0) {
-        exe_klog(LOG_ERROR, "MEMEXEC", "Initialization failed! Halting.");
+        liblog(LOG_ERROR, "MEMEXEC", "Initialization failed! Halting.");
         while (1) __asm__ volatile("hlt");
     }
     
     EXEC_SET_STATE(g_ecb, EXEC_STATE_RUNNING);
-    exe_klog(LOG_INFO, "MEMEXEC", "Entering main loop...");
+    liblog(LOG_INFO, "MEMEXEC", "Entering main loop...");
     
     exec_request_t req;
     exec_response_t resp;
     
     while (!EXEC_SHOULD_STOP(g_ecb)) {
         if (exe_request_queue_pop(g_req_queue, &req) == EXEC_OK) {
-            exe_memory_process_request(&req, &resp);
+            exe_memory_dispatch(&req, &resp);
             exe_response_queue_push(g_resp_queue, &resp);
         } else {
             exe_yield();
@@ -313,6 +339,6 @@ void exe_memory_main(void) {
     }
     
     EXEC_SET_STATE(g_ecb, EXEC_STATE_STOPPED);
-    exe_klog(LOG_WARN, "MEMEXEC", "Stopped. Halting.");
+    liblog(LOG_WARN, "MEMEXEC", "Stopped. Halting.");
     while (1) __asm__ volatile("hlt");
 }

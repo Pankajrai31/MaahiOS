@@ -5,39 +5,8 @@
 
 #include "bga.h"
 #include <stdint.h>
-
-/* ============================================
- * Port I/O
- * ============================================ */
-static inline uint8_t inb(uint16_t port) {
-    uint8_t ret;
-    __asm__ volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
-
-static inline void outb(uint16_t port, uint8_t val) {
-    __asm__ volatile("outb %0, %1" : : "a"(val), "Nd"(port));
-}
-
-static inline void outw(uint16_t port, uint16_t val) {
-    __asm__ volatile("outw %0, %1" : : "a"(val), "Nd"(port));
-}
-
-static inline uint16_t inw(uint16_t port) {
-    uint16_t ret;
-    __asm__ volatile("inw %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
-
-static inline void outl(uint16_t port, uint32_t val) {
-    __asm__ volatile("outl %0, %1" : : "a"(val), "Nd"(port));
-}
-
-static inline uint32_t inl(uint16_t port) {
-    uint32_t ret;
-    __asm__ volatile("inl %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
+#include "../../managers/klog/klog.h"
+#include "../../system/libraries/shared/io.h"
 
 /* ============================================
  * State
@@ -240,7 +209,12 @@ uint16_t bga_get_width(void) { return screen_width; }
 uint16_t bga_get_height(void) { return screen_height; }
 
 int bga_init(uint16_t width, uint16_t height, uint16_t bpp) {
-    if (!bga_is_available()) return 0;
+    KLOG_INFO("BGA", "Initializing BGA hardware driver");
+    
+    if (!bga_is_available()) {
+        KLOG_ERROR("BGA", "BGA hardware not available");
+        return 0;
+    }
     
     bga_set_video_mode(width, height, bpp);
     
@@ -249,6 +223,7 @@ int bga_init(uint16_t width, uint16_t height, uint16_t bpp) {
     screen_bpp = bga_read_register(VBE_DISPI_INDEX_BPP);
     framebuffer = (uint32_t *)bga_get_framebuffer_addr();
     
+    KLOG_INFO("BGA", "Mode set, framebuffer mapped");
     return 1;
 }
 

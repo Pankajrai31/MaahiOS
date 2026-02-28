@@ -60,18 +60,8 @@ static const uint8_t scancode_to_ascii_shift[128] = {
     0,   0,   0,   0,   0,   0,   0,   0
 };
 
-/* ============================================
- * Port I/O Helpers
- * ============================================ */
-static inline uint8_t inb(uint16_t port) {
-    uint8_t ret;
-    __asm__ volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
-
-static inline void outb(uint16_t port, uint8_t val) {
-    __asm__ volatile("outb %0, %1" : : "a"(val), "Nd"(port));
-}
+/* Port I/O */
+#include "../../system/libraries/shared/io.h"
 
 /* ============================================
  * Queue Management

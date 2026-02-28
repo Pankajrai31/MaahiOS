@@ -39,12 +39,14 @@
 #define EXEC_NAME_MAX           32
 
 /* Executive IDs (well-known) */
-#define EXEC_ID_QUEUE           1   /* Queue Executive (manages other queues) */
 #define EXEC_ID_CELL            2   /* Cell Executive (registry) */
 #define EXEC_ID_DISK            3   /* Disk Executive (storage) */
 #define EXEC_ID_PROCESS         4   /* Process Executive */
 #define EXEC_ID_MEMORY          5   /* Memory Executive (heap) */
 #define EXEC_ID_LOG             6   /* Log Executive (user-space logging) */
+#define EXEC_ID_FS              7   /* Filesystem Executive (file I/O) */
+#define EXEC_ID_GUI             8   /* GUI Executive (display/framebuffer) */
+#define EXEC_ID_IO              9   /* I/O Executive (keyboard/mouse input) */
 #define EXEC_ID_MAX             16  /* Maximum executives */
 
 /*=============================================================================

@@ -8,8 +8,9 @@
 
 /**
  * Initialize IRQ manager and remap PIC
+ * Returns: 0 on success
  */
-void irq_manager_init(void);
+int irq_manager_init(void);
 
 /**
  * Enable specific IRQ line

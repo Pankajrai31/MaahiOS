@@ -1,126 +1,109 @@
-#ifndef SYSCALL_NUMBERS_H
-#define SYSCALL_NUMBERS_H
+/**
+ * MaahiOS Syscall Numbers - User-Space Copy
+ * 
+ * Mirror of managers/syscall/syscall_numbers.h for user-space code.
+ * If you add a new syscall, update BOTH files.
+ */
 
-// Syscall number definitions
-// These are the identifiers used in EAX to specify which syscall to invoke
+#ifndef USER_SYSCALL_NUMBERS_H
+#define USER_SYSCALL_NUMBERS_H
 
-#define SYSCALL_PUTCHAR     1   // putchar(char c) - Print single character
-#define SYSCALL_PUTS        2   // puts(const char* str) - Print null-terminated string
-#define SYSCALL_PUTINT      3   // putint(int num) - Print integer
-#define SYSCALL_EXIT        4   // exit(int code) - Terminate program
-#define SYSCALL_WRITE       5   // write(int fd, char* buf, int size) - Write to file descriptor
-#define SYSCALL_ALLOC_PAGE  6   // alloc_page() - Allocate a physical page (4KB)
-#define SYSCALL_FREE_PAGE   7   // free_page(void* addr) - Free a physical page
-#define SYSCALL_CLEAR       8   // clear() - Clear screen
-#define SYSCALL_SET_COLOR   9   // set_color(fg, bg) - Set text color
-#define SYSCALL_DRAW_RECT   10  // draw_rect(x, y, width, height, color) - Draw filled rectangle
-#define SYSCALL_GRAPHICS_MODE 11 // graphics_mode() - Switch to 320x200 graphics mode
-#define SYSCALL_PUT_PIXEL   12  // put_pixel(x, y, color) - Draw a pixel
-#define SYSCALL_CLEAR_GFX   13  // clear_gfx(color) - Clear graphics screen
-#define SYSCALL_PRINT_AT    14  // print_at(x, y, str) - Print string at position
-#define SYSCALL_SET_CURSOR  15  // set_cursor(x, y) - Set cursor position
-#define SYSCALL_DRAW_BOX    16  // draw_box(x, y, width, height) - Draw box border
-#define SYSCALL_CREATE_PROCESS 17  // create_process(entry_point) - Create new process
-#define SYSCALL_GET_ORBIT_ADDR 18  // get_orbit_address() - Get orbit module address
+/* ═══════════════════════════════════════════════════════════════════
+ * DOMAIN 0-15: CORE
+ * ═══════════════════════════════════════════════════════════════════ */
+#define SYS_EXIT                0
+#define SYS_YIELD               1
+#define SYS_GETPID              2
+#define SYS_SLEEP               3
+#define SYS_SHUTDOWN            4
+#define SYS_RESTART             5
 
-// Graphics syscalls (Simple text-mode-like API - no addresses!)
-#define SYSCALL_GFX_PUTC        19  // gfx_putc(char c) - Print character at cursor
-#define SYSCALL_GFX_PUTS        20  // gfx_puts(str) - Print string at cursor
-#define SYSCALL_GFX_CLEAR       21  // gfx_clear() - Clear screen to black
-#define SYSCALL_GFX_SET_COLOR   22  // gfx_set_color(fg, bg) - Set text colors
-#define SYSCALL_GFX_FILL_RECT   23  // gfx_fill_rect(x, y, w, h, color) - Draw filled rectangle
-#define SYSCALL_GFX_DRAW_RECT   24  // gfx_draw_rect(x, y, w, h, color) - Draw rectangle outline
-#define SYSCALL_GFX_PRINT_AT    25  // gfx_print_at(x, y, str, fg, bg) - Print at position
-#define SYSCALL_GFX_CLEAR_COLOR 26  // gfx_clear_color(rgb) - Clear screen to RGB color
-#define SYSCALL_GFX_DRAW_BMP    27  // gfx_draw_bmp(x, y, bmp_data) - Draw BMP image at position
+/* ═══════════════════════════════════════════════════════════════════
+ * DOMAIN 16-31: PROCESS
+ * ═══════════════════════════════════════════════════════════════════ */
+#define SYS_PROCESS_CREATE      16
+#define SYS_PROCESS_KILL        17
+#define SYS_PROCESS_INFO        18
+#define SYS_PROCESS_GET_COUNT   19
+#define SYS_PROCESS_EXEC        20
+#define SYS_PROCESS_LIST        21
 
-// Mouse syscalls
-#define SYSCALL_MOUSE_GET_X     28  // mouse_get_x() - Get mouse X position
-#define SYSCALL_MOUSE_GET_Y     29  // mouse_get_y() - Get mouse Y position
-#define SYSCALL_MOUSE_GET_BUTTONS 30 // mouse_get_buttons() - Get button states
+/* ═══════════════════════════════════════════════════════════════════
+ * DOMAIN 32-47: MEMORY
+ * ═══════════════════════════════════════════════════════════════════ */
+#define SYS_MEM_ALLOC_PAGE      32
+#define SYS_MEM_FREE_PAGE       33
+#define SYS_MEM_ALLOC           34
+#define SYS_MEM_ATOMIC_COPY     35
 
-// Scheduler syscalls
-#define SYSCALL_YIELD           31  // yield() - Yield CPU to scheduler
+/* ═══════════════════════════════════════════════════════════════════
+ * DOMAIN 48-63: SHARED MEMORY
+ * ═══════════════════════════════════════════════════════════════════ */
+#define SYS_SHM_CREATE          48
+#define SYS_SHM_ATTACH          49
+#define SYS_SHM_DETACH          50
+#define SYS_SHM_DESTROY         51
+#define SYS_SHM_INFO            52
 
-// Debug syscalls
-#define SYSCALL_MOUSE_GET_IRQ_TOTAL 32  // mouse_get_irq_total() - Get total IRQ12 count
-#define SYSCALL_GET_PIC_MASK        33  // get_pic_mask() - Get PIC mask register
-#define SYSCALL_RE_ENABLE_MOUSE     34  // re_enable_mouse() - Re-enable IRQ12
-#define SYSCALL_POLL_MOUSE          35  // poll_mouse() - Manually poll 8042 for mouse data if IRQ12 stopped
-#define SYSCALL_READ_PIXEL          36  // read_pixel(x, y) - Read pixel from framebuffer for cursor compositor
+/* ═══════════════════════════════════════════════════════════════════
+ * DOMAIN 64-79: CELL (Key-Value Store)
+ * ═══════════════════════════════════════════════════════════════════ */
+#define SYS_CELL_WRITE          64
+#define SYS_CELL_READ           65
+#define SYS_CELL_DELETE         66
+#define SYS_CELL_EXISTS         67
+#define SYS_CELL_GET_SHM_ID     68
+#define SYS_CELL_LIST           69
 
-// UIManager syscalls
-#define SYSCALL_UI_REGISTER_BUTTON  37  // ui_register_button(owner_pid, x, y, w, h, label) - Register button with UIManager
-#define SYSCALL_GET_UIMANAGER_ADDR  38  // get_uimanager_address() - Get UIManager module address
-#define SYSCALL_GET_CURRENT_PID     39  // get_current_pid() - Get current process ID
-#define SYSCALL_UI_CREATE_WINDOW    40  // ui_create_window(x, y, w, h, title, parent) - Create window
-#define SYSCALL_UI_CREATE_BUTTON    41  // ui_create_button(window_id, x, y, w, h, text) - Create button
-#define SYSCALL_UI_CREATE_LABEL     42  // ui_create_label(window_id, x, y, text) - Create label
-#define SYSCALL_UI_POLL_EVENT       43  // ui_poll_event(event_out) - Poll for UI events
-#define SYSCALL_UI_RENDER_ALL       44  // ui_render_all() - Request render (will be called by UIManager anyway)
+/* ═══════════════════════════════════════════════════════════════════
+ * DOMAIN 80-95: DEVICE I/O
+ * ═══════════════════════════════════════════════════════════════════ */
+#define SYS_DEV_OPEN            80
+#define SYS_DEV_CLOSE           81
+#define SYS_DEV_READ            82
+#define SYS_DEV_WRITE           83
+#define SYS_DEV_IOCTL           84
+#define SYS_DEV_POLL            85
+#define SYS_DEV_LIST            86
 
-#define SYSCALL_UI_GET_WINDOWS_PTR  45  // get_windows_pointer() - Get pointer to kernel windows array
-#define SYSCALL_UI_GET_CONTROLS_PTR 46  // get_controls_pointer() - Get pointer to kernel controls array
-#define SYSCALL_UI_GET_EVENTS_PTR   47  // get_events_pointer() - Get pointer to kernel event queues
+/* ═══════════════════════════════════════════════════════════════════
+ * DOMAIN 96-111: GRUB MODULE
+ * ═══════════════════════════════════════════════════════════════════ */
+#define SYS_MOD_GET_COUNT       96
+#define SYS_MOD_GET_INFO        97
+#define SYS_MOD_GET_ADDR        98
+#define SYS_MOD_GET_SIZE        99
+#define SYS_MOD_COPY            100
 
-// Memory management
-#define SYSCALL_ALLOC_MEMORY        50  // alloc_memory(size_bytes) - Allocate contiguous memory block
-#define SYSCALL_ATOMIC_MEMCPY       51  // atomic_memcpy(dest, src, size) - Interrupt-safe memory copy
-#define SYSCALL_LAUNCH_FILE_MANAGER 52  // launch_file_manager() - Launch file_manager.bin as new process
-#define SYSCALL_KILL_PROCESS        53  // kill_process(pid) - Terminate a process and free resources
-#define SYSCALL_UI_CREATE_ICON      54  // ui_create_icon(window_id, x, y, text) - Create icon control
-#define SYSCALL_LAUNCH_DISK_MANAGER 55  // launch_disk_manager() - Launch disk_manager.bin as new process
+/* ═══════════════════════════════════════════════════════════════════
+ * DOMAIN 112-127: TIME
+ * ═══════════════════════════════════════════════════════════════════ */
+#define SYS_TIME_GET_DATETIME   112
+#define SYS_TIME_GET_UNIX       113
+#define SYS_TIME_GET_UPTIME     114
+#define SYS_TIME_GET_TICKS      115
+#define SYS_TIME_GET_TICK_FREQ  116
+#define SYS_TIME_GET_SHM_ID     117
 
-// Disk operations
-#define SYSCALL_DISK_GET_COUNT      56  // disk_get_count() - Get number of detected disks
-#define SYSCALL_DISK_GET_INFO       57  // disk_get_info(index, buffer) - Get disk information
-#define SYSCALL_DISK_READ_SECTOR    58  // disk_read_sector(disk_index, lba, buffer) - Read sector
+/* ═══════════════════════════════════════════════════════════════════
+ * DOMAIN 128-143: FILESYSTEM
+ * ═══════════════════════════════════════════════════════════════════ */
+#define SYS_FS_LIST_DIR         128
+#define SYS_FS_READ_FILE        129
+#define SYS_FS_FILE_COUNT       130
+#define SYS_FS_FIND_DIR         131
+#define SYS_FS_GET_ROOT_INFO    132
 
-// Advanced UI Controls (New framework)
-#define SYSCALL_CONTROL_CREATE          60  // control_create(window_id, type) - Create UI control
-#define SYSCALL_CONTROL_SET_POSITION    61  // control_set_position(control_id, x, y) - Set position
-#define SYSCALL_CONTROL_SET_SIZE        62  // control_set_size(control_id, width, height) - Set size
-#define SYSCALL_CONTROL_SET_TEXT        63  // control_set_text(control_id, text) - Set text
-#define SYSCALL_CONTROL_SET_PARENT      64  // control_set_parent(control_id, parent_id) - Set parent
-#define SYSCALL_CONTROL_SET_COLORS      65  // control_set_colors(control_id, bg, fg, border) - Set colors
-#define SYSCALL_CONTROL_SET_MARGINS     66  // control_set_margins(control_id, l, t, r, b) - Set margins
-#define SYSCALL_CONTROL_RENDER          67  // control_render(control_id) - Render control
-#define SYSCALL_PANEL_ADD_CHILD         68  // panel_add_child(panel_id, child_id) - Add child to panel
-#define SYSCALL_PANEL_SET_SCROLLABLE    69  // panel_set_scrollable(panel_id, scrollable) - Enable scrolling
-#define SYSCALL_TABLE_SET_DIMENSIONS    70  // table_set_dimensions(table_id, rows, cols) - Set table size
-#define SYSCALL_TABLE_SET_COLUMN_WIDTH  71  // table_set_column_width(table_id, col, width) - Set column width
-#define SYSCALL_TEXTBOX_SET_CONTENT     72  // textbox_set_content(textbox_id, content) - Set textbox text
-#define SYSCALL_TEXTBOX_GET_CONTENT     73  // textbox_get_content(textbox_id) - Get textbox text
+/* ═══════════════════════════════════════════════════════════════════
+ * DOMAIN 240-255: DEBUG/KLOG
+ * ═══════════════════════════════════════════════════════════════════ */
+#define SYS_KLOG                240
+#define SYS_KLOG_HEX            241
+#define SYS_KLOG_GET_SHM        242
+#define SYS_GET_CPU_INFO        243
+#define SYS_GET_MEM_INFO        244
+#define SYS_GET_PIC_MASK        245
 
-// List control syscalls
-#define SYSCALL_UI_CREATE_LIST          76  // ui_create_list(window_id, x, y, w, h, items) - Create list control
-#define SYSCALL_UI_UPDATE_CONTROL_TEXT  77  // ui_update_control_text(control_id, text) - Update control text content
+#define SYSCALL_MAX             255
 
-// ISO filesystem syscalls
-#define SYSCALL_ISO_LIST_DIR            78  // iso_list_dir(lba, size, buffer, max) - List directory by LBA
-#define SYSCALL_ISO_GET_ROOT_INFO       79  // iso_get_root_info(lba_ptr, size_ptr) - Get root directory info
-#define SYSCALL_ISO_READ_FILE           80  // iso_read_file(lba, size, buffer, max) - Read file data from ISO
-#define SYSCALL_ISO_FIND_READ_FILE      81  // iso_find_read_file(dir_lba, dir_size, filename, buffer, max) - Find and read file
-
-// Window icon syscall
-#define SYSCALL_SET_WINDOW_ICON         82  // set_window_icon(window_id, icon_name) - Set window title bar icon
-
-// Window management syscalls (for Orbit smart launching)
-#define SYSCALL_FIND_WINDOW_BY_TITLE    85  // find_window_by_title(title) - Find window ID by title, returns -1 if not found
-#define SYSCALL_GET_WINDOW_STATE        86  // get_window_state(window_id) - Get window state (0=normal, 1=minimized, 3=pending_close)
-#define SYSCALL_RESTORE_WINDOW          87  // restore_window(window_id) - Restore minimized window
-#define SYSCALL_FOCUS_WINDOW            88  // focus_window(window_id) - Bring window to front
-
-// Debug/Diagnostic syscalls
-#define SYSCALL_DEBUG_DUMP_RESOURCES    90  // debug_dump_resources() - Dump active windows/controls/processes to serial
-
-// Hardware cursor syscalls
-#define SYSCALL_BGA_CURSOR_IS_SUPPORTED 91  // bga_cursor_is_supported() - Check if hardware cursor is available
-
-// VGA Color constants (for reference)
-// Foreground/Background colors: 0-15
-// 0=Black, 1=Blue, 2=Green, 3=Cyan, 4=Red, 5=Magenta, 6=Brown, 7=Light Gray
-// 8=Dark Gray, 9=Light Blue, 10=Light Green, 11=Light Cyan, 12=Light Red
-// 13=Light Magenta, 14=Yellow, 15=White
-
-#endif // SYSCALL_NUMBERS_H
+#endif /* USER_SYSCALL_NUMBERS_H */

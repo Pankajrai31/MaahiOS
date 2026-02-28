@@ -1,35 +1,15 @@
-/*
- * Simple Scheduler - Works with Process Manager
- * Round-robin scheduling between processes
+/**
+ * MaahiOS Scheduler
+ * 
+ * Round-robin scheduler for multitasking.
+ * - Process queue for pending launches
+ * - Running process list for round-robin switching
+ * - Integrates with PIT timer for preemptive context switching
  */
 
 #include "scheduler.h"
 #include "../process/process_manager.h"
-
-/* Simple serial port output for debugging */
-static void serial_print(const char *str) {
-    while (*str) {
-        while (!(*(volatile unsigned char*)0x3FD & 0x20));
-        *(volatile unsigned char*)0x3F8 = *str++;
-    }
-}
-
-static void serial_hex(unsigned char byte) {
-    const char hex[] = "0123456789ABCDEF";
-    while (!(*(volatile unsigned char*)0x3FD & 0x20));
-    *(volatile unsigned char*)0x3F8 = hex[(byte >> 4) & 0xF];
-    while (!(*(volatile unsigned char*)0x3FD & 0x20));
-    *(volatile unsigned char*)0x3F8 = hex[byte & 0xF];
-}
-
-static void serial_hex32(uint32_t value) {
-    const char hex[] = "0123456789ABCDEF";
-    for (int i = 7; i >= 0; i--) {
-        unsigned char byte = (value >> (i * 4)) & 0xF;
-        while (!(*(volatile unsigned char*)0x3FD & 0x20));
-        *(volatile unsigned char*)0x3F8 = hex[byte];
-    }
-}
+#include "../klog/klog.h"
 
 /* External process manager functions */
 extern process_t* process_get_by_pid(int pid);
@@ -57,29 +37,6 @@ static int queue_head = 0;
 static int queue_tail = 0;
 static int queue_count = 0;
 
-/**
- * Initialize the scheduler
- */
-void scheduler_init(void) {
-    current_pid = 0;  /* 0 = kernel idle */
-    scheduling_enabled = 0;
-    serial_print("[SCHEDULER] Initialized\n");
-}
-
-/**
- * Get current process PID
- */
-int scheduler_get_current_pid(void) {
-    return current_pid;
-}
-
-/**
- * Set current process PID (called by PIT handler after context switch)
- */
-void scheduler_set_current_pid(int pid) {
-    current_pid = pid;
-}
-
 /* List of all running processes for round-robin */
 static int running_processes[MAX_QUEUED_PROCESSES];
 static int running_count = 0;
@@ -89,381 +46,124 @@ static int current_index = -1;
 static int should_switch = 0;
 static int next_switch_pid = 0;
 
-/**
- * Check if scheduler wants to switch processes
- */
+/* ============================================
+ * Initialization
+ * ============================================ */
+
+int scheduler_init(void) {
+    current_pid = 0;
+    scheduling_enabled = 0;
+    KLOG_INFO("SCHED", "Initialized");
+    return 0;
+}
+
+/* ============================================
+ * Accessors
+ * ============================================ */
+
+int scheduler_get_current_pid(void) {
+    return current_pid;
+}
+
+void scheduler_set_current_pid(int pid) {
+    current_pid = pid;
+}
+
 int scheduler_should_switch(void) {
     return should_switch;
 }
 
-/**
- * Get the PID to switch to
- */
 int scheduler_get_next_pid(void) {
     should_switch = 0;  /* Clear flag after reading */
     return next_switch_pid;
 }
 
-/**
- * Called by timer interrupt - switches between processes
- * Starts queued processes and switches between running ones
- */
+/* ============================================
+ * Scheduler Tick (called from timer interrupt)
+ * ============================================ */
+
 void scheduler_tick(void) {
-    
     if (!scheduling_enabled) {
         return;
     }
     
-    /* If current process was killed, switch immediately */
+    /* If current process was killed, clear force flag and fall through */
     if (force_switch || current_pid == 0) {
         force_switch = 0;
-        /* Fall through to switch logic */
     }
     
     /* Check if there's a queued process to start */
     if (queue_count > 0) {
-        __asm__ volatile(
-            "pushl %%eax\n"
-            "pushl %%edx\n"
-            "movl $0x3F8, %%edx\n"
-            "movb $'Q', %%al\n" "outb %%al, %%dx\n"
-            "movb $'>', %%al\n" "outb %%al, %%dx\n"
-            "movb $'0', %%al\n" "outb %%al, %%dx\n"
-            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-            "popl %%edx\n"
-            "popl %%eax\n"
-            ::: "memory"
-        );
-        
         queued_process_t *proc = &process_queue[queue_head];
         
-        __asm__ volatile(
-            "pushl %%eax\n"
-            "pushl %%edx\n"
-            "movl $0x3F8, %%edx\n"
-            "movb $'P', %%al\n" "outb %%al, %%dx\n"
-            "movb $'R', %%al\n" "outb %%al, %%dx\n"
-            "movb $'C', %%al\n" "outb %%al, %%dx\n"
-            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-            "popl %%edx\n"
-            "popl %%eax\n"
-            ::: "memory"
-        );
-        
-        serial_print("[SCHEDULER] Starting PID ");
-        serial_hex(proc->pid);
-        serial_print(" from queue\n");
-        
-        /* Set TSS kernel stack for this process */
-        extern void gdt_set_kernel_stack(unsigned int esp0_value);
-        gdt_set_kernel_stack(proc->kernel_stack);
+        /* NOTE: Do NOT call gdt_set_kernel_stack() here!
+         * scheduler_tick() is called from both PIT and sys_yield().
+         * Setting TSS.ESP0 here would corrupt the CURRENT process's
+         * kernel stack on its next syscall. The PIT handler sets
+         * TSS.ESP0 at the actual context switch point. */
         
         /* Remove from queue */
         queue_head = (queue_head + 1) % MAX_QUEUED_PROCESSES;
         queue_count--;
         
-        /* DO NOT set current_pid here - PIT handler will set it after successful switch */
+        /* Mark process as running */
+        process_t *pcb = process_get_by_pid(proc->pid);
+        if (!pcb) {
+            KLOG_ERROR_HEX("SCHED", "NULL PCB for queued PID", proc->pid);
+            /* Try next process on next tick */
+            return;
+        }
+        
+        pcb->state = PROCESS_STATE_RUNNING;
+        
+        /* Signal context switch to this process */
+        should_switch = 1;
+        next_switch_pid = proc->pid;
         
         /* Add to running processes list */
         if (running_count < MAX_QUEUED_PROCESSES) {
             running_processes[running_count++] = proc->pid;
-            /* Update current_index to point to this process */
             current_index = running_count - 1;
         }
         
-        /* Mark process as running and build initial interrupt frame */
-        process_t *pcb = process_get_by_pid(proc->pid);
-        
-        __asm__ volatile(
-            "pushl %%eax\n"
-            "pushl %%edx\n"
-            "movl $0x3F8, %%edx\n"
-            "movb $'P', %%al\n" "outb %%al, %%dx\n"
-            "movb $'C', %%al\n" "outb %%al, %%dx\n"
-            "movb $'B', %%al\n" "outb %%al, %%dx\n"
-            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-            "popl %%edx\n"
-            "popl %%eax\n"
-            ::: "memory"
-        );
-        
-        serial_print("[SCHED_PCB_CHECK] PID=");
-        serial_hex(proc->pid);
-        serial_print(" pcb=0x");
-        serial_hex32((uint32_t)pcb);
-        serial_print("\n");
-        
-        __asm__ volatile(
-            "pushl %%eax\n"
-            "pushl %%edx\n"
-            "movl $0x3F8, %%edx\n"
-            "movb $'C', %%al\n" "outb %%al, %%dx\n"
-            "movb $'H', %%al\n" "outb %%al, %%dx\n"
-            "movb $'K', %%al\n" "outb %%al, %%dx\n"
-            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-            "popl %%edx\n"
-            "popl %%eax\n"
-            ::: "memory"
-        );
-        
-        if (!pcb) {
-            __asm__ volatile(
-                "pushl %%eax\n"
-                "pushl %%edx\n"
-                "movl $0x3F8, %%edx\n"
-                "movb $'N', %%al\n" "outb %%al, %%dx\n"
-                "movb $'U', %%al\n" "outb %%al, %%dx\n"
-                "movb $'L', %%al\n" "outb %%al, %%dx\n"
-                "movb $'L', %%al\n" "outb %%al, %%dx\n"
-                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                "popl %%edx\n"
-                "popl %%eax\n"
-                ::: "memory"
-            );
-            while(1) __asm__ volatile("hlt");
-        }
-        
-        __asm__ volatile(
-            "pushl %%eax\n"
-            "pushl %%edx\n"
-            "movl $0x3F8, %%edx\n"
-            "movb $'O', %%al\n" "outb %%al, %%dx\n"
-            "movb $'K', %%al\n" "outb %%al, %%dx\n"
-            "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-            "popl %%edx\n"
-            "popl %%eax\n"
-            ::: "memory"
-        );
-        
-        if (pcb) {
-            __asm__ volatile(
-                "pushl %%eax\n"
-                "pushl %%edx\n"
-                "movl $0x3F8, %%edx\n"
-                "movb $'S', %%al\n" "outb %%al, %%dx\n"
-                "movb $'T', %%al\n" "outb %%al, %%dx\n"
-                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                "popl %%edx\n"
-                "popl %%eax\n"
-                ::: "memory"
-            );
-            pcb->state = PROCESS_STATE_RUNNING;
-            __asm__ volatile(
-                "pushl %%eax\n"
-                "pushl %%edx\n"
-                "movl $0x3F8, %%edx\n"
-                "movb $'S', %%al\n" "outb %%al, %%dx\n"
-                "movb $'T', %%al\n" "outb %%al, %%dx\n"
-                "movb $'2', %%al\n" "outb %%al, %%dx\n"
-                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                "popl %%edx\n"
-                "popl %%eax\n"
-                ::: "memory"
-            );
-            
-            /* Signal context switch to this process */
-            /* PCB already has prepared interrupt frame from process_create() */
-            should_switch = 1;
-            next_switch_pid = proc->pid;
-            
-            __asm__ volatile(
-                "pushl %%eax\n"
-                "pushl %%edx\n"
-                "movl $0x3F8, %%edx\n"
-                "movb $'S', %%al\n" "outb %%al, %%dx\n"
-                "movb $'W', %%al\n" "outb %%al, %%dx\n"
-                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                "popl %%edx\n"
-                "popl %%eax\n"
-                ::: "memory"
-            );
-            
-            /* Add to running processes list */
-            if (running_count < MAX_QUEUED_PROCESSES) {
-                __asm__ volatile(
-                    "pushl %%eax\n"
-                    "pushl %%edx\n"
-                    "movl $0x3F8, %%edx\n"
-                    "movb $'R', %%al\n" "outb %%al, %%dx\n"
-                    "movb $'1', %%al\n" "outb %%al, %%dx\n"
-                    "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                    "popl %%edx\n"
-                    "popl %%eax\n"
-                    ::: "memory"
-                );
-                running_processes[running_count++] = proc->pid;
-                __asm__ volatile(
-                    "pushl %%eax\n"
-                    "pushl %%edx\n"
-                    "movl $0x3F8, %%edx\n"
-                    "movb $'R', %%al\n" "outb %%al, %%dx\n"
-                    "movb $'2', %%al\n" "outb %%al, %%dx\n"
-                    "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                    "popl %%edx\n"
-                    "popl %%eax\n"
-                    ::: "memory"
-                );
-                /* Update current_index to point to this process */
-                current_index = running_count - 1;
-                __asm__ volatile(
-                    "pushl %%eax\n"
-                    "pushl %%edx\n"
-                    "movl $0x3F8, %%edx\n"
-                    "movb $'R', %%al\n" "outb %%al, %%dx\n"
-                    "movb $'3', %%al\n" "outb %%al, %%dx\n"
-                    "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                    "popl %%edx\n"
-                    "popl %%eax\n"
-                    ::: "memory"
-                );
-            }
-            
-            __asm__ volatile(
-                "pushl %%eax\n"
-                "pushl %%edx\n"
-                "movl $0x3F8, %%edx\n"
-                "movb $'D', %%al\n" "outb %%al, %%dx\n"
-                "movb $'N', %%al\n" "outb %%al, %%dx\n"
-                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                "popl %%edx\n"
-                "popl %%eax\n"
-                ::: "memory"
-            );
-            
-            return;  /* Process started, timer will continue */
-        } else {
-            /* CRITICAL ERROR: PCB is NULL - bulletproof error output */
-            __asm__ volatile(
-                "pushl %%eax\n"
-                "pushl %%edx\n"
-                "movl $0x3F8, %%edx\n"
-                "movb $'E', %%al\n" "outb %%al, %%dx\n"
-                "movb $'R', %%al\n" "outb %%al, %%dx\n"
-                "movb $'R', %%al\n" "outb %%al, %%dx\n"
-                "movb $'!', %%al\n" "outb %%al, %%dx\n"
-                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                "popl %%edx\n"
-                "popl %%eax\n"
-                ::: "memory"
-            );
-            
-            /* Skip this broken process - queue_head already advanced */
-            /* Check if more processes in queue */
-            if (queue_count > 0) {
-                /* Try next process immediately */
-                __asm__ volatile(
-                    "pushl %%eax\n"
-                    "pushl %%edx\n"
-                    "movl $0x3F8, %%edx\n"
-                    "movb $'N', %%al\n" "outb %%al, %%dx\n"
-                    "movb $'X', %%al\n" "outb %%al, %%dx\n"
-                    "movb $'T', %%al\n" "outb %%al, %%dx\n"
-                    "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                    "popl %%edx\n"
-                    "popl %%eax\n"
-                    ::: "memory"
-                );
-                scheduler_tick();
-                return;
-            }
-            
-            /* No more queued processes */
-            __asm__ volatile(
-                "pushl %%eax\n"
-                "pushl %%edx\n"
-                "movl $0x3F8, %%edx\n"
-                "movb $'E', %%al\n" "outb %%al, %%dx\n"
-                "movb $'N', %%al\n" "outb %%al, %%dx\n"
-                "movb $'D', %%al\n" "outb %%al, %%dx\n"
-                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                "popl %%edx\n"
-                "popl %%eax\n"
-                ::: "memory"
-            );
-        }
+        KLOG_INFO("SCHED", "Starting PID %d from queue", proc->pid);
+        return;
     }
     
-    /* Context switch between running processes (round-robin) */
-    /* Debug every 100 ticks to avoid spam */
-    static int debug_counter = 0;
-    if (++debug_counter >= 100) {
-        debug_counter = 0;
-        serial_print("[SCHED_DEBUG] running=");
-        serial_hex(running_count);
-        serial_print(" queue=");
-        serial_hex(queue_count);
-        serial_print(" curr_pid=");
-        serial_hex(current_pid);
-        serial_print(" curr_idx=");
-        serial_hex(current_index);
-        serial_print("\n");
-    }
-    
-    if (running_count > 1 && queue_count == 0) {  /* Only switch when all processes started */
-        /* Round-robin: switch to next process */
-        int old_index = current_index;
+    /* Round-robin context switch between running processes */
+    if (running_count > 1) {
         current_index = (current_index + 1) % running_count;
-        int next_pid = running_processes[current_index];
+        int next_pid_val = running_processes[current_index];
         
-        if (next_pid != current_pid) {
-            serial_print("[SCHEDULER] Switching from PID ");
-            serial_hex(current_pid);
-            serial_print(" to PID ");
-            serial_hex(next_pid);
-            serial_print("\n");
-            
-            /* Signal context switch to pit_handler */
+        if (next_pid_val != current_pid) {
             should_switch = 1;
-            next_switch_pid = next_pid;
-            /* DO NOT set current_pid here - PIT handler will set it */
+            next_switch_pid = next_pid_val;
         }
     }
 }
 
-/**
- * Enable scheduling
- */
+/* ============================================
+ * Enable/Disable
+ * ============================================ */
+
 void scheduler_enable() {
     scheduling_enabled = 1;
-    serial_print("[SCHEDULER] Enabled\n");
+    KLOG_INFO("SCHED", "Enabled");
 }
 
-/**
- * Disable scheduling
- */
 void scheduler_disable() {
     scheduling_enabled = 0;
-    serial_print("[SCHEDULER] Disabled\n");
+    KLOG_INFO("SCHED", "Disabled");
 }
 
-/**
- * Add a new process to the ready queue
- * It will be started on the next scheduler tick
- */
+/* ============================================
+ * Process Management
+ * ============================================ */
+
 void scheduler_add_process(int pid, uint32_t entry_point, uint32_t user_stack, uint32_t kernel_stack) {
-    /* ABSOLUTE FIRST - inline asm */
-    __asm__ volatile(
-        "pushl %%eax\n"
-        "pushl %%edx\n"
-        "movl $0x3F8, %%edx\n"
-        "movb $'A', %%al\n" "outb %%al, %%dx\n"
-        "movb $'D', %%al\n" "outb %%al, %%dx\n"
-        "movb $'D', %%al\n" "outb %%al, %%dx\n"
-        "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-        "popl %%edx\n"
-        "popl %%eax\n"
-        ::: "memory"
-    );
-    
-    serial_print("[SCHED_ADD] PID=");
-    serial_hex(pid);
-    serial_print(" queue_count=");
-    serial_hex(queue_count);
-    serial_print("\n");
-    
     if (queue_count >= MAX_QUEUED_PROCESSES) {
-        serial_print("[SCHED_ADD] ERROR: Queue full!\n");
-        return;  /* Queue full */
+        KLOG_ERROR("SCHED", "Queue full, cannot add PID %d", pid);
+        return;
     }
     
     process_queue[queue_tail].pid = pid;
@@ -474,33 +174,23 @@ void scheduler_add_process(int pid, uint32_t entry_point, uint32_t user_stack, u
     queue_tail = (queue_tail + 1) % MAX_QUEUED_PROCESSES;
     queue_count++;
     
-    serial_print("[SCHED_ADD] Added! New queue_count=");
-    serial_hex(queue_count);
-    serial_print("\n");
+    KLOG_INFO("SCHED", "Queued PID %d (queue_count=%d)", pid, queue_count);
 }
 
-/**
- * Remove a process from the scheduler
- */
 void scheduler_remove_process(int pid) {
-    serial_print("[SCHED_REMOVE] PID=");
-    serial_hex(pid);
-    serial_print("\n");
-    
     int was_current = 0;
     
-    // If it's the current process, mark it for removal
+    /* If it's the current process, mark for removal */
     if (current_pid == pid) {
-        serial_print("[SCHED_REMOVE] Removing CURRENT process\n");
-        current_pid = 0;  // Mark as no current process
+        current_pid = 0;
         was_current = 1;
     }
     
-    // Remove from process queue (if queued but not running yet)
+    /* Remove from process queue (if queued but not running yet) */
     for (int i = 0; i < queue_count; i++) {
         int idx = (queue_head + i) % MAX_QUEUED_PROCESSES;
         if (process_queue[idx].pid == pid) {
-            // Shift remaining items
+            /* Shift remaining items */
             for (int j = i; j < queue_count - 1; j++) {
                 int curr_idx = (queue_head + j) % MAX_QUEUED_PROCESSES;
                 int next_idx = (queue_head + j + 1) % MAX_QUEUED_PROCESSES;
@@ -508,53 +198,34 @@ void scheduler_remove_process(int pid) {
             }
             queue_count--;
             queue_tail = (queue_tail - 1 + MAX_QUEUED_PROCESSES) % MAX_QUEUED_PROCESSES;
-            serial_print("[SCHED_REMOVE] Removed from queue\n");
             break;
         }
     }
     
-    // CRITICAL: Remove from running_processes array
+    /* Remove from running_processes array */
     for (int i = 0; i < running_count; i++) {
         if (running_processes[i] == pid) {
-            serial_print("[SCHED_REMOVE] Removing from running_processes at index=");
-            serial_hex(i);
-            serial_print("\n");
-            
-            // Shift remaining items
+            /* Shift remaining items */
             for (int j = i; j < running_count - 1; j++) {
                 running_processes[j] = running_processes[j + 1];
             }
             running_count--;
             
-            // Adjust current_index if needed
-            if (current_index >= i) {
-                if (current_index > 0) {
-                    current_index--;
-                } else {
-                    current_index = 0;
-                }
+            /* Adjust current_index */
+            if (current_index >= i && current_index > 0) {
+                current_index--;
             }
-            
-            // Ensure current_index stays in bounds
             if (current_index >= running_count && running_count > 0) {
                 current_index = 0;
             }
-            
-            serial_print("[SCHED_REMOVE] Removed from running list, new running_count=");
-            serial_hex(running_count);
-            serial_print(" current_index=");
-            serial_hex(current_index);
-            serial_print("\n");
             break;
         }
     }
     
-    serial_print("[SCHED_REMOVE] Done\n");
+    KLOG_INFO("SCHED", "Removed PID %d (running=%d, queued=%d)", pid, running_count, queue_count);
     
-    // If we just killed the current process, set flag for immediate switch
+    /* If we killed the current process, force switch on next tick */
     if (was_current) {
-        serial_print("[SCHED_REMOVE] Setting force_switch flag\n");
         force_switch = 1;
-        // Will switch on next timer tick (within 10ms)
     }
 }

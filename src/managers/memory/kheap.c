@@ -1,10 +1,15 @@
 /**
  * MaahiOS Kernel Heap
- * Simple heap allocator for kernel use
+ * 
+ * Simple linked-list heap allocator for kernel use.
+ * - 4MB heap at 0x01000000 (16MB mark)
+ * - 16-byte aligned allocations
+ * - Block splitting and coalescing on free
  */
 
 #include <stdint.h>
 #include <stddef.h>
+#include "../klog/klog.h"
 
 /* Heap configuration */
 #define KHEAP_START     0x01000000   /* 16MB mark */
@@ -39,6 +44,9 @@ int kheap_init(void) {
     
     heap_end = heap_start;
     initialized = 1;
+    
+    KLOG_INFO("KHEAP", "Initialized: 4MB heap at 0x%x", KHEAP_START);
+    
     return 0;  /* Success */
 }
 

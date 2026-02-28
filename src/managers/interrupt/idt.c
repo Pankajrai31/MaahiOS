@@ -1,3 +1,5 @@
+#include "../klog/klog.h"
+
 #define IDT_ENTRIES 256
 
 struct idt_entry {
@@ -29,6 +31,8 @@ void idt_set_entry(int index, unsigned int handler, unsigned short selector, uns
 int idt_init(void) {
     int i;
     
+    KLOG_DEBUG("IDT", "Initializing IDT (256 entries)");
+    
     /* Set up IDT pointer */
     idt_pointer.limit = (sizeof(struct idt_entry) * IDT_ENTRIES) - 1;
     idt_pointer.base = (unsigned int)&idt;
@@ -38,12 +42,14 @@ int idt_init(void) {
         idt_set_entry(i, 0, 0, 0);
     }
     
+    KLOG_INFO("IDT", "IDT initialized (256 entries cleared)");
     return 1;  /* Success */
 }
 
 /* Load IDT into CPU */
 int idt_load(void) {
     asm volatile("lidt %0" : : "m"(idt_pointer));
+    KLOG_INFO("IDT", "IDT loaded into CPU");
     return 1;  /* Success */
 }
 
@@ -73,6 +79,8 @@ extern void irq0_stub(void);  /* Timer IRQ */
 extern void irq1_stub(void);  /* Keyboard IRQ */
 
 int idt_install_exception_handlers(void) {
+    KLOG_DEBUG("IDT", "Installing exception handlers (0-19)");
+    
     /* Type: 0x8F = Present, Ring 0, Trap Gate (allows nested exceptions, doesn't disable interrupts) */
     idt_set_entry(0, (unsigned int)exception_stub_0, 0x08, 0x8F);
     idt_set_entry(1, (unsigned int)exception_stub_1, 0x08, 0x8F);
@@ -112,8 +120,7 @@ int idt_install_exception_handlers(void) {
     /* Set up IRQ 1 (Keyboard) handler - IRQ 1 is remapped to INT 33 */
     idt_set_entry(33, (unsigned int)irq1_stub, 0x08, 0x8E);
     
-    /* IRQ 15 (ATA) handler removed - now using AHCI */
-    
+    KLOG_INFO("IDT", "Exception handlers (0-19), syscall (0x80), IRQ0/1 installed");
     return 1;  /* Success */
 }
 
@@ -124,5 +131,6 @@ int idt_install_mouse_handler(void) {
     /* Type: 0x8E = Present (1), DPL=0 (kernel), 32-bit Interrupt Gate */
     /* Hardware IRQs MUST use DPL=0 - they can interrupt any privilege level */
     idt_set_entry(44, (unsigned int)irq12_stub, 0x08, 0x8E);
+    KLOG_INFO("IDT", "Mouse handler installed (IRQ12 -> INT 44)");
     return 1;  /* Success */
 }

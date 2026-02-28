@@ -20,6 +20,8 @@ static int sys_dev_open(uint32_t device_id, uint32_t flags, uint32_t arg3,
                         uint32_t arg4, uint32_t arg5) {
     (void)arg3; (void)arg4; (void)arg5;
     
+    KLOG_DEBUG_HEX2("SYSCALL", "dev_open: id/flags: ", device_id, flags);
+    
     /* Call kernel API */
     extern int kernel_device_open(int device_id, int flags);
     return kernel_device_open((int)device_id, (int)flags);
@@ -31,6 +33,8 @@ static int sys_dev_open(uint32_t device_id, uint32_t flags, uint32_t arg3,
 static int sys_dev_close(uint32_t device_id, uint32_t handle, uint32_t arg3,
                          uint32_t arg4, uint32_t arg5) {
     (void)arg3; (void)arg4; (void)arg5;
+    
+    KLOG_DEBUG_HEX2("SYSCALL", "dev_close: id/handle: ", device_id, handle);
     
     /* Call kernel API */
     extern int kernel_device_close(int device_id, int handle);

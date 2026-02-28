@@ -1,0 +1,8 @@
+set pagination off
+set confirm off
+set architecture i386
+target remote localhost:1234
+# Watch PID 2's IRET EIP slot on kernel stack
+# PID 2's kernel_stack_top = 0x608000, EIP is at 0x607FEC
+watch *0x607FEC
+continue

@@ -2,17 +2,25 @@
  * MaahiOS Disk Library - libdisk.h
  * 
  * Description:
- *   User library for disk and file access.
- *   Applications include this header to read files and directories.
- *   Internally communicates with Disk Executive via SHM queues.
+ *   User library for block-level disk access.
+ *   Auto-initializes on first call (discovers SHM, attaches).
+ *   Falls back to direct SYS_DEV_* kernel syscalls if
+ *   Disk Executive is not yet running.
+ * 
+ *   This library is for RAW DISK operations only:
+ *   - List disks, get info, check status
+ *   - Read/write raw sectors
+ *   
+ *   For filesystem operations (files, directories), use a future libfs.
  * 
  * Usage:
- *   #include <libdisk.h>
+ *   #include "libdisk.h"
  *   
- *   libdisk_init();
- *   char buffer[1024];
- *   int bytes = libdisk_read_file("/icons/app.bmp", 0, buffer, 1024);
- *   libdisk_shutdown();
+ *   int count = libdisk_list(disks, 8);
+ *   libdisk_get_info(0, &info);
+ *   int status = libdisk_get_status(0);
+ *   int shm_id = libdisk_read_sector(0, lba, 1);
+ *   No init() needed — handled automatically.
  * 
  * Author: MaahiOS Team
  * Date: February 2026
@@ -29,89 +37,85 @@
  *===========================================================================*/
 
 /**
- * libdisk_init - Initialize disk library
+ * libdisk_init - Explicitly initialize disk library (optional)
  * 
- * Connects to Disk Executive's SHM queues.
- * Must be called before any other libdisk functions.
+ * Auto-called on first use of any libdisk function.
+ * Falls back to direct device syscalls if executive not ready.
  * 
- * Returns: 0 on success, negative on error
+ * Returns: 0 on success, negative if executive not available
  */
 int libdisk_init(void);
 
 /**
  * libdisk_shutdown - Cleanup disk library
+ * 
+ * Detaches from SHM queues.
  */
 void libdisk_shutdown(void);
 
 /*=============================================================================
- * FILE OPERATIONS
+ * DISK ENUMERATION
  *===========================================================================*/
 
 /**
- * libdisk_read_file - Read data from a file
- * @path: File path (e.g., "/icons/app.bmp")
- * @offset: Starting offset in file
- * @buffer: Buffer to receive data
- * @size: Maximum bytes to read
+ * libdisk_list - List available disks
+ * @disks: Output array of disk_exec_info_t
+ * @max_disks: Maximum entries to return (up to 5)
  * 
- * Returns: Bytes read on success, negative on error
+ * Returns: Number of disks found on success, negative on error
  */
-int libdisk_read_file(const char *path, uint32_t offset, void *buffer, uint32_t size);
+int libdisk_list(disk_exec_info_t *disks, int max_disks);
 
 /**
- * libdisk_file_exists - Check if a file exists
- * @path: File path
+ * libdisk_get_count - Get number of disks
  * 
- * Returns: 1 if exists, 0 if not, negative on error
+ * Returns: Disk count on success, negative on error
  */
-int libdisk_file_exists(const char *path);
-
-/**
- * libdisk_file_info - Get file information
- * @path: File path
- * @info: Output structure
- * 
- * Returns: 0 on success, negative on error
- */
-int libdisk_file_info(const char *path, file_info_t *info);
+int libdisk_get_count(void);
 
 /*=============================================================================
- * DIRECTORY OPERATIONS
- *===========================================================================*/
-
-/**
- * libdisk_list_dir - List directory contents
- * @path: Directory path
- * @offset: Starting index
- * @entries: Output array of file_info_t
- * @max_entries: Maximum entries to return
- * @total_count: Output total number of entries (can be NULL)
- * 
- * Returns: Number of entries returned on success, negative on error
- */
-int libdisk_list_dir(const char *path, uint32_t offset, file_info_t *entries, 
-                     uint32_t max_entries, uint32_t *total_count);
-
-/*=============================================================================
- * DISK OPERATIONS
+ * DISK INFORMATION
  *===========================================================================*/
 
 /**
  * libdisk_get_info - Get disk information
- * @disk_id: Disk ID (0 for primary)
+ * @disk_index: Disk index (0-based)
  * @info: Output structure
  * 
  * Returns: 0 on success, negative on error
  */
-int libdisk_get_info(uint32_t disk_id, disk_info_t *info);
+int libdisk_get_info(uint8_t disk_index, disk_exec_info_t *info);
 
 /**
- * libdisk_list_disks - List available disks
- * @disks: Output array of disk_info_t
- * @max_disks: Maximum disks to return
+ * libdisk_get_status - Get disk online/offline status
+ * @disk_index: Disk index (0-based)
  * 
- * Returns: Number of disks on success, negative on error
+ * Returns: DISK_STATUS_* value on success, negative on error
  */
-int libdisk_list_disks(disk_info_t *disks, uint32_t max_disks);
+int libdisk_get_status(uint8_t disk_index);
+
+/**
+ * libdisk_get_sector_size - Get sector size for a disk
+ * @disk_index: Disk index (0-based)
+ * 
+ * Returns: Sector size in bytes (512 or 2048), negative on error
+ */
+int libdisk_get_sector_size(uint8_t disk_index);
+
+/*=============================================================================
+ * SECTOR OPERATIONS
+ *===========================================================================*/
+
+/**
+ * libdisk_read_sector - Read a raw sector from disk
+ * @disk_index: Disk index (0-based)
+ * @lba: Logical Block Address
+ * @count: Number of sectors to read (currently max 1)
+ * 
+ * Returns: SHM ID containing sector data on success.
+ *          Caller must SHM_ATTACH to read data, then SHM_DETACH+SHM_DESTROY.
+ *          Negative on error.
+ */
+int libdisk_read_sector(uint8_t disk_index, uint32_t lba, uint32_t count);
 
 #endif /* LIBDISK_H */

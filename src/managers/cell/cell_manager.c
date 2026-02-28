@@ -249,15 +249,16 @@ int kernel_cell_read(const char *key, void *buffer, size_t buffer_size, size_t *
     }
     
     /* Copy value */
-    mem_copy(buffer, entry->value, entry->value_size);
+    size_t bytes_read = entry->value_size;
+    mem_copy(buffer, entry->value, bytes_read);
     if (actual_size) {
-        *actual_size = entry->value_size;
+        *actual_size = bytes_read;
     }
     
     spinlock_release(&entry->lock);
     
-    KLOG_TRACE_HEX("CELL", "Read cell, size: ", entry->value_size);
-    return CELL_OK;
+    KLOG_TRACE_HEX("CELL", "Read cell, size: ", bytes_read);
+    return (int)bytes_read;
 }
 
 int kernel_cell_delete(const char *key) {

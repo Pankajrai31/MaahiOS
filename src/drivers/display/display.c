@@ -8,6 +8,7 @@
 #include "display.h"
 #include "bga.h"
 #include "../../managers/device/device_manager.h"
+#include "../../managers/klog/klog.h"
 
 /* ============================================
  * State
@@ -103,6 +104,8 @@ static device_ops_t display_ops = {
  * Initialize graphics system
  */
 int gfx_init(uint16_t width, uint16_t height, uint16_t bpp) {
+    KLOG_INFO("DISPLAY", "Initializing graphics subsystem");
+    
     /* Try BGA first */
     if (bga_is_available()) {
         if (bga_init(width, height, bpp)) {
@@ -111,12 +114,27 @@ int gfx_init(uint16_t width, uint16_t height, uint16_t bpp) {
             g_height = bga_get_height();
             g_framebuffer = (uint32_t *)bga_get_framebuffer_addr();
             
-            /* Register with Device Manager */
-            register_device(DEV_DISPLAY, "display", &display_ops);
+            KLOG_INFO("DISPLAY", "BGA driver active");
             return 1;
         }
     }
     
+    KLOG_ERROR("DISPLAY", "No graphics driver available");
+    return 0;
+}
+
+/**
+ * Register display with Device Manager.
+ * Called from g_driver_table[] in device_manager.c.
+ * BGA hardware must already be initialized (via gfx_init).
+ */
+int display_register_device(void) {
+    if (current_driver == DISPLAY_DRIVER_NONE) {
+        KLOG_ERROR("DISPLAY", "Cannot register - no driver active");
+        return -1;
+    }
+    register_device(DEV_DISPLAY, "display", &display_ops);
+    KLOG_INFO("DISPLAY", "Registered as DEV_DISPLAY");
     return 0;
 }
 

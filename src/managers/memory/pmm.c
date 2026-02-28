@@ -1,19 +1,16 @@
+/**
+ * MaahiOS Physical Memory Manager (PMM)
+ * 
+ * Bitmap-based page frame allocator.
+ * - Tracks physical memory via 1-bit-per-page bitmap
+ * - Supports single and contiguous multi-page allocation
+ * - Reserves kernel, modules, and bitmap regions automatically
+ */
+
 #include "pmm.h"
+#include "../klog/klog.h"
 
-// External functions
-extern void vga_print(const char *s);
-static void print_hex(uint32_t val) {
-    char hex[9];
-    hex[8] = '\0';
-    for (int i = 7; i >= 0; i--) {
-        uint32_t digit = val & 0xF;
-        hex[i] = (digit < 10) ? ('0' + digit) : ('a' + digit - 10);
-        val >>= 4;
-    }
-    vga_print(hex);
-}
-
-// Bitmap and memory tracking
+/* Bitmap and memory tracking */
 static uint32_t *bitmap = 0;
 static uint32_t total_pages = 0;
 static uint32_t used_pages = 0;
@@ -111,6 +108,9 @@ int pmm_init(multiboot_info_t *mbi) {
     uint32_t bitmap_end = bitmap_addr + (bitmap_size * 4);
     pmm_mark_region_used(bitmap_addr, bitmap_end);
     
+    KLOG_INFO("PMM", "Initialized: %u pages (%u MB), bitmap at 0x%x",
+              total_pages, (total_pages * PAGE_SIZE) / (1024 * 1024), bitmap_addr);
+    
     return 1;  /* Success */
 }
 
@@ -143,50 +143,40 @@ void *pmm_alloc_page() {
 }
 
 void *pmm_alloc_size(uint32_t size_bytes) {
-    // Calculate number of pages needed (round up)
+    /* Calculate number of pages needed (round up) */
     uint32_t pages_needed = (size_bytes + PAGE_SIZE - 1) / PAGE_SIZE;
-    
-    serial_print("[PMM_ALLOC_SIZE] Request: ");
-    serial_hex(size_bytes);
-    serial_print(" bytes, ");
-    serial_hex(pages_needed);
-    serial_print(" pages\n");
     
     if (pages_needed == 0) {
         return 0;
     }
     
-    // Try to find contiguous free pages
+    /* Try to find contiguous free pages */
     for (uint32_t start_page = 0; start_page <= total_pages - pages_needed; start_page++) {
-        // Check if we have enough contiguous free pages
+        /* Check if we have enough contiguous free pages */
         uint32_t found = 1;
         for (uint32_t i = 0; i < pages_needed; i++) {
             if (bitmap_test(start_page + i)) {
                 found = 0;
-                start_page += i;  // Skip ahead
+                start_page += i;  /* Skip ahead */
                 break;
             }
         }
         
         if (found) {
-            // Mark all pages as used
+            /* Mark all pages as used */
             for (uint32_t i = 0; i < pages_needed; i++) {
                 bitmap_set(start_page + i);
                 used_pages++;
             }
             
             void *result = (void *)page_to_addr(start_page);
-            serial_print("[PMM_ALLOC_SIZE] SUCCESS at ");
-            serial_hex((uint32_t)result);
-            serial_print("\n");
+            KLOG_DEBUG_HEX("PMM", "Allocated contiguous block at", (uint32_t)result);
             return result;
         }
     }
     
-    // No contiguous block found
-    serial_print("[PMM_ALLOC_SIZE] FAILED - no contiguous block for ");
-    serial_hex(pages_needed);
-    serial_print(" pages\n");
+    /* No contiguous block found */
+    KLOG_WARN_HEX("PMM", "Failed to allocate contiguous pages", pages_needed);
     return 0;
 }
 
@@ -201,4 +191,12 @@ void pmm_free_page(void *addr) {
         bitmap_clear(page);
         used_pages--;
     }
+}
+
+uint32_t pmm_get_total_pages(void) {
+    return total_pages;
+}
+
+uint32_t pmm_get_used_pages(void) {
+    return used_pages;
 }

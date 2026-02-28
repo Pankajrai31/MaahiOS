@@ -1,6 +1,15 @@
+/**
+ * MaahiOS PIT (Programmable Interval Timer)
+ * 
+ * Drives the system timer at 50Hz for preemptive multitasking.
+ * - pit_handler_with_context() is the real IRQ0 handler
+ * - Returns new ESP for context switching between processes
+ */
+
 #include "pit.h"
 #include <stdint.h>
 #include "../process/process_manager.h"
+#include "../klog/klog.h"
 
 /* External scheduler functions */
 extern void scheduler_tick(void);
@@ -12,24 +21,13 @@ extern void scheduler_tick(void);
 #define PIT_CHANNEL0 0x40
 #define PIT_COMMAND  0x43
 
-/* Global tick counter */
-static volatile unsigned int pit_ticks = 0;
+/* Global tick counter (64-bit for long uptimes) */
+static volatile uint64_t pit_ticks = 0;
 
 /**
- * PIT IRQ handler - Called from interrupt stub
- * Simple version: just ticks and calls scheduler
- */
-void pit_handler(void) {
-    pit_ticks++;
-    
-    /* Call scheduler - for now just checks if scheduling is needed */
-    scheduler_tick();
-}
-
-/**
- * PIT handler with context switching support
- * Called from irq0_stub with current ESP on stack
- * Returns new ESP (same process or switched process)
+ * PIT handler with context switching support.
+ * Called from irq0_stub with current ESP on stack.
+ * Returns new ESP (same process or switched process).
  */
 uint32_t pit_handler_with_context(uint32_t current_esp) {
     pit_ticks++;
@@ -43,75 +41,21 @@ uint32_t pit_handler_with_context(uint32_t current_esp) {
     
     int current_pid = scheduler_get_current_pid();
     
-    /* Debug: Print current PID on every timer tick (reduce spam with counter) */
-    static int debug_counter = 0;
-    if (++debug_counter >= 1000) {
-        debug_counter = 0;
-        __asm__ volatile(
-            "pushl %%eax\n"
-            "pushl %%edx\n"
-            "movl $0x3F8, %%edx\n"
-            "movb $'P', %%al\n" "outb %%al, %%dx\n"
-            "movb $'I', %%al\n" "outb %%al, %%dx\n"
-            "movb $'D', %%al\n" "outb %%al, %%dx\n"
-            "movb $'=', %%al\n" "outb %%al, %%dx\n"
-            "popl %%edx\n"
-            "popl %%eax\n"
-            ::: "memory"
-        );
-        // Print PID as hex digit (0-9, A-F)
-        char pid_char = (current_pid < 10) ? ('0' + current_pid) : ('A' + current_pid - 10);
-        __asm__ volatile(
-            "pushl %%eax\n"
-            "pushl %%edx\n"
-            "movl $0x3F8, %%edx\n"
-            "movb %0, %%al\n"
-            "outb %%al, %%dx\n"
-            "movb $'\\n', %%al\n"
-            "outb %%al, %%dx\n"
-            "popl %%edx\n"
-            "popl %%eax\n"
-            :
-            : "r"(pid_char)
-            : "memory"
-        );
-    }
-    
     /* Call scheduler to check if we should switch */
     scheduler_tick();
     
-    /* If current_pid is 0 (kernel idle), check if scheduler wants to start a process */
+    /* If kernel idle (PID 0), check if scheduler wants to start a process */
     if (current_pid == 0) {
         if (scheduler_should_switch()) {
-            __asm__ volatile(
-                "pushl %%eax\n"
-                "pushl %%edx\n"
-                "movl $0x3F8, %%edx\n"
-                "movb $'P', %%al\n" "outb %%al, %%dx\n"
-                "movb $'I', %%al\n" "outb %%al, %%dx\n"
-                "movb $'T', %%al\n" "outb %%al, %%dx\n"
-                "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                "popl %%edx\n"
-                "popl %%eax\n"
-                ::: "memory"
-            );
             int next_pid = scheduler_get_next_pid();
             if (next_pid > 0) {
-                /* Scheduler started a new process, switch to it */
                 process_t *next_pcb = process_get_by_pid(next_pid);
                 if (next_pcb && next_pcb->esp != 0) {
-                    __asm__ volatile(
-                        "pushl %%eax\n"
-                        "pushl %%edx\n"
-                        "movl $0x3F8, %%edx\n"
-                        "movb $'G', %%al\n" "outb %%al, %%dx\n"
-                        "movb $'O', %%al\n" "outb %%al, %%dx\n"
-                        "movb $'!', %%al\n" "outb %%al, %%dx\n"
-                        "movb $'\\n', %%al\n" "outb %%al, %%dx\n"
-                        "popl %%edx\n"
-                        "popl %%eax\n"
-                        ::: "memory"
-                    );
+                    /* Switch page directory if process has its own */
+                    extern uint32_t *kernel_page_directory;
+                    if (next_pcb->page_directory && next_pcb->page_directory != kernel_page_directory) {
+                        asm volatile("mov %0, %%cr3" : : "r"(next_pcb->page_directory) : "memory");
+                    }
                     gdt_set_kernel_stack(next_pcb->kernel_stack_top);
                     scheduler_set_current_pid(next_pid);
                     return next_pcb->esp;
@@ -135,6 +79,10 @@ uint32_t pit_handler_with_context(uint32_t current_esp) {
             /* Load next process context */
             process_t *next_pcb = process_get_by_pid(next_pid);
             if (next_pcb) {
+                /* Switch page directory if switching between different address spaces */
+                if (current_pcb && next_pcb->page_directory != current_pcb->page_directory) {
+                    asm volatile("mov %0, %%cr3" : : "r"(next_pcb->page_directory) : "memory");
+                }
                 gdt_set_kernel_stack(next_pcb->kernel_stack_top);
                 scheduler_set_current_pid(next_pid);
                 return next_pcb->esp;
@@ -148,22 +96,29 @@ uint32_t pit_handler_with_context(uint32_t current_esp) {
 /**
  * Initialize PIT to fire at specified frequency (Hz)
  */
-void pit_init(unsigned int frequency) {
-    /* Calculate divisor for desired frequency */
+int pit_init(unsigned int frequency) {
     unsigned int divisor = PIT_FREQUENCY / frequency;
     
-    /* Send command byte: Channel 0, lobyte/hibyte, rate generator */
+    /* Channel 0, lobyte/hibyte, rate generator */
     outb(PIT_COMMAND, 0x36);
-    
-    /* Send divisor (low byte, then high byte) */
     outb(PIT_CHANNEL0, divisor & 0xFF);
     outb(PIT_CHANNEL0, (divisor >> 8) & 0xFF);
+    
+    KLOG_INFO("PIT", "Initialized at %u Hz (divisor=%u)", frequency, divisor);
+    return 0;
 }
 
 /**
- * Get current tick count
+ * Get current tick count (32-bit, lower 32 bits of 64-bit counter)
  */
-unsigned int pit_get_ticks() {
+unsigned int pit_get_ticks(void) {
+    return (unsigned int)pit_ticks;
+}
+
+/**
+ * Get current tick count (64-bit, full counter)
+ */
+uint64_t pit_get_ticks64(void) {
     return pit_ticks;
 }
 

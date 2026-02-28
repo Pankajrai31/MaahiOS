@@ -4,6 +4,7 @@
  * Description:
  *   Cell Executive manages the cell registry - a hierarchical key-value store.
  *   Makes syscalls to kernel cell_manager for actual storage.
+ *   Uses liblog for logging (Log Executive must be running first).
  * 
  * Author: MaahiOS Team
  * Date: February 2026
@@ -11,56 +12,12 @@
 
 #include "cell_executive.h"
 #include "../common/executive_queue.h"
+#include "../../libraries/core/syscall_helpers.h"
+#include "../../libraries/liblog/liblog.h"
 
 /*=============================================================================
- * SYSCALL INTERFACE
+ * CONVENIENCE WRAPPERS (thin layer over syscall_helpers.h)
  *===========================================================================*/
-
-#define SYS_SHM_CREATE      48
-#define SYS_SHM_ATTACH      49
-#define SYS_YIELD           1
-/* Cell syscalls per syscall_numbers.h */
-#define SYS_CELL_WRITE      64
-#define SYS_CELL_READ       65
-#define SYS_CELL_DELETE     66
-#define SYS_CELL_EXISTS     67
-#define SYS_CELL_GET_SHM_ID 68
-#define SYS_CELL_LIST       69
-/* Klog syscalls - output [U] since we're ring 3 */
-#define SYS_KLOG            240
-#define SYS_KLOG_HEX        241
-
-/* Log levels */
-#define LOG_INFO    3
-#define LOG_WARN    2
-#define LOG_ERROR   1
-
-static inline int syscall5(int num, int a1, int a2, int a3, int a4, int a5) {
-    int ret;
-    __asm__ volatile(
-        "int $0x80"
-        : "=a"(ret)
-        : "a"(num), "b"(a1), "c"(a2), "d"(a3), "S"(a4), "D"(a5)
-        : "memory"
-    );
-    return ret;
-}
-
-static inline int syscall4(int num, int a1, int a2, int a3, int a4) {
-    return syscall5(num, a1, a2, a3, a4, 0);
-}
-
-static inline int syscall3(int num, int a1, int a2, int a3) {
-    return syscall5(num, a1, a2, a3, 0, 0);
-}
-
-static inline int syscall1(int num, int a1) {
-    return syscall5(num, a1, 0, 0, 0, 0);
-}
-
-static inline int syscall0(int num) {
-    return syscall5(num, 0, 0, 0, 0, 0);
-}
 
 static inline void exe_yield(void) {
     syscall0(SYS_YIELD);
@@ -71,23 +28,13 @@ static inline int exe_shm_create(uint32_t size) {
 }
 
 static inline void* exe_shm_attach(int shm_id) {
-    return (void*)syscall1(SYS_SHM_ATTACH, shm_id);
-}
-
-/* Klog syscalls - output [U] since we're ring 3 calling via syscall */
-static inline void exe_klog(int level, const char *tag, const char *msg) {
-    syscall3(SYS_KLOG, level, (int)tag, (int)msg);
-}
-
-static inline void exe_klog_hex(int level, const char *tag, const char *msg, uint32_t value) {
-    syscall4(SYS_KLOG_HEX, level, (int)tag, (int)msg, (int)value);
+    return (void*)syscall2(SYS_SHM_ATTACH, shm_id, 0);
 }
 
 /*=============================================================================
  * CELL KERNEL SYSCALLS
  *===========================================================================*/
 
-/* cell_write auto-creates if key doesn't exist */
 static inline int exe_cell_write(const char *name, const void *data, uint32_t size) {
     return syscall3(SYS_CELL_WRITE, (int)name, (int)data, (int)size);
 }
@@ -215,6 +162,49 @@ static void exe_cell_handle_lookup(const exec_request_t *req, exec_response_t *r
     resp->payload_size = 0;
 }
 
+static void exe_cell_handle_exists(const exec_request_t *req, exec_response_t *resp) {
+    cell_name_req_t *payload = (cell_name_req_t *)req->payload;
+    
+    int result = exe_cell_exists(payload->name);
+    
+    resp->msg_id = req->msg_id;
+    resp->status = (result > 0) ? EXEC_OK : EXEC_ERR_NOT_FOUND;
+    resp->result = (result > 0) ? 1 : 0;
+    resp->payload_size = 0;
+}
+
+static void exe_cell_handle_get_info(const exec_request_t *req, exec_response_t *resp) {
+    cell_name_req_t *payload = (cell_name_req_t *)req->payload;
+    cell_info_resp_t *resp_data = (cell_info_resp_t *)resp->payload;
+    
+    /* Check if cell exists first */
+    int exists = exe_cell_exists(payload->name);
+    if (exists <= 0) {
+        resp->msg_id = req->msg_id;
+        resp->status = EXEC_ERR_NOT_FOUND;
+        resp->payload_size = 0;
+        return;
+    }
+    
+    /* Read cell data to get size */
+    uint8_t tmp[4];
+    int read_result = exe_cell_read(payload->name, tmp, sizeof(tmp));
+    
+    /* Fill in info structure */
+    exe_str_copy(resp_data->info.name, payload->name, CELL_NAME_MAX);
+    resp_data->info.type = CELL_TYPE_DATA;
+    resp_data->info.flags = 0;
+    resp_data->info.size = (read_result >= 0) ? (uint32_t)read_result : 0;
+    resp_data->info.owner_pid = 0;
+    resp_data->info.created_time = 0;
+    resp_data->info.modified_time = 0;
+    
+    resp->msg_id = req->msg_id;
+    resp->status = EXEC_OK;
+    resp->result = 0;
+    resp->payload_size = sizeof(cell_info_resp_t);
+}
+
 static void exe_cell_handle_ping(const exec_request_t *req, exec_response_t *resp) {
     resp->msg_id = req->msg_id;
     resp->status = EXEC_OK;
@@ -258,6 +248,18 @@ static void exe_cell_process_request(const exec_request_t *req, exec_response_t 
             exe_cell_handle_lookup(req, resp);
             break;
             
+        case CELL_OP_EXISTS:
+            exe_cell_handle_exists(req, resp);
+            break;
+            
+        case CELL_OP_GET_INFO:
+            exe_cell_handle_get_info(req, resp);
+            break;
+            
+        case EXEC_OP_PING:
+            exe_cell_handle_ping(req, resp);
+            break;
+            
         default:
             resp->msg_id = req->msg_id;
             resp->status = EXEC_ERR_INVALID;
@@ -276,36 +278,40 @@ static void exe_cell_process_request(const exec_request_t *req, exec_response_t 
  *===========================================================================*/
 
 static int exe_cell_init(void) {
-    exe_klog(LOG_INFO, "CELLEXEC", "Cell Executive initializing...");
+    /* liblog auto-inits: if Log Executive is ready, uses SHM queue;
+     * if not ready yet, falls back to direct klog syscall. */
+    liblog(LOG_INFO, "CELLEXEC", "Cell Executive initializing...");
     
+    /* Create SHM queues */
     g_req_queue_shm_id = exe_shm_create(sizeof(exec_request_queue_t));
     if (g_req_queue_shm_id < 0) {
-        exe_klog(LOG_ERROR, "CELLEXEC", "Failed to create request queue SHM");
+        liblog(LOG_ERROR, "CELLEXEC", "Failed to create request queue SHM");
         return -1;
     }
     
     g_req_queue = (exec_request_queue_t *)exe_shm_attach(g_req_queue_shm_id);
     if (!g_req_queue) {
-        exe_klog(LOG_ERROR, "CELLEXEC", "Failed to attach request queue SHM");
+        liblog(LOG_ERROR, "CELLEXEC", "Failed to attach request queue SHM");
         return -1;
     }
     exe_request_queue_init(g_req_queue);
-    exe_klog_hex(LOG_INFO, "CELLEXEC", "Request queue SHM ID:", g_req_queue_shm_id);
+    liblog_hex(LOG_INFO, "CELLEXEC", "Request queue SHM ID:", g_req_queue_shm_id);
     
     g_resp_queue_shm_id = exe_shm_create(sizeof(exec_response_queue_t));
     if (g_resp_queue_shm_id < 0) {
-        exe_klog(LOG_ERROR, "CELLEXEC", "Failed to create response queue SHM");
+        liblog(LOG_ERROR, "CELLEXEC", "Failed to create response queue SHM");
         return -1;
     }
     
     g_resp_queue = (exec_response_queue_t *)exe_shm_attach(g_resp_queue_shm_id);
     if (!g_resp_queue) {
-        exe_klog(LOG_ERROR, "CELLEXEC", "Failed to attach response queue SHM");
+        liblog(LOG_ERROR, "CELLEXEC", "Failed to attach response queue SHM");
         return -1;
     }
     exe_response_queue_init(g_resp_queue);
-    exe_klog_hex(LOG_INFO, "CELLEXEC", "Response queue SHM ID:", g_resp_queue_shm_id);
+    liblog_hex(LOG_INFO, "CELLEXEC", "Response queue SHM ID:", g_resp_queue_shm_id);
     
+    /* Set up control block */
     static exec_control_block_t local_ecb;
     g_ecb = &local_ecb;
     exe_str_copy(g_ecb->name, "cell_executive", EXEC_NAME_MAX);
@@ -315,23 +321,22 @@ static int exe_cell_init(void) {
     g_ecb->request_queue_shm_id = g_req_queue_shm_id;
     g_ecb->response_queue_shm_id = g_resp_queue_shm_id;
     
-    /* Write our queue SHM IDs to cells for discovery */
-    /* cell_write auto-creates if key doesn't exist */
+    /* Write queue SHM IDs to cells for discovery */
     exe_cell_write("system.exec.cell.req_shm", &g_req_queue_shm_id, sizeof(int));
     exe_cell_write("system.exec.cell.resp_shm", &g_resp_queue_shm_id, sizeof(int));
     
-    exe_klog(LOG_INFO, "CELLEXEC", "Cell Executive initialized successfully");
+    liblog(LOG_INFO, "CELLEXEC", "Cell Executive initialized successfully");
     return 0;
 }
 
 void exe_cell_main(void) {
     if (exe_cell_init() != 0) {
-        exe_klog(LOG_ERROR, "CELLEXEC", "Initialization failed! Halting.");
+        liblog(LOG_ERROR, "CELLEXEC", "Initialization failed! Halting.");
         while (1) __asm__ volatile("hlt");
     }
     
     EXEC_SET_STATE(g_ecb, EXEC_STATE_RUNNING);
-    exe_klog(LOG_INFO, "CELLEXEC", "Entering main loop...");
+    liblog(LOG_INFO, "CELLEXEC", "Entering main loop...");
     
     exec_request_t req;
     exec_response_t resp;
@@ -346,6 +351,6 @@ void exe_cell_main(void) {
     }
     
     EXEC_SET_STATE(g_ecb, EXEC_STATE_STOPPED);
-    exe_klog(LOG_WARN, "CELLEXEC", "Stopped. Halting.");
+    liblog(LOG_WARN, "CELLEXEC", "Stopped. Halting.");
     while (1) __asm__ volatile("hlt");
 }

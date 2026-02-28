@@ -23,13 +23,11 @@
 .globl irq0_stub
 .globl irq1_stub
 .globl irq12_stub
-/* .globl ata_irq_handler - removed (using AHCI now) */
 
 /* Extern C handler functions */
 .extern exception_handler
-.extern syscall_dispatcher
-.extern pit_handler
-.extern ata_irq_c_handler
+.extern syscall_dispatch
+.extern pit_handler_with_context
 .extern mouse_handler
 .extern keyboard_irq_handler
 
@@ -176,7 +174,7 @@ syscall_int:
     push %ebx                   /* arg1 -> 1st parameter */
     push %eax                   /* syscall_num -> 0th parameter */
     
-    call syscall_dispatcher
+    call syscall_dispatch
     
     /* Pop arguments */
     add $24, %esp

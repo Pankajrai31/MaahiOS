@@ -32,4 +32,8 @@ void *pmm_alloc_page();
 void *pmm_alloc_size(uint32_t size_bytes);
 void pmm_free_page(void *addr);
 
+// PMM Statistics
+uint32_t pmm_get_total_pages(void);
+uint32_t pmm_get_used_pages(void);
+
 #endif
