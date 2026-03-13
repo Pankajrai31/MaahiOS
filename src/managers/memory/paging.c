@@ -170,7 +170,7 @@ int paging_init(multiboot_info_t *mbi) {
     KLOG_INFO("PAGING", "Initialized: identity mapped 128MB, page dir at 0x%x",
               (uint32_t)kernel_page_directory);
     
-    return 1;  /* Success */
+    return 0;  /* Success */
 }
 
 /* ===========================================================================

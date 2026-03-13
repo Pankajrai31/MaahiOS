@@ -29,6 +29,7 @@ static volatile int queue_count = 0;
  * Modifier State
  * ============================================ */
 static volatile uint8_t modifiers = 0;
+static volatile uint8_t last_scancode = 0;
 static volatile int keyboard_initialized = 0;
 
 /* ============================================
@@ -116,16 +117,25 @@ static int keyboard_dev_read(int handle, void* buffer, size_t size) {
 
 static int keyboard_dev_ioctl(int handle, int cmd, void* arg) {
     (void)handle;
-    (void)arg;
     
     switch (cmd) {
         case KB_IOCTL_GET_SCANCODE:
-            /* Return last scancode */
-            return 0;  /* TODO */
+            /* Return last raw scancode received */
+            return (int)last_scancode;
         
-        case KB_IOCTL_SET_LEDS:
-            /* TODO: Set keyboard LEDs */
+        case KB_IOCTL_SET_LEDS: {
+            /* Send LED command to PS/2 controller */
+            uint8_t led_byte = (arg != (void*)0) ? (uint8_t)(uint32_t)arg : 0;
+            /* Wait for input buffer empty */
+            while (inb(KBD_STATUS_PORT) & 0x02)
+                __asm__ volatile("pause");
+            outb(KBD_DATA_PORT, 0xED);  /* LED command */
+            /* Wait for ACK */
+            while (inb(KBD_STATUS_PORT) & 0x02)
+                __asm__ volatile("pause");
+            outb(KBD_DATA_PORT, led_byte & 0x07);  /* LED state bits */
             return DEV_OK;
+        }
         
         default:
             return DEV_ERR_INVALID;
@@ -153,6 +163,7 @@ static device_ops_t keyboard_ops = {
 void keyboard_irq_handler(void) {
     /* Read scan code */
     uint8_t scancode = inb(KBD_DATA_PORT);
+    last_scancode = scancode;
     
     /* Check if key release (bit 7 set) */
     int released = scancode & 0x80;

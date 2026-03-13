@@ -32,9 +32,9 @@ _start:
     /* Call application entry point */
     call mex_main
 
-    /* If mex_main returns, halt via syscall (SYS_EXIT = 17) */
-    movl $17, %eax
-    movl $0, %ebx
+    /* If mex_main returns, exit via syscall (SYS_EXIT = 0) */
+    movl $0, %eax       /* SYS_EXIT */
+    movl $0, %ebx       /* exit code 0 */
     int $0x80
 
     /* Fallback hang if exit syscall fails */

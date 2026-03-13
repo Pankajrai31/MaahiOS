@@ -29,6 +29,12 @@ unsigned int pit_get_ticks(void);
 uint64_t pit_get_ticks64(void);
 
 /**
+ * Mark next pit_handler_with_context call as a yield (skip tick increment).
+ * Called by sys_yield before triggering software INT 0x20.
+ */
+void pit_request_yield(void);
+
+/**
  * Busy-wait for specified ticks
  */
 void pit_wait(unsigned int ticks);

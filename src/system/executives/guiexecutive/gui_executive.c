@@ -52,6 +52,7 @@ static inline int exe_dev_ioctl(int device_id, int cmd, void *arg) {
 
 #define DEV_DISPLAY             3
 #define DISPLAY_IOCTL_GET_FB    3
+#define DISPLAY_IOCTL_GET_INFO  1
 
 /*=============================================================================
  * EXECUTIVE STATE
@@ -186,12 +187,33 @@ static int exe_gui_init(void) {
     }
     liblog_hex(LOG_INFO, "GUIEXEC", "Framebuffer at:", fb_addr);
 
+    /* Query actual display dimensions from device driver */
+    /* display_info_t layout: u16 width, u16 height, u16 bpp, u32 fb_addr, u32 fb_size, u32 driver */
+    struct { uint16_t w, h, bpp; uint32_t fb, fbsz, drv; } dinfo;
+    exe_memset(&dinfo, 0, sizeof(dinfo));
+    int info_ret = exe_dev_ioctl(DEV_DISPLAY, DISPLAY_IOCTL_GET_INFO, &dinfo);
+
+    uint32_t scr_w, scr_h, scr_bpp;
+    if (info_ret == 0 && dinfo.w > 0 && dinfo.h > 0) {
+        scr_w   = dinfo.w;
+        scr_h   = dinfo.h;
+        scr_bpp = dinfo.bpp;
+        liblog_hex(LOG_INFO, "GUIEXEC", "Display width:", scr_w);
+        liblog_hex(LOG_INFO, "GUIEXEC", "Display height:", scr_h);
+    } else {
+        /* Fallback to compile-time defaults */
+        scr_w   = 1024;
+        scr_h   = 768;
+        scr_bpp = 32;
+        liblog(LOG_WARN, "GUIEXEC", "GET_INFO failed, using fallback 1024x768");
+    }
+
     /* Populate display info */
     g_display_info.framebuffer = fb_addr;
-    g_display_info.width       = GUI_SCREEN_WIDTH;
-    g_display_info.height      = GUI_SCREEN_HEIGHT;
-    g_display_info.bpp         = GUI_SCREEN_BPP;
-    g_display_info.pitch       = GUI_SCREEN_WIDTH * (GUI_SCREEN_BPP / 8);
+    g_display_info.width       = scr_w;
+    g_display_info.height      = scr_h;
+    g_display_info.bpp         = scr_bpp;
+    g_display_info.pitch       = scr_w * (scr_bpp / 8);
 
     /* Publish display info to cell registry for libgui discovery */
     uint32_t val;
@@ -199,16 +221,16 @@ static int exe_gui_init(void) {
     val = fb_addr;
     libcell_write("system.gui.framebuffer", &val, sizeof(uint32_t));
 
-    val = GUI_SCREEN_WIDTH;
+    val = scr_w;
     libcell_write("system.gui.width", &val, sizeof(uint32_t));
 
-    val = GUI_SCREEN_HEIGHT;
+    val = scr_h;
     libcell_write("system.gui.height", &val, sizeof(uint32_t));
 
-    val = GUI_SCREEN_BPP;
+    val = scr_bpp;
     libcell_write("system.gui.bpp", &val, sizeof(uint32_t));
 
-    val = GUI_SCREEN_WIDTH * (GUI_SCREEN_BPP / 8);
+    val = scr_w * (scr_bpp / 8);
     libcell_write("system.gui.pitch", &val, sizeof(uint32_t));
 
     liblog(LOG_INFO, "GUIEXEC", "Display info published to cells");

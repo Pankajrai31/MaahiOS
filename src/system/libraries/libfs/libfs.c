@@ -268,3 +268,111 @@ int libfs_read_file(const char *dir_path, const char *filename,
 
     return (int)to_copy;
 }
+
+/*=============================================================================
+ * PUBLIC API: WRITE OPERATIONS (MFS only)
+ *===========================================================================*/
+
+int libfs_write_file(const char *dir_path, const char *filename,
+                     const void *data, uint32_t size) {
+    if (!dir_path || !filename) return EXEC_ERR_INVALID;
+    if (!g_initialized) _libfs_try_init();
+    if (!g_initialized) return EXEC_ERR_NOT_RUNNING;
+
+    /* Create SHM block for file data (if any) */
+    int data_shm_id = -1;
+    if (data && size > 0) {
+        data_shm_id = (int)syscall1(SYS_SHM_CREATE, (int)size);
+        if (data_shm_id < 0) return EXEC_ERR_NO_MEMORY;
+
+        void *shm_buf = (void *)syscall2(SYS_SHM_ATTACH, data_shm_id, 0);
+        if (!shm_buf || (uint32_t)shm_buf == 0xFFFFFFFF) {
+            syscall1(SYS_SHM_DESTROY, data_shm_id);
+            return EXEC_ERR_NO_MEMORY;
+        }
+
+        _fs_memcpy(shm_buf, data, size);
+    }
+
+    exec_request_t req;
+    exec_response_t resp;
+    _fs_memset(&req, 0, sizeof(req));
+
+    req.func_id = FS_OP_WRITE_FILE;
+    fs_write_file_req_t *payload = (fs_write_file_req_t *)req.payload;
+    _fs_str_copy(payload->dir_path, dir_path, 64);
+    _fs_str_copy(payload->filename, filename, 64);
+    payload->data_shm_id = data_shm_id;
+    payload->size = size;
+    req.payload_size = sizeof(fs_write_file_req_t);
+
+    int result = _send_and_wait(&req, &resp);
+
+    /* Cleanup data SHM */
+    if (data_shm_id >= 0) {
+        syscall1(SYS_SHM_DETACH, data_shm_id);
+        syscall1(SYS_SHM_DESTROY, data_shm_id);
+    }
+
+    if (result != EXEC_OK) return result;
+    if (resp.status != EXEC_OK) return resp.status;
+
+    return (int)resp.result;
+}
+
+int libfs_delete_file(const char *dir_path, const char *filename) {
+    if (!dir_path || !filename) return EXEC_ERR_INVALID;
+    if (!g_initialized) _libfs_try_init();
+    if (!g_initialized) return EXEC_ERR_NOT_RUNNING;
+
+    exec_request_t req;
+    exec_response_t resp;
+    _fs_memset(&req, 0, sizeof(req));
+
+    req.func_id = FS_OP_DELETE_FILE;
+    fs_delete_file_req_t *payload = (fs_delete_file_req_t *)req.payload;
+    _fs_str_copy(payload->dir_path, dir_path, 64);
+    _fs_str_copy(payload->filename, filename, 64);
+    req.payload_size = sizeof(fs_delete_file_req_t);
+
+    int result = _send_and_wait(&req, &resp);
+    if (result != EXEC_OK) return result;
+    if (resp.status != EXEC_OK) return resp.status;
+
+    return (int)resp.result;
+}
+
+int libfs_create_dir(const char *parent_path, const char *dirname) {
+    if (!parent_path || !dirname) return EXEC_ERR_INVALID;
+    if (!g_initialized) _libfs_try_init();
+    if (!g_initialized) return EXEC_ERR_NOT_RUNNING;
+
+    exec_request_t req;
+    exec_response_t resp;
+    _fs_memset(&req, 0, sizeof(req));
+
+    req.func_id = FS_OP_CREATE_DIR;
+    fs_create_dir_req_t *payload = (fs_create_dir_req_t *)req.payload;
+    _fs_str_copy(payload->parent_path, parent_path, 64);
+    _fs_str_copy(payload->dirname, dirname, 64);
+    req.payload_size = sizeof(fs_create_dir_req_t);
+
+    int result = _send_and_wait(&req, &resp);
+    if (result != EXEC_OK) return result;
+    if (resp.status != EXEC_OK) return resp.status;
+
+    return (int)resp.result;
+}
+
+/*=============================================================================
+ * PUBLIC API: VOLUME QUERIES (direct syscalls, no executive needed)
+ *===========================================================================*/
+
+int libfs_vol_count(void) {
+    return (int)syscall0(SYS_FS_VOL_COUNT);
+}
+
+int libfs_vol_info(int vol_index, libfs_vol_info_t *info) {
+    if (!info) return -1;
+    return (int)syscall2(SYS_FS_VOL_INFO, (uint32_t)vol_index, (uint32_t)info);
+}

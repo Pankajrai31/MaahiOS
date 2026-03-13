@@ -46,6 +46,7 @@
 #define SYS_PROCESS_GET_COUNT   19  /* process_get_count() - Get total process count */
 #define SYS_PROCESS_EXEC        20  /* process_exec(base, data, size, entry_off) - Exec binary */
 #define SYS_PROCESS_LIST        21  /* process_list(buf, max) - List all processes */
+#define SYS_PROCESS_SET_NAME    22  /* process_set_name(pid, name_ptr, type) - Set name & type */
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * DOMAIN 32-47: MEMORY management
@@ -88,6 +89,7 @@
 #define SYS_DEV_IOCTL           84  /* dev_ioctl(id, cmd, arg) - Device control */
 #define SYS_DEV_POLL            85  /* dev_poll(id) - Poll device readiness */
 #define SYS_DEV_LIST            86  /* dev_list(list, max) - List devices */
+#define SYS_DISK_FORMAT         87  /* disk_format(disk_idx, label) - Format disk (MBR+MFS) */
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * DOMAIN 96-111: GRUB MODULE (Boot module management)
@@ -112,13 +114,18 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * DOMAIN 128-143: FILESYSTEM (File & directory operations)
- * Manager: ISO9660 driver (+ future MFS driver)
+ * Manager: Volume driver → ISO9660 / MFS
  * ═══════════════════════════════════════════════════════════════════════════ */
 #define SYS_FS_LIST_DIR         128 /* fs_list_dir(path, entries, max) - List directory */
 #define SYS_FS_READ_FILE        129 /* fs_read_file(dir_path, name, buf, max) - Read file */
 #define SYS_FS_FILE_COUNT       130 /* fs_file_count(path) - Get file count */
 #define SYS_FS_FIND_DIR         131 /* fs_find_dir(name, out_lba, out_size) - Find subdir */
 #define SYS_FS_GET_ROOT_INFO    132 /* fs_get_root_info(out_lba, out_size) - Get root LBA/size */
+#define SYS_FS_WRITE_FILE       133 /* fs_write_file(dir, name, buf, size) - Write file (MFS) */
+#define SYS_FS_DELETE_FILE      134 /* fs_delete_file(dir, name) - Delete file (MFS) */
+#define SYS_FS_CREATE_DIR       135 /* fs_create_dir(parent, name) - Create dir (MFS) */
+#define SYS_FS_VOL_COUNT        136 /* fs_vol_count() - Get mounted volume count */
+#define SYS_FS_VOL_INFO         137 /* fs_vol_info(idx, info) - Get volume info */
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * DOMAIN 240-255: DEBUG/KLOG
@@ -130,6 +137,7 @@
 #define SYS_GET_CPU_INFO        243 /* get_cpu_info() - Get CPU information */
 #define SYS_GET_MEM_INFO        244 /* get_mem_info() - Get memory information */
 #define SYS_GET_PIC_MASK        245 /* get_pic_mask() - Get PIC interrupt mask */
+#define SYS_KLOG_READ           246 /* klog_read(buf, max_entries) - Copy log entries to user buf */
 
 /* Maximum syscall number */
 #define SYSCALL_MAX             255

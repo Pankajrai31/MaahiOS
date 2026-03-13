@@ -13,6 +13,7 @@
 
 #include "libgui.h"
 #include "../core/syscall_helpers.h"
+#include "../libcell/libcell.h"
 
 /*=============================================================================
  * LIBRARY STATE
@@ -43,17 +44,14 @@ int gui_init(void) {
         width   = 0;
         height  = 0;
 
-        syscall3(SYS_CELL_READ,
-                 (uint32_t)"system.gui.framebuffer",
-                 (uint32_t)&fb_addr, sizeof(uint32_t));
+        libcell_read("system.gui.framebuffer",
+                     &fb_addr, sizeof(uint32_t));
 
-        syscall3(SYS_CELL_READ,
-                 (uint32_t)"system.gui.width",
-                 (uint32_t)&width, sizeof(uint32_t));
+        libcell_read("system.gui.width",
+                     &width, sizeof(uint32_t));
 
-        syscall3(SYS_CELL_READ,
-                 (uint32_t)"system.gui.height",
-                 (uint32_t)&height, sizeof(uint32_t));
+        libcell_read("system.gui.height",
+                     &height, sizeof(uint32_t));
 
         if (fb_addr != 0 && width != 0 && height != 0) {
             break;  /* All cells found */
@@ -93,4 +91,33 @@ uint32_t gui_get_screen_width(void) {
 uint32_t gui_get_screen_height(void) {
     if (!g_initialized) gui_init();
     return g_screen_height;
+}
+
+/*=============================================================================
+ * DISPLAY FLIP
+ *
+ * ARCHITECTURE NOTE — Accepted Performance Exception:
+ *   gui_flip() and gui_flip_rect() use a direct SYS_DEV_IOCTL syscall
+ *   to the display driver, bypassing the IO Executive SHM round-trip.
+ *   This is intentional: display flip is called on every frame by every
+ *   GUI app/executive and is the single hottest path in the system.
+ *   Adding IPC latency here would make rendering unusable.  The entire
+ *   libgui framebuffer model is a direct-access pattern (apps write
+ *   pixels to a memory-mapped BGA surface); the flip is simply the
+ *   buffer-swap signal and carries no security-sensitive payload.
+ *===========================================================================*/
+
+/* Device IDs and IOCTL constants (must match device_manager.h) */
+#define DEV_DISPLAY            3
+#define DISPLAY_IOCTL_FLIP     4
+#define DISPLAY_IOCTL_FLIP_RECT 5
+
+void gui_flip(void) {
+    syscall3(SYS_DEV_IOCTL, DEV_DISPLAY, DISPLAY_IOCTL_FLIP, 0);
+}
+
+void gui_flip_rect(int x, int y, int w, int h) {
+    int rect[4] = { x, y, w, h };
+    syscall3(SYS_DEV_IOCTL, DEV_DISPLAY, DISPLAY_IOCTL_FLIP_RECT,
+             (int)(uint32_t)rect);
 }

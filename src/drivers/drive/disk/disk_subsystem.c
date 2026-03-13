@@ -115,7 +115,10 @@ int disk_subsystem_init(void) {
     KLOG_INFO("DISK", "Initializing disk subsystem");
     
     // Initialize ATA subsystem
-    ata_init();
+    if (ata_init() != 0) {
+        KLOG_ERROR("DISK", "ATA initialization failed");
+        return -1;
+    }
     
     // Scan for disks
     disk_subsystem_scan();

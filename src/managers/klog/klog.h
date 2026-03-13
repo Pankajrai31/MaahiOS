@@ -73,6 +73,16 @@ void klog_dump(void);
 /** Get pointer to ring buffer for inspection. */
 klog_entry_t* klog_get_buffer(int *count);
 
+/**
+ * klog_read_entries - Copy log entries to a user-supplied buffer
+ * @dst:         Destination buffer (array of klog_entry_t)
+ * @max_entries: Maximum entries to copy
+ *
+ * Copies entries in chronological order (oldest first).
+ * Returns: Number of entries actually copied.
+ */
+int klog_read_entries(klog_entry_t *dst, int max_entries);
+
 /* ============================================
  * User-space Log API (Ring 3 → kernel via syscall)
  * Messages are prefixed with [U] to distinguish from kernel logs.

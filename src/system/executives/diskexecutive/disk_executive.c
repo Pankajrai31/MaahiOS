@@ -81,7 +81,7 @@ typedef struct {
     uint8_t  active;
     uint8_t  disk_type;
     uint8_t  fs_type;
-    uint8_t  drive_letter;
+    uint8_t  _reserved;     /* Was drive_letter; letters are volume-only now */
     uint8_t  ata_drive_id;
     uint32_t size_mb;
     char     label[32];
@@ -114,49 +114,49 @@ static int g_dev_handle = -1;   /* Device handle from dev_open */
 static void exe_disk_scan(void) {
     g_disk_count = 0;
 
-    /* Try to read disk info via ioctl for each index */
-    for (uint8_t i = 0; i < DISK_MAX_DISKS; i++) {
-        /* The disk_subsystem ioctl GET_INFO expects:
-         * arg = byte[0] = index, followed by space for disk_info_t result
-         * This is a compact struct we pass in. */
-        uint8_t ioctl_buf[1 + sizeof(kernel_disk_info_t)];
-        ioctl_buf[0] = i;
-        exe_memset(ioctl_buf + 1, 0, sizeof(kernel_disk_info_t));
-        
-        int result = exe_dev_ioctl(DEV_DISK, DISK_IOCTL_GET_INFO, ioctl_buf);
-        if (result != 0) {
-            /* No more disks */
-            break;
-        }
-        
-        /* Parse kernel disk info from ioctl result */
-        kernel_disk_info_t *kdi = (kernel_disk_info_t *)(ioctl_buf + 1);
-        if (!kdi->active) continue;
-        
+    /* Read disk count from cell (published by kernel disk.c at boot) */
+    int count = 0;
+    int result = libcell_read("device.disk.count", &count, sizeof(int));
+    if (result < 0 || count <= 0) {
+        liblog(LOG_WARN, "DISKEXEC", "No disks found in cell registry");
+        return;
+    }
+    if (count > DISK_MAX_DISKS) count = DISK_MAX_DISKS;
+
+    /* Read per-disk info from cells */
+    for (int i = 0; i < count; i++) {
+        char key[32] = "device.disk.0";
+        key[12] = '0' + (char)i;
+
+        kernel_disk_info_t kdi;
+        exe_memset(&kdi, 0, sizeof(kdi));
+        result = libcell_read(key, &kdi, sizeof(kernel_disk_info_t));
+        if (result < 0 || !kdi.active) continue;
+
         disk_exec_info_t *d = &g_disk_cache[g_disk_count];
-        d->index      = i;
-        d->disk_type  = kdi->disk_type;
+        d->index      = (uint8_t)i;
+        d->disk_type  = kdi.disk_type;
         d->status     = DISK_STATUS_ONLINE;
         d->reserved   = 0;
-        d->size_mb    = kdi->size_mb;
-        
+        d->size_mb    = kdi.size_mb;
+
         /* Sector size: CDROM=2048, HDD=512 */
-        if (kdi->disk_type == DISK_TYPE_CDROM) {
+        if (kdi.disk_type == DISK_TYPE_CDROM) {
             d->sector_size = 2048;
         } else {
             d->sector_size = 512;
         }
-        
+
         /* Build name from type_str and drive letter */
-        exe_str_copy(d->name, kdi->type_str, DISK_NAME_MAX);
-        
+        exe_str_copy(d->name, kdi.type_str, DISK_NAME_MAX);
+
         g_disk_count++;
-        
-        liblog_hex(LOG_INFO, "DISKEXEC", "Found disk index:", i);
-        liblog(LOG_INFO, "DISKEXEC", kdi->type_str);
-        liblog_hex(LOG_INFO, "DISKEXEC", "  Size MB:", kdi->size_mb);
+
+        liblog_hex(LOG_INFO, "DISKEXEC", "Found disk index:", (uint32_t)i);
+        liblog(LOG_INFO, "DISKEXEC", kdi.type_str);
+        liblog_hex(LOG_INFO, "DISKEXEC", "  Size MB:", kdi.size_mb);
     }
-    
+
     liblog_hex(LOG_INFO, "DISKEXEC", "Total disks found:", g_disk_count);
 }
 
@@ -172,9 +172,7 @@ static void exe_disk_handle_ping(const exec_request_t *req, exec_response_t *res
 }
 
 static void exe_disk_handle_list_disks(const exec_request_t *req, exec_response_t *resp) {
-    /* Re-scan to get fresh info */
-    exe_disk_scan();
-    
+    /* Return cached info (populated at init from cells — no re-scan needed) */
     disk_list_resp_t *list = (disk_list_resp_t *)resp->payload;
     
     /* Copy cached info to response (max 5 due to payload size limit) */
@@ -263,6 +261,7 @@ static void exe_disk_handle_read_sector(const exec_request_t *req, exec_response
     void *data_buf = exe_shm_attach(data_shm_id);
     if (!data_buf) {
         liblog(LOG_ERROR, "DISKEXEC", "Failed to attach SHM for sector data");
+        syscall1(SYS_SHM_DESTROY, data_shm_id);
         resp->msg_id = req->msg_id;
         resp->status = EXEC_ERR_NO_MEMORY;
         resp->payload_size = 0;
@@ -284,12 +283,16 @@ static void exe_disk_handle_read_sector(const exec_request_t *req, exec_response
     
     if (read_result < 0) {
         liblog_hex(LOG_ERROR, "DISKEXEC", "Sector read failed, err:", (uint32_t)read_result);
+        syscall1(SYS_SHM_DETACH, data_shm_id);
+        syscall1(SYS_SHM_DESTROY, data_shm_id);
         resp->msg_id = req->msg_id;
         resp->status = read_result;
         resp->payload_size = 0;
         return;
     }
     
+    /* Detach our side — caller will attach, copy, detach, destroy */
+    syscall1(SYS_SHM_DETACH, data_shm_id);
     liblog_hex(LOG_DEBUG, "DISKEXEC", "Sector read OK, SHM ID:", (uint32_t)data_shm_id);
     
     resp->msg_id = req->msg_id;
@@ -313,6 +316,46 @@ static void exe_disk_handle_get_sector_size(const exec_request_t *req, exec_resp
     resp->status = EXEC_OK;
     resp->result = g_disk_cache[idx].sector_size;
     resp->payload_size = 0;
+}
+
+static void exe_disk_handle_format(const exec_request_t *req, exec_response_t *resp) {
+    disk_format_req_t *payload = (disk_format_req_t *)req->payload;
+    uint8_t idx = payload->disk_index;
+
+    if (idx >= g_disk_count) {
+        resp->msg_id = req->msg_id;
+        resp->status = EXEC_ERR_NOT_FOUND;
+        resp->payload_size = 0;
+        return;
+    }
+
+    /* Only HDDs can be formatted */
+    if (g_disk_cache[idx].disk_type == DISK_TYPE_CDROM) {
+        liblog(LOG_WARN, "DISKEXEC", "Cannot format CD-ROM");
+        resp->msg_id = req->msg_id;
+        resp->status = EXEC_ERR_INVALID;
+        resp->payload_size = 0;
+        return;
+    }
+
+    liblog(LOG_INFO, "DISKEXEC", "Format request for disk");
+    liblog_hex(LOG_INFO, "DISKEXEC", "  disk index:", (uint32_t)idx);
+
+    /* Call SYS_DISK_FORMAT syscall → kernel orchestrates MBR + MFS + mount */
+    int result = syscall2(SYS_DISK_FORMAT, (int)idx, (int)payload->label);
+
+    resp->msg_id = req->msg_id;
+    resp->status = (result == 0) ? EXEC_OK : result;
+    resp->result = (uint32_t)result;
+    resp->payload_size = 0;
+
+    if (result == 0) {
+        liblog(LOG_INFO, "DISKEXEC", "Format completed successfully");
+        /* Re-scan disks to update cache with new MFS info */
+        exe_disk_scan();
+    } else {
+        liblog_hex(LOG_ERROR, "DISKEXEC", "Format failed, err:", (uint32_t)result);
+    }
 }
 
 /*=============================================================================
@@ -358,6 +401,10 @@ static void exe_disk_dispatch(const exec_request_t *req, exec_response_t *resp) 
             
         case DISK_OP_GET_SECTOR_SIZE:
             exe_disk_handle_get_sector_size(req, resp);
+            break;
+
+        case DISK_OP_FORMAT:
+            exe_disk_handle_format(req, resp);
             break;
             
         default:

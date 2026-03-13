@@ -5,6 +5,7 @@
  */
 
 #include "../klog/klog.h"
+#include "../../system/libraries/shared/io.h"
 
 /* External functions */
 extern void vga_print(const char *s);
@@ -18,18 +19,10 @@ extern int scheduler_get_current_pid(void);
 extern int process_terminate(int pid);
 extern void scheduler_remove_process(int pid);
 
-/* Serial output helpers - use proper x86 I/O port instructions */
-static inline unsigned char exc_inb(unsigned short port) {
-    unsigned char val;
-    __asm__ volatile("inb %1, %0" : "=a"(val) : "Nd"(port));
-    return val;
-}
-static inline void exc_outb(unsigned short port, unsigned char val) {
-    __asm__ volatile("outb %0, %1" : : "a"(val), "Nd"(port));
-}
+/* Serial output helpers */
 static void serial_putc(char c) {
-    while ((exc_inb(0x3FD) & 0x20) == 0);  /* Wait for transmit buffer empty */
-    exc_outb(0x3F8, c);
+    while ((inb(0x3FD) & 0x20) == 0);  /* Wait for transmit buffer empty */
+    outb(0x3F8, c);
 }
 
 static void serial_puts(const char *s) {

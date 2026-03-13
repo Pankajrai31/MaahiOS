@@ -14,8 +14,8 @@
 /* ============================================
  * Screen Defaults
  * ============================================ */
-#define DISPLAY_DEFAULT_WIDTH   1024
-#define DISPLAY_DEFAULT_HEIGHT  768
+#define DISPLAY_DEFAULT_WIDTH   1280
+#define DISPLAY_DEFAULT_HEIGHT  800
 #define DISPLAY_DEFAULT_BPP     32
 
 /* ============================================
@@ -99,6 +99,24 @@ void gfx_draw_char(int x, int y, char c, uint32_t fg, uint32_t bg);
 void gfx_draw_string(int x, int y, const char *str, uint32_t fg, uint32_t bg);
 
 /**
+ * Get back buffer address (RAM copy, fast writes).
+ * All user-space drawing should target the back buffer.
+ * Call gfx_flip() to copy back buffer → HW framebuffer.
+ */
+uint32_t* gfx_get_backbuffer(void);
+
+/**
+ * Flip: copy back buffer → HW framebuffer + redraw cursor.
+ */
+void gfx_flip(void);
+
+/**
+ * Flip rect: copy only (x,y,w,h) region from back buffer → HW fb.
+ * Much faster than full flip for small updates.
+ */
+void gfx_flip_rect(int x, int y, int w, int h);
+
+/**
  * Read pixel value.
  */
 uint32_t gfx_read_pixel(int x, int y);
@@ -112,29 +130,5 @@ void gfx_put_pixel(int x, int y, uint32_t color);
  * Write pixel with alpha blending.
  */
 void gfx_put_pixel_alpha(int x, int y, uint32_t color, uint8_t alpha);
-
-/* ============================================
- * Hardware Cursor API
- * ============================================ */
-
-/**
- * Initialize hardware cursor.
- */
-void bga_cursor_init(void);
-
-/**
- * Check if hardware cursor is supported.
- */
-int bga_cursor_is_supported(void);
-
-/**
- * Enable/disable hardware cursor.
- */
-void bga_cursor_enable(int enable);
-
-/**
- * Set cursor position.
- */
-void bga_cursor_set_position(int x, int y);
 
 #endif /* DISPLAY_H */

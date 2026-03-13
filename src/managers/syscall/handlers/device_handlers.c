@@ -113,6 +113,25 @@ static int sys_dev_list(uint32_t list_ptr, uint32_t max_count, uint32_t arg3,
     return kernel_device_list_all((device_info_t *)list_ptr, (int)max_count);
 }
 
+/**
+ * sys_disk_format - Format a disk (create MBR + MFS filesystem + mount)
+ * arg1 = disk index
+ * arg2 = pointer to label string (or 0 for default)
+ * Returns: 0 on success, negative on error
+ */
+static int sys_disk_format(uint32_t disk_index, uint32_t label_ptr, uint32_t arg3,
+                           uint32_t arg4, uint32_t arg5) {
+    (void)arg3; (void)arg4; (void)arg5;
+    
+    KLOG_INFO("SYSCALL", "disk_format: disk_index=%u", disk_index);
+    
+    const char *label = (const char *)label_ptr;
+    
+    /* Call volume driver to orchestrate the full format flow */
+    extern int voldrive_format_disk(uint8_t disk_index, const char *label);
+    return voldrive_format_disk((uint8_t)disk_index, label);
+}
+
 /* ===========================================================================
  * REGISTRATION
  * =========================================================================== */
@@ -125,6 +144,7 @@ void syscall_register_device_handlers(void) {
     syscall_register(SYS_DEV_IOCTL, sys_dev_ioctl);
     syscall_register(SYS_DEV_POLL, sys_dev_poll);
     syscall_register(SYS_DEV_LIST, sys_dev_list);
+    syscall_register(SYS_DISK_FORMAT, sys_disk_format);
     
     KLOG_DEBUG("SYSCALL", "Device handlers registered (80-95)");
 }

@@ -23,6 +23,11 @@
 /* Maximum shared memory regions */
 #define MAX_SHM_REGIONS 64
 
+/* Virtual address spacing per SHM slot (4 MB each, supports surfaces up to 4 MB) */
+#define SHM_SLOT_VIRT_SIZE  0x400000
+/* Base virtual address for SHM mappings */
+#define SHM_VIRT_BASE       0x80000000
+
 /* SHM region info (for userspace queries) */
 typedef struct {
     int shm_id;

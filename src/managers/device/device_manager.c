@@ -15,7 +15,7 @@
 #include "../../managers/klog/klog.h"
 
 /* Driver headers for auto-initialization */
-#include "../../drivers/drive/disk/disk_subsystem.h"
+#include "../../drivers/drive/disk/disk.h"
 #include "../../drivers/display/display.h"
 #include "../../drivers/mouse/mouse.h"
 #include "../../drivers/keyboard/keyboard.h"
@@ -48,7 +48,7 @@ typedef struct {
 } driver_entry_t;
 
 static driver_entry_t g_driver_table[] = {
-    { "disk",     disk_subsystem_init,     DEV_DISK     },
+    { "disk",     disk_init,               DEV_DISK     },
     { "display",  display_register_device, DEV_DISPLAY  },
     { "mouse",    mouse_init,              DEV_MOUSE    },
     { "keyboard", keyboard_init,           DEV_KEYBOARD },

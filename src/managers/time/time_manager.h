@@ -53,39 +53,39 @@ int time_manager_init(void);
  * Check if time system is initialized.
  * @return 1 if initialized, 0 if not
  */
-int time_is_initialized(void);
+int kernel_time_is_initialized(void);
 
 /**
  * Get current date/time.
  * @param dt Output datetime structure
  * @return 0 on success, negative on error
  */
-int time_get_datetime(sys_datetime_t *dt);
+int kernel_time_get_datetime(sys_datetime_t *dt);
 
 /**
  * Get current Unix timestamp.
  * @return Seconds since Jan 1, 1970
  */
-uint32_t time_get_unix(void);
+uint32_t kernel_time_get_unix(void);
 
 /**
  * Get system uptime.
  * @param up Output uptime structure
  * @return 0 on success, negative on error
  */
-int time_get_uptime(sys_uptime_t *up);
+int kernel_time_get_uptime(sys_uptime_t *up);
 
 /**
  * Get raw tick count from PIT.
  * @return Ticks since boot
  */
-uint64_t time_get_ticks(void);
+uint64_t kernel_time_get_ticks(void);
 
 /**
  * Get tick frequency (ticks per second).
  * @return Ticks per second (e.g., 50)
  */
-uint32_t time_get_tick_frequency(void);
+uint32_t kernel_time_get_tick_frequency(void);
 
 /* ============================================
  * Shared Time API (for User-Space)
@@ -103,6 +103,6 @@ void time_manager_tick(void);
  * User-space can attach to read time without syscalls.
  * @return SHM ID, or -1 if not available
  */
-int time_get_shared_shm_id(void);
+int kernel_time_get_shared_shm_id(void);
 
 #endif /* TIME_MANAGER_H */

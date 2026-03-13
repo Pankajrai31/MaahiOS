@@ -1,11 +1,31 @@
 # Build artifacts
 build/binaries/
 build/isodir/
+build/grub_extract/
 build/*.bin
 build/*.elf
-build/*.iso
 build/*.o
+build/*.mex
 build/sysman_disasm.txt
+build/serial.log
+build/gdb_cmds.txt
+build/gdb_watch.txt
+build/module_bss_sizes.h
+build/sysman.s
+
+# Keep build.sh, run scripts, and boot.iso
+!build/build.sh
+!build/run_maahios.ps1
+!build/run_maahios.sh
+!build/boot.iso
+
+# Virtual disk
+osdrive.vhd
+
+# Python / venv
+.venv/
+__pycache__/
+*.pyc
 
 # Editor files
 .vscode/
@@ -16,3 +36,9 @@ build/sysman_disasm.txt
 # OS files
 .DS_Store
 Thumbs.db
+
+# Docs — only keep architecture and wiki
+docs/audit.md
+docs/issues_to_be_fixed.md
+docs/belo.html
+docs/maahi-os-design-system.html

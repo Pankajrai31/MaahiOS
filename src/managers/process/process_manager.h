@@ -7,6 +7,13 @@
 #define PROCESS_STATE_READY    1
 #define PROCESS_STATE_RUNNING  2
 
+/* Process types */
+#define PROC_TYPE_SYSTEM       0   /* System process (executives, sysman, orbit) */
+#define PROC_TYPE_USER         1   /* User application (.mex apps) */
+
+/* Process name max length (including null terminator) */
+#define PROC_NAME_MAX          32
+
 /* Process Control Block (PCB) */
 typedef struct {
     int pid;
@@ -16,6 +23,9 @@ typedef struct {
     uint32_t kernel_stack_top;  /* Kernel interrupt stack pointer */
     uint32_t esp;               /* Saved stack pointer (context on kernel stack) */
     uint32_t *page_directory;   /* Per-process page directory (NULL = kernel default) */
+    char     name[PROC_NAME_MAX]; /* Process name (e.g. "LogExec", "diskman") */
+    uint8_t  type;              /* PROC_TYPE_SYSTEM or PROC_TYPE_USER */
+    uint32_t memory_alloc;      /* Total memory allocated (bytes) */
 } process_t;
 
 /**
@@ -57,7 +67,8 @@ int process_manager_get_count(void);
  * Returns: PID on success, -1 on failure
  */
 int process_create_from_memory(uint32_t base_address, const void *binary_data,
-                               uint32_t binary_size, uint32_t entry_offset);
+                               uint32_t binary_size, uint32_t entry_offset,
+                               uint32_t bss_size);
 
 /**
  * Terminate a process and free its resources
@@ -66,11 +77,20 @@ int process_terminate(int pid);
 
 /**
  * List all active processes.
- * Fills buffer with pairs of [pid, state] (8 bytes each).
- * @param buffer     Output buffer (must hold max_entries * 8 bytes)
+ * Each entry is 48 bytes: [pid:4][state:4][name:32][type:1][pad:3][memory:4]
+ * @param buffer     Output buffer (must hold max_entries * 48 bytes)
  * @param max_entries Maximum entries to return
  * @return Number of entries written, or -1 on error
  */
 int process_manager_list(void *buffer, int max_entries);
+
+/**
+ * Set process name and type.
+ * @param pid   Process ID
+ * @param name  Name string (max 31 chars + null)
+ * @param type  PROC_TYPE_SYSTEM or PROC_TYPE_USER
+ * @return 0 on success, -1 on error
+ */
+int process_set_name(int pid, const char *name, uint8_t type);
 
 #endif // PROCESS_MANAGER_H

@@ -30,6 +30,8 @@
 #include "../../libraries/libcell/libcell.h"
 #include "../../libraries/libprocess/libprocess.h"
 #include "../../libraries/libmemory/libmemory.h"
+#include "../../libraries/shared/taskbar_types.h"
+#include "module_bss_sizes.h"  /* Auto-generated: MOD_BSS_LOGEXEC, MOD_BSS_ORBIT, etc. */
 
 /* All user processes are linked at this virtual address.
  * Per-process page directories provide isolated address spaces. */
@@ -45,8 +47,9 @@
 #define GRUB_MOD_FSEXEC         6
 #define GRUB_MOD_GUIEXEC        7
 #define GRUB_MOD_IOEXEC         8
-#define GRUB_MOD_ORBIT          9
-#define GRUB_MOD_TERMINAL       10
+#define GRUB_MOD_WMEXEC         9
+#define GRUB_MOD_ORBIT          10
+#define GRUB_MOD_TERMINAL       11
 
 /*=============================================================================
  * Convenience wrappers (thin layer over syscall_helpers)
@@ -64,8 +67,9 @@ static void sleep_ticks(int ticks) {
  * Create a process from a GRUB module with per-process page directory.
  * Uses SYS_PROCESS_EXEC (which calls process_create_from_memory in kernel).
  * Each process gets its own page directory with binary mapped at PROCESS_VIRTUAL_BASE.
+ * bss_size is passed so the kernel allocates the correct amount of memory.
  */
-static int create_process_from_module(int module_index, const char *name) {
+static int create_process_from_module(int module_index, const char *name, uint32_t bss_size) {
     uint32_t mod_addr = (uint32_t)syscall1(SYS_MOD_GET_ADDR, module_index);
     if (mod_addr == 0) {
         liblog(LOG_ERROR, "SYSMAN", "Module not found!");
@@ -81,13 +85,17 @@ static int create_process_from_module(int module_index, const char *name) {
     
     liblog_hex(LOG_INFO, "SYSMAN", "Module GRUB addr:", mod_addr);
     liblog_hex(LOG_INFO, "SYSMAN", "Module size:", mod_size);
+    liblog_hex(LOG_INFO, "SYSMAN", "Module BSS:", bss_size);
     
-    int pid = syscall4(SYS_PROCESS_EXEC, PROCESS_VIRTUAL_BASE,
-                       (int)mod_addr, (int)mod_size, 0);
+    int pid = syscall5(SYS_PROCESS_EXEC, PROCESS_VIRTUAL_BASE,
+                       (int)mod_addr, (int)mod_size, 0, (int)bss_size);
     if (pid < 0) {
         liblog(LOG_ERROR, "SYSMAN", "Failed to create process!");
         return -1;
     }
+    
+    /* Set process name and type (system process) */
+    syscall3(SYS_PROCESS_SET_NAME, pid, (int)name, 0 /* PROC_TYPE_SYSTEM */);
     
     liblog_hex(LOG_INFO, "SYSMAN", "Process started, PID:", (uint32_t)pid);
     return pid;
@@ -104,12 +112,15 @@ void sysman_main_c(void) {
     liblog(LOG_INFO, "SYSMAN", "  Welcome to Sysman (PID 1)");
     liblog(LOG_INFO, "SYSMAN", "========================================");
     
+    /* Name ourselves */
+    syscall3(SYS_PROCESS_SET_NAME, 1, (int)"Sysman", 0 /* PROC_TYPE_SYSTEM */);
+    
     /*=========================================================================
      * STEP 1: Start Log Executive
      *=======================================================================*/
     liblog(LOG_INFO, "SYSMAN", "Starting Log Executive...");
     
-    int log_pid = create_process_from_module(GRUB_MOD_LOGEXEC, "LogExec");
+    int log_pid = create_process_from_module(GRUB_MOD_LOGEXEC, "LogExec", MOD_BSS_LOGEXEC);
     if (log_pid < 0) {
         liblog(LOG_ERROR, "SYSMAN", "Failed to start Log Executive!");
         while (1) yield();
@@ -123,7 +134,7 @@ void sysman_main_c(void) {
      *=======================================================================*/
     liblog(LOG_INFO, "SYSMAN", "Starting Cell Executive...");
     
-    int cell_pid = create_process_from_module(GRUB_MOD_CELLEXEC, "CellExec");
+    int cell_pid = create_process_from_module(GRUB_MOD_CELLEXEC, "CellExec", MOD_BSS_CELLEXEC);
     if (cell_pid < 0) {
         liblog(LOG_ERROR, "SYSMAN", "Failed to start Cell Executive!");
         while (1) yield();
@@ -141,7 +152,7 @@ void sysman_main_c(void) {
      *=======================================================================*/
     liblog(LOG_INFO, "SYSMAN", "Starting GUI Executive...");
     
-    int gui_pid = create_process_from_module(GRUB_MOD_GUIEXEC, "GUIExec");
+    int gui_pid = create_process_from_module(GRUB_MOD_GUIEXEC, "GUIExec", MOD_BSS_GUIEXEC);
     if (gui_pid < 0) {
         liblog(LOG_ERROR, "SYSMAN", "Failed to start GUI Executive!");
         while (1) yield();
@@ -158,7 +169,7 @@ void sysman_main_c(void) {
      *=======================================================================*/
     liblog(LOG_INFO, "SYSMAN", "Starting I/O Executive...");
     
-    int io_pid = create_process_from_module(GRUB_MOD_IOEXEC, "IOExec");
+    int io_pid = create_process_from_module(GRUB_MOD_IOEXEC, "IOExec", MOD_BSS_IOEXEC);
     if (io_pid < 0) {
         liblog(LOG_ERROR, "SYSMAN", "Failed to start I/O Executive!");
         while (1) yield();
@@ -168,11 +179,29 @@ void sysman_main_c(void) {
     sleep_ticks(5);
     
     /*=========================================================================
+     * STEP 4b: Start WM Executive
+     *   - Depends on: GUI Executive (display cells), Cell Executive
+     *   - Creates SHM queues for window registration
+     *   - Must be running before any windowed app starts
+     *=======================================================================*/
+    liblog(LOG_INFO, "SYSMAN", "Starting WM Executive...");
+    
+    int wm_pid = create_process_from_module(GRUB_MOD_WMEXEC, "WMExec", MOD_BSS_WMEXEC);
+    if (wm_pid < 0) {
+        liblog(LOG_ERROR, "SYSMAN", "Failed to start WM Executive!");
+        while (1) yield();
+    }
+    
+    /* Give WM Executive time to init display, create SHM queues,
+     * and signal readiness via cell */
+    sleep_ticks(5);
+    
+    /*=========================================================================
      * STEP 5: Start Process Executive
      *=======================================================================*/
     liblog(LOG_INFO, "SYSMAN", "Starting Process Executive...");
     
-    int proc_pid = create_process_from_module(GRUB_MOD_PROCEXEC, "ProcExec");
+    int proc_pid = create_process_from_module(GRUB_MOD_PROCEXEC, "ProcExec", MOD_BSS_PROCEXEC);
     if (proc_pid < 0) {
         liblog(LOG_ERROR, "SYSMAN", "Failed to start Process Executive!");
         while (1) yield();
@@ -186,7 +215,7 @@ void sysman_main_c(void) {
      *=======================================================================*/
     liblog(LOG_INFO, "SYSMAN", "Starting Memory Executive...");
     
-    int mem_pid = create_process_from_module(GRUB_MOD_MEMEXEC, "MemExec");
+    int mem_pid = create_process_from_module(GRUB_MOD_MEMEXEC, "MemExec", MOD_BSS_MEMEXEC);
     if (mem_pid < 0) {
         liblog(LOG_ERROR, "SYSMAN", "Failed to start Memory Executive!");
         while (1) yield();
@@ -200,7 +229,7 @@ void sysman_main_c(void) {
      *=======================================================================*/
     liblog(LOG_INFO, "SYSMAN", "Starting Disk Executive...");
     
-    int disk_pid = create_process_from_module(GRUB_MOD_DISKEXEC, "DiskExec");
+    int disk_pid = create_process_from_module(GRUB_MOD_DISKEXEC, "DiskExec", MOD_BSS_DISKEXEC);
     if (disk_pid < 0) {
         liblog(LOG_ERROR, "SYSMAN", "Failed to start Disk Executive!");
         while (1) yield();
@@ -214,7 +243,7 @@ void sysman_main_c(void) {
      *=======================================================================*/
     liblog(LOG_INFO, "SYSMAN", "Starting Filesystem Executive...");
     
-    int fs_pid = create_process_from_module(GRUB_MOD_FSEXEC, "FSExec");
+    int fs_pid = create_process_from_module(GRUB_MOD_FSEXEC, "FSExec", MOD_BSS_FSEXEC);
     if (fs_pid < 0) {
         liblog(LOG_ERROR, "SYSMAN", "Failed to start FS Executive!");
         while (1) yield();
@@ -239,9 +268,82 @@ void sysman_main_c(void) {
     libcell_write("system.app.terminal.module",
                   &term_mod_val, sizeof(uint32_t));
     liblog(LOG_INFO, "SYSMAN", "Terminal module cell published");
+
+    /* Publish desktop app shortcuts for Orbit to render as clickable icons */
+    {
+        desktop_app_list_t apps;
+        int i;
+        for (i = 0; i < (int)sizeof(apps); i++) ((uint8_t *)&apps)[i] = 0;
+
+        apps.count = 2;
+
+        /* Terminal — GRUB module */
+        {
+            const char *n = "Terminal";
+            int j;
+            for (j = 0; n[j] && j < DESKTOP_APP_NAME_MAX - 1; j++)
+                apps.entries[0].name[j] = n[j];
+            apps.entries[0].name[j] = '\0';
+        }
+        {
+            const char *ic = "TERMINAL.BMP";
+            int j;
+            for (j = 0; ic[j] && j < DESKTOP_ICON_NAME_MAX - 1; j++)
+                apps.entries[0].icon_file[j] = ic[j];
+            apps.entries[0].icon_file[j] = '\0';
+        }
+        apps.entries[0].app_type   = DESKTOP_APP_TYPE_MODULE;
+        apps.entries[0].module_idx = GRUB_MOD_TERMINAL;
+        apps.entries[0].is_gui     = 1;
+        apps.entries[0].bss_size   = MOD_BSS_TERMINAL;
+
+        /* HelloGUI — MEX file on filesystem */
+        {
+            const char *n = "HelloGUI";
+            int j;
+            for (j = 0; n[j] && j < DESKTOP_APP_NAME_MAX - 1; j++)
+                apps.entries[1].name[j] = n[j];
+            apps.entries[1].name[j] = '\0';
+        }
+        {
+            const char *c = "HELLOGUI.MEX";
+            int j;
+            for (j = 0; c[j] && j < DESKTOP_APP_CMD_MAX - 1; j++)
+                apps.entries[1].command[j] = c[j];
+            apps.entries[1].command[j] = '\0';
+        }
+        {
+            const char *ic = "HELLOGUI.BMP";
+            int j;
+            for (j = 0; ic[j] && j < DESKTOP_ICON_NAME_MAX - 1; j++)
+                apps.entries[1].icon_file[j] = ic[j];
+            apps.entries[1].icon_file[j] = '\0';
+        }
+        apps.entries[1].app_type   = DESKTOP_APP_TYPE_MEX;
+        apps.entries[1].module_idx = 0;
+        apps.entries[1].is_gui     = 1;
+
+        libcell_write(CELL_DESKTOP_APPS, &apps,
+                     (uint32_t)(sizeof(int32_t) +
+                      apps.count * sizeof(desktop_app_entry_t)));
+        liblog(LOG_INFO, "SYSMAN", "Desktop app shortcuts cell published");
+    }
+
+    /* Initialize empty taskbar window list and restore cells */
+    {
+        taskbar_window_list_t empty_list;
+        int i;
+        for (i = 0; i < (int)sizeof(empty_list); i++) ((uint8_t *)&empty_list)[i] = 0;
+        empty_list.count = 0;
+        libcell_write(CELL_TASKBAR_WINDOWS, &empty_list, sizeof(int32_t));
+
+        taskbar_restore_t restore;
+        restore.pid = 0;
+        libcell_write(CELL_TASKBAR_RESTORE, &restore, sizeof(restore));
+    }
     
     /* Launch Orbit with per-process page directory */
-    int orbit_pid = create_process_from_module(GRUB_MOD_ORBIT, "Orbit");
+    int orbit_pid = create_process_from_module(GRUB_MOD_ORBIT, "Orbit", MOD_BSS_ORBIT);
     if (orbit_pid < 0) {
         liblog(LOG_ERROR, "SYSMAN", "Failed to start Orbit!");
         while (1) yield();

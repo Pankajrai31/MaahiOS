@@ -34,7 +34,7 @@
  *===========================================================================*/
 
 #define IO_DEV_KEYBOARD         2
-#define IO_DEV_MOUSE            4   /* Future */
+#define IO_DEV_MOUSE            1   /* Must match DEV_MOUSE in device_manager.h */
 
 /*=============================================================================
  * REQUEST / RESPONSE PAYLOADS
@@ -86,5 +86,23 @@ typedef struct {
     uint32_t entry_size;            /* IO_KBD_RING_ENTRY_SIZE */
     uint8_t data[IO_KBD_RING_CAPACITY * IO_KBD_RING_ENTRY_SIZE];
 } io_kbd_ring_t;
+
+/*=============================================================================
+ * MOUSE STATE SLOT (shared memory, lock-free single-value)
+ *
+ * The mouse is state-based (current position + buttons), not event-based.
+ * The I/O Executive continuously polls the mouse device and writes the
+ * latest state to this slot in shared memory. libio reads directly from
+ * here — zero syscalls, zero IPC.  Much simpler than a ring buffer.
+ *
+ * Discovered via cell "system.io.mouse.state_shm".
+ *===========================================================================*/
+
+typedef struct {
+    volatile int      x;         /* Current X position */
+    volatile int      y;         /* Current Y position */
+    volatile uint8_t  buttons;   /* Button state (MOUSE_LEFT, etc.) */
+    volatile uint32_t seq;       /* Sequence counter (writer increments) */
+} io_mouse_state_t;
 
 #endif /* IO_EXECUTIVE_H */

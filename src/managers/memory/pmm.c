@@ -111,7 +111,7 @@ int pmm_init(multiboot_info_t *mbi) {
     KLOG_INFO("PMM", "Initialized: %u pages (%u MB), bitmap at 0x%x",
               total_pages, (total_pages * PAGE_SIZE) / (1024 * 1024), bitmap_addr);
     
-    return 1;  /* Success */
+    return 0;  /* Success */
 }
 
 void pmm_mark_region_used(uint32_t start, uint32_t end) {

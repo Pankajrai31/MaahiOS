@@ -322,6 +322,34 @@ void klog_hex2(int level, const char *tag, const char *msg,
 }
 
 /**
+ * Copy log entries to a user-supplied buffer (chronological order)
+ * Returns number of entries copied.
+ */
+int klog_read_entries(klog_entry_t *dst, int max_entries) {
+    if (!dst || max_entries <= 0) return 0;
+
+    int to_copy = log_count;
+    if (to_copy > max_entries) to_copy = max_entries;
+    if (to_copy > KLOG_BUFFER_SIZE) to_copy = KLOG_BUFFER_SIZE;
+
+    /* Find oldest entry */
+    int start = (log_count < KLOG_BUFFER_SIZE) ? 0 : log_head;
+
+    int i;
+    for (i = 0; i < to_copy; i++) {
+        int idx = (start + i) % KLOG_BUFFER_SIZE;
+        /* Copy entry field-by-field */
+        dst[i].timestamp = log_buffer[idx].timestamp;
+        dst[i].level     = log_buffer[idx].level;
+        dst[i].pid       = log_buffer[idx].pid;
+        klog_strcpy(dst[i].tag, log_buffer[idx].tag, KLOG_MAX_TAG_LEN);
+        klog_strcpy(dst[i].msg, log_buffer[idx].msg, KLOG_MAX_MSG_LEN);
+    }
+
+    return to_copy;
+}
+
+/**
  * Dump entire ring buffer to serial output
  * Triggered by Ctrl+Alt+Shift or exception handlers
  */

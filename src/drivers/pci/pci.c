@@ -4,19 +4,7 @@
  */
 
 #include "pci.h"
-
-/* ============================================
- * Port I/O
- * ============================================ */
-static inline void outl(uint16_t port, uint32_t value) {
-    __asm__ volatile("outl %0, %1" : : "a"(value), "Nd"(port));
-}
-
-static inline uint32_t inl(uint16_t port) {
-    uint32_t ret;
-    __asm__ volatile("inl %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
+#include "../../system/libraries/shared/io.h"
 
 /* ============================================
  * PCI Address Calculation

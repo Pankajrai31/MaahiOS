@@ -203,6 +203,11 @@ static int rtc_dev_ioctl(int handle, int cmd, void *arg) {
     }
 }
 
+static int rtc_dev_poll(int handle) {
+    (void)handle;
+    return 1;  /* RTC is always readable */
+}
+
 /* Device operations table */
 static device_ops_t rtc_ops = {
     .open  = rtc_dev_open,
@@ -210,7 +215,7 @@ static device_ops_t rtc_ops = {
     .read  = rtc_dev_read,
     .write = (void *)0,
     .ioctl = rtc_dev_ioctl,
-    .poll  = (void *)0
+    .poll  = rtc_dev_poll
 };
 
 /* ===========================================================================

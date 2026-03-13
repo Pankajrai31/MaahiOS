@@ -12,6 +12,7 @@
 
 #include "printgui.h"
 #include "../fonts/font8x16.h"
+#include "../fonts/libfont.h"
 
 /* Forward declarations for libgui core accessors */
 extern uint32_t *gui_get_framebuffer(void);
@@ -30,11 +31,23 @@ void gui_fill_rect(int x, int y, int w, int h, uint32_t color) {
     uint32_t scr_h = gui_get_screen_height();
     uint32_t rgb = color & 0x00FFFFFF;
 
-    for (int row = y; row < y + h && row < (int)scr_h; row++) {
-        if (row < 0) continue;
-        for (int col = x; col < x + w && col < (int)scr_w; col++) {
-            if (col < 0) continue;
-            fb[row * scr_w + col] = rgb;
+    /* Clip to screen bounds */
+    int x0 = x;
+    int y0 = y;
+    int x1 = x + w;
+    int y1 = y + h;
+    if (x0 < 0) x0 = 0;
+    if (y0 < 0) y0 = 0;
+    if (x1 > (int)scr_w) x1 = (int)scr_w;
+    if (y1 > (int)scr_h) y1 = (int)scr_h;
+    int cw = x1 - x0;
+    if (cw <= 0) return;
+
+    /* Fast row-based fill: write one clipped row at a time */
+    for (int row = y0; row < y1; row++) {
+        uint32_t *dst = &fb[row * scr_w + x0];
+        for (int i = 0; i < cw; i++) {
+            dst[i] = rgb;
         }
     }
 }
@@ -62,6 +75,14 @@ void gui_scroll_rect_up(int x, int y, int w, int h,
     uint32_t scr_h = gui_get_screen_height();
     uint32_t rgb = bg_color & 0x00FFFFFF;
 
+    /* Clip horizontal span once */
+    int x0 = x;
+    int x1 = x + w;
+    if (x0 < 0) x0 = 0;
+    if (x1 > (int)scr_w) x1 = (int)scr_w;
+    int cw = x1 - x0;
+    if (cw <= 0) return;
+
     /* Move rows up by scroll_pixels within the region */
     int lines_to_copy = h - scroll_pixels;
     for (int row = 0; row < lines_to_copy; row++) {
@@ -70,9 +91,10 @@ void gui_scroll_rect_up(int x, int y, int w, int h,
         if (src_y < 0 || src_y >= (int)scr_h) continue;
         if (dst_y < 0 || dst_y >= (int)scr_h) continue;
 
-        for (int col = x; col < x + w && col < (int)scr_w; col++) {
-            if (col < 0) continue;
-            fb[dst_y * scr_w + col] = fb[src_y * scr_w + col];
+        uint32_t *src = &fb[src_y * scr_w + x0];
+        uint32_t *dst = &fb[dst_y * scr_w + x0];
+        for (int i = 0; i < cw; i++) {
+            dst[i] = src[i];
         }
     }
 
@@ -81,9 +103,9 @@ void gui_scroll_rect_up(int x, int y, int w, int h,
     if (clear_y < y) clear_y = y;
     for (int row = clear_y; row < y + h && row < (int)scr_h; row++) {
         if (row < 0) continue;
-        for (int col = x; col < x + w && col < (int)scr_w; col++) {
-            if (col < 0) continue;
-            fb[row * scr_w + col] = rgb;
+        uint32_t *dst = &fb[row * scr_w + x0];
+        for (int i = 0; i < cw; i++) {
+            dst[i] = rgb;
         }
     }
 }
@@ -147,4 +169,54 @@ void gui_draw_cursor(int px, int py, uint32_t color) {
 
 void gui_erase_cursor(int px, int py, uint32_t bg_color) {
     gui_fill_rect(px, py, FONT_CHAR_WIDTH, FONT_CHAR_HEIGHT, bg_color);
+}
+
+/*=============================================================================
+ * PROPORTIONAL TEXT (anti-aliased via libfont)
+ *===========================================================================*/
+
+void gui_draw_text(int x, int y, const char *str,
+                   uint32_t fg, font_size_t size) {
+    uint32_t *fb = gui_get_framebuffer();
+    if (!fb || !str) return;
+
+    int scr_w = (int)gui_get_screen_width();
+    int scr_h = (int)gui_get_screen_height();
+
+    font_draw_string(fb, scr_w, scr_w, scr_h, x, y, str, fg, size);
+}
+
+int gui_measure_text(const char *str, font_size_t size) {
+    return font_measure_string(str, size);
+}
+
+int gui_text_height(font_size_t size) {
+    return font_line_height(size);
+}
+
+/*=============================================================================
+ * ICON BLIT (color-key transparency)
+ *===========================================================================*/
+
+void gui_blit_icon(int x, int y, const uint32_t *pixels,
+                   int w, int h, uint32_t colorkey) {
+    uint32_t *fb = gui_get_framebuffer();
+    if (!fb || !pixels) return;
+
+    int scr_w = (int)gui_get_screen_width();
+    int scr_h = (int)gui_get_screen_height();
+    uint32_t key = colorkey & 0x00FFFFFF;
+
+    for (int row = 0; row < h; row++) {
+        int sy = y + row;
+        if (sy < 0 || sy >= scr_h) continue;
+        for (int col = 0; col < w; col++) {
+            int sx = x + col;
+            if (sx < 0 || sx >= scr_w) continue;
+            uint32_t px = pixels[row * w + col] & 0x00FFFFFF;
+            if (px != key) {
+                fb[sy * scr_w + sx] = px;
+            }
+        }
+    }
 }

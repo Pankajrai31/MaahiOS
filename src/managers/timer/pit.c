@@ -24,13 +24,24 @@ extern void scheduler_tick(void);
 /* Global tick counter (64-bit for long uptimes) */
 static volatile uint64_t pit_ticks = 0;
 
+/* When set, pit_handler_with_context skips pit_ticks++ so that
+ * software-triggered yields (sys_yield -> int $0x20) don't
+ * artificially speed up the system clock. */
+static volatile int yield_in_progress = 0;
+
+void pit_request_yield(void) {
+    yield_in_progress = 1;
+}
+
 /**
  * PIT handler with context switching support.
  * Called from irq0_stub with current ESP on stack.
  * Returns new ESP (same process or switched process).
  */
 uint32_t pit_handler_with_context(uint32_t current_esp) {
-    pit_ticks++;
+    if (!yield_in_progress)
+        pit_ticks++;
+    yield_in_progress = 0;
     
     extern int scheduler_get_current_pid(void);
     extern int scheduler_should_switch(void);

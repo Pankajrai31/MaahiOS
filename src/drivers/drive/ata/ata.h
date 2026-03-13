@@ -27,6 +27,8 @@
 
 // ATA Commands
 #define ATA_CMD_READ_PIO       0x20
+#define ATA_CMD_WRITE_PIO      0x30
+#define ATA_CMD_CACHE_FLUSH    0xE7
 #define ATA_CMD_IDENTIFY       0xEC
 #define ATA_CMD_IDENTIFY_PACKET 0xA1
 
@@ -59,14 +61,16 @@ typedef struct {
     uint16_t base_port;       // Base I/O port
     uint8_t is_slave;         // 0=master, 1=slave
     uint32_t size_mb;         // Size in MB
+    uint32_t total_sectors;   // Total LBA28 addressable sectors
     char model[41];           // Model string
 } ata_drive_t;
 
 // Function prototypes
-void ata_init(void);
+int ata_init(void);
 int ata_detect_drive(uint16_t base_port, uint8_t is_slave);
 int ata_identify(uint16_t base_port, uint8_t is_slave, uint16_t *buffer);
 int ata_read_sector(uint8_t drive_id, uint32_t lba, uint16_t *buffer);
+int ata_write_sector(uint8_t drive_id, uint32_t lba, const uint16_t *buffer);
 ata_drive_t* ata_get_drive(uint8_t drive_id);
 
 #endif // ATA_H

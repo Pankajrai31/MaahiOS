@@ -147,7 +147,8 @@ int libmex_exec(const mex_info_t *info) {
         info->base_address,
         info->binary_data,
         info->code_size,
-        info->entry_offset
+        info->entry_offset,
+        info->bss_size
     );
 
     if (pid < 0) {

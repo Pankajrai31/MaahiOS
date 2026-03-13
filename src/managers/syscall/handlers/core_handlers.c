@@ -29,8 +29,8 @@ static int sys_exit(uint32_t code, uint32_t arg2, uint32_t arg3,
         process_terminate(pid);
     }
     
-    /* Halt if kernel process or last process */
-    __asm__ volatile("cli");
+    /* Re-enable interrupts so scheduler timer can fire, then idle */
+    __asm__ volatile("sti");
     while (1) {
         __asm__ volatile("hlt");
     }
@@ -40,13 +40,28 @@ static int sys_exit(uint32_t code, uint32_t arg2, uint32_t arg3,
 
 /**
  * sys_yield - Yield CPU to scheduler
+ *
+ * Instead of just calling scheduler_tick() and returning (which only
+ * sets should_switch — the actual context switch wouldn't happen
+ * until the next PIT interrupt, up to 20ms later), we trigger a
+ * software INT 0x20 which enters irq0_stub.  That performs the full
+ * context-switch sequence immediately: scheduler_tick → save ESP →
+ * load next process → iret.  The pit_request_yield() flag tells the
+ * PIT handler to skip incrementing pit_ticks so the system clock
+ * stays accurate.
  */
+extern void pit_request_yield(void);
+
 static int sys_yield(uint32_t arg1, uint32_t arg2, uint32_t arg3,
                      uint32_t arg4, uint32_t arg5) {
     (void)arg1; (void)arg2; (void)arg3; (void)arg4; (void)arg5;
     
-    /* Force scheduler tick */
-    scheduler_tick();
+    /* Mark this as a yield (don't increment system tick counter) */
+    pit_request_yield();
+    /* Trigger timer interrupt via software — causes immediate
+     * context switch through the same irq0_stub path as the
+     * hardware PIT, but without waiting up to 20ms. */
+    __asm__ volatile("int $0x20");
     return 0;
 }
 

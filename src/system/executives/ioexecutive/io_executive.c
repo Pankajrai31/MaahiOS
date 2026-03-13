@@ -57,10 +57,15 @@ static int g_resp_queue_shm_id = -1;
 
 /* Device handles */
 static int g_kbd_handle = -1;
+static int g_mouse_handle = -1;
 
 /* Keyboard ring buffer (shared with libio consumers) */
 static io_kbd_ring_t *g_kbd_ring = NULL;
 static int g_kbd_ring_shm_id = -1;
+
+/* Mouse state slot (shared with libio consumers) */
+static io_mouse_state_t *g_mouse_state = NULL;
+static int g_mouse_state_shm_id = -1;
 
 /*=============================================================================
  * REQUEST HANDLERS
@@ -152,6 +157,29 @@ static void exe_io_poll_keyboard(void) {
     }
 }
 
+/**
+ * Poll mouse device and write latest state to shared memory slot.
+ * Called from the main loop on every iteration. Single-value overwrite:
+ * only this executive writes, libio consumers read.
+ */
+static void exe_io_poll_mouse(void) {
+    if (!g_mouse_state) return;
+
+    /* Read raw mouse state from kernel */
+    uint8_t buf[12];  /* Enough for mouse_state_t (int x, int y, uint8_t buttons) */
+    int r = exe_dev_read(IO_DEV_MOUSE, buf, sizeof(buf));
+    if (r > 0) {
+        /* Copy fields individually to avoid struct alignment issues */
+        int *ibuf = (int *)buf;
+        g_mouse_state->x       = ibuf[0];
+        g_mouse_state->y       = ibuf[1];
+        g_mouse_state->buttons = buf[8];
+        /* Compiler barrier + increment seq so readers see consistent state */
+        __asm__ volatile("" ::: "memory");
+        g_mouse_state->seq++;
+    }
+}
+
 /*=============================================================================
  * INITIALIZATION & MAIN LOOP
  *===========================================================================*/
@@ -211,6 +239,15 @@ static int exe_io_init(void) {
     liblog_hex(LOG_INFO, "IOEXEC", "Keyboard device opened, handle:", 
                (uint32_t)g_kbd_handle);
 
+    /* Open mouse device */
+    g_mouse_handle = exe_dev_open(IO_DEV_MOUSE, 0);
+    if (g_mouse_handle < 0) {
+        liblog(LOG_WARN, "IOEXEC", "Mouse device not available (non-fatal)");
+    } else {
+        liblog_hex(LOG_INFO, "IOEXEC", "Mouse device opened, handle:",
+                   (uint32_t)g_mouse_handle);
+    }
+
     /* Create keyboard ring buffer in shared memory.
      * libio consumers read directly from this buffer — no IPC round trip. */
     g_kbd_ring_shm_id = exe_shm_create(sizeof(io_kbd_ring_t));
@@ -231,6 +268,26 @@ static int exe_io_init(void) {
                   &g_kbd_ring_shm_id, sizeof(int));
     liblog_hex(LOG_INFO, "IOEXEC", "Keyboard ring buffer SHM ID:",
                (uint32_t)g_kbd_ring_shm_id);
+
+    /* Create mouse state slot in shared memory.
+     * Single overwrite slot — IO Executive writes latest mouse state,
+     * libio consumers read directly. Zero IPC, zero syscalls. */
+    if (g_mouse_handle >= 0) {
+        g_mouse_state_shm_id = exe_shm_create(4096); /* Page-aligned */
+        if (g_mouse_state_shm_id >= 0) {
+            g_mouse_state = (io_mouse_state_t *)exe_shm_attach(g_mouse_state_shm_id);
+            if (g_mouse_state) {
+                g_mouse_state->x       = 0;
+                g_mouse_state->y       = 0;
+                g_mouse_state->buttons = 0;
+                g_mouse_state->seq     = 0;
+                libcell_write("system.io.mouse.state_shm",
+                              &g_mouse_state_shm_id, sizeof(int));
+                liblog_hex(LOG_INFO, "IOEXEC", "Mouse state SHM ID:",
+                           (uint32_t)g_mouse_state_shm_id);
+            }
+        }
+    }
 
     liblog(LOG_INFO, "IOEXEC", "I/O Executive initialized successfully");
     return 0;
@@ -257,6 +314,9 @@ void exe_io_main(void) {
 
         /* Poll keyboard and buffer events for libio consumers */
         exe_io_poll_keyboard();
+
+        /* Poll mouse and write latest state for libio consumers */
+        exe_io_poll_mouse();
 
         exe_yield();
     }

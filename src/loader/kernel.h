@@ -55,6 +55,10 @@ void bga_cursor_init(void);
 void bga_cursor_enable(int enable);
 int bga_cursor_is_supported(void);
 
+/* VBE (VESA) driver — uses GRUB's framebuffer */
+int vbe_is_available(void);
+uint32_t vbe_get_framebuffer_addr(void);
+
 /* Graphics abstraction layer */
 int gfx_init(uint16_t width, uint16_t height, uint16_t bpp);
 void gfx_clear(uint32_t color);
@@ -116,11 +120,12 @@ int pit_init(unsigned int frequency);
 int mouse_init(void);
 int keyboard_init(void);
 
-/* Disk subsystem */
-int disk_subsystem_init(void);
+/* Disk subsystem → Storage stack */
+int disk_init(void);
+int partdrive_init(void);
+int voldrive_init(void);
 
 /* Global variables for module addresses */
-extern unsigned int uimanager_module_address;
 extern unsigned int orbit_module_address;
 extern uint32_t *kernel_page_directory;
 

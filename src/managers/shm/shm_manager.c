@@ -175,7 +175,9 @@ unsigned int kernel_shm_attach(int shm_id, int pid, unsigned int virt_addr) {
     }
     
     if (virt_addr == 0) {
-        virt_addr = 0x80000000 + (shm_id * 0x100000);
+        /* Use table slot index (0..63) with 4 MB spacing so large SHMs
+         * (e.g. 2 MB window surfaces) never overlap each other. */
+        virt_addr = SHM_VIRT_BASE + ((unsigned int)slot * SHM_SLOT_VIRT_SIZE);
     }
     
     /* Map SHM pages into the process's page directory.

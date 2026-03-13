@@ -108,7 +108,7 @@ int time_manager_init(void) {
     return 0;
 }
 
-int time_is_initialized(void) {
+int kernel_time_is_initialized(void) {
     return g_time_initialized;
 }
 
@@ -116,15 +116,15 @@ int time_is_initialized(void) {
  * Time Queries
  * =========================================================================== */
 
-uint64_t time_get_ticks(void) {
+uint64_t kernel_time_get_ticks(void) {
     return pit_get_ticks64();
 }
 
-uint32_t time_get_tick_frequency(void) {
+uint32_t kernel_time_get_tick_frequency(void) {
     return g_tick_freq;
 }
 
-uint32_t time_get_unix(void) {
+uint32_t kernel_time_get_unix(void) {
     if (!g_time_initialized) {
         return 0;
     }
@@ -148,12 +148,12 @@ static int is_leap_year(uint16_t year) {
     return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
 
-int time_get_datetime(sys_datetime_t *dt) {
+int kernel_time_get_datetime(sys_datetime_t *dt) {
     if (!dt || !g_time_initialized) {
         return -1;
     }
     
-    uint32_t unix_time = time_get_unix();
+    uint32_t unix_time = kernel_time_get_unix();
     
     /* Extract time of day */
     uint32_t day_seconds = unix_time % 86400;
@@ -193,7 +193,7 @@ int time_get_datetime(sys_datetime_t *dt) {
     return 0;
 }
 
-int time_get_uptime(sys_uptime_t *up) {
+int kernel_time_get_uptime(sys_uptime_t *up) {
     if (!up) return -1;
     
     uint64_t ticks = pit_get_ticks64();
@@ -239,11 +239,11 @@ static void time_update_shared(void) {
     g_shared_time->ticks = pit_get_ticks64();
     
     /* Update unix time */
-    g_shared_time->unix_time = time_get_unix();
+    g_shared_time->unix_time = kernel_time_get_unix();
     
     /* Update datetime fields */
     sys_datetime_t dt;
-    if (time_get_datetime(&dt) == 0) {
+    if (kernel_time_get_datetime(&dt) == 0) {
         g_shared_time->year    = dt.year;
         g_shared_time->month   = dt.month;
         g_shared_time->day     = dt.day;
@@ -280,6 +280,6 @@ void time_manager_tick(void) {
  * Get the SHM ID for shared time
  * User-space can attach to this to read time without syscalls
  */
-int time_get_shared_shm_id(void) {
+int kernel_time_get_shared_shm_id(void) {
     return g_shared_time_shm_id;
 }

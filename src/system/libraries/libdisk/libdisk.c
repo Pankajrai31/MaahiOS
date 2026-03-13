@@ -4,8 +4,8 @@
  * Description:
  *   User-space library for block-level disk access.
  *   Auto-initializes on first call (discovers SHM, attaches).
- *   Falls back to direct SYS_DEV_* kernel syscalls if
- *   Disk Executive is not yet running.
+ *   Returns error codes if Disk Executive is not yet running
+ *   (never bypasses the executive layer with direct syscalls).
  * 
  * Author: MaahiOS Team
  * Date: February 2026
@@ -13,15 +13,8 @@
 
 #include "libdisk.h"
 #include "../core/syscall_helpers.h"
+#include "../libcell/libcell.h"
 #include "../../executives/common/executive_queue.h"
-
-/*=============================================================================
- * DEVICE MANAGER CONSTANTS (for fallback path)
- *===========================================================================*/
-
-#define DEV_DISK            4
-#define DISK_IOCTL_GET_INFO         1
-#define DISK_IOCTL_GET_SECTOR_SIZE  2
 
 /*=============================================================================
  * LIBRARY STATE
@@ -53,20 +46,19 @@ static int _libdisk_try_init(void) {
         g_msg_id = (g_my_pid << 16) | 1;
     }
     
-    /* Read Disk Executive's request queue SHM ID from cell registry */
+    /* Read Disk Executive's request queue SHM ID from cell registry
+     * via libcell → Cell Executive (proper layering) */
     int req_shm_id = -1;
-    int result = syscall3(SYS_CELL_READ,
-                          (uint32_t)"system.exec.disk.req_shm",
-                          (uint32_t)&req_shm_id, sizeof(int));
+    int result = libcell_read("system.exec.disk.req_shm",
+                              &req_shm_id, sizeof(int));
     if (result < 0 || req_shm_id < 0) {
         return -1;  /* Executive not registered yet */
     }
     
     /* Read Disk Executive's response queue SHM ID */
     int resp_shm_id = -1;
-    result = syscall3(SYS_CELL_READ,
-                      (uint32_t)"system.exec.disk.resp_shm",
-                      (uint32_t)&resp_shm_id, sizeof(int));
+    result = libcell_read("system.exec.disk.resp_shm",
+                          &resp_shm_id, sizeof(int));
     if (result < 0 || resp_shm_id < 0) {
         return -1;
     }
@@ -165,18 +157,8 @@ int libdisk_list(disk_exec_info_t *disks, int max_disks) {
         return (int)resp.result;  /* Total disk count */
     }
     
-    /* Fallback: direct device syscall — poll if disk exists */
-    int poll = syscall1(SYS_DEV_POLL, DEV_DISK);
-    if (poll <= 0) return 0;  /* No disks */
-    
-    /* Can't enumerate via fallback, just report 1 disk present */
-    disks[0].index = 0;
-    disks[0].disk_type = DISK_TYPE_UNKNOWN;
-    disks[0].status = DISK_STATUS_ONLINE;
-    disks[0].sector_size = 512;
-    disks[0].size_mb = 0;
-    exe_str_copy(disks[0].name, "disk0", DISK_NAME_MAX);
-    return 1;
+    /* Disk Executive not running — cannot enumerate disks */
+    return 0;
 }
 
 int libdisk_get_count(void) {
@@ -197,9 +179,8 @@ int libdisk_get_count(void) {
         return (int)resp.result;  /* Total disk count */
     }
     
-    /* Fallback */
-    int poll = syscall1(SYS_DEV_POLL, DEV_DISK);
-    return (poll > 0) ? 1 : 0;
+    /* Disk Executive not running — cannot count disks */
+    return 0;
 }
 
 /*=============================================================================
@@ -253,9 +234,8 @@ int libdisk_get_status(uint8_t disk_index) {
         return (int)resp.result;  /* DISK_STATUS_* */
     }
     
-    /* Fallback */
-    int poll = syscall1(SYS_DEV_POLL, DEV_DISK);
-    return (poll > 0) ? DISK_STATUS_ONLINE : DISK_STATUS_OFFLINE;
+    /* Disk Executive not running — status unknown */
+    return DISK_STATUS_OFFLINE;
 }
 
 int libdisk_get_sector_size(uint8_t disk_index) {
@@ -278,8 +258,8 @@ int libdisk_get_sector_size(uint8_t disk_index) {
         return (int)resp.result;  /* Sector size in bytes */
     }
     
-    /* Fallback */
-    return syscall3(SYS_DEV_IOCTL, DEV_DISK, DISK_IOCTL_GET_SECTOR_SIZE, 0);
+    /* Disk Executive not running — cannot query sector size */
+    return EXEC_ERR_NOT_RUNNING;
 }
 
 /*=============================================================================
@@ -310,4 +290,45 @@ int libdisk_read_sector(uint8_t disk_index, uint32_t lba, uint32_t count) {
     
     /* Fallback: direct device read — limited, just returns first disk's info */
     return EXEC_ERR_NOT_RUNNING;
+}
+
+/*=============================================================================
+ * PUBLIC API: DISK FORMAT
+ *===========================================================================*/
+
+int libdisk_format(uint8_t disk_index, const char *label) {
+    if (!g_initialized) _libdisk_try_init();
+    if (!g_initialized) return EXEC_ERR_NOT_RUNNING;
+    
+    exec_request_t req;
+    exec_response_t resp;
+    exe_memset(&req, 0, sizeof(req));
+    
+    req.func_id = DISK_OP_FORMAT;
+    disk_format_req_t *payload = (disk_format_req_t *)req.payload;
+    payload->disk_index = disk_index;
+    
+    /* Copy label or default */
+    if (label) {
+        int i;
+        for (i = 0; i < 31 && label[i]; i++) {
+            payload->label[i] = label[i];
+        }
+        payload->label[i] = '\0';
+    } else {
+        const char *def = "MaahiOS";
+        int i;
+        for (i = 0; def[i]; i++) {
+            payload->label[i] = def[i];
+        }
+        payload->label[i] = '\0';
+    }
+    
+    req.payload_size = sizeof(disk_format_req_t);
+    
+    int result = _send_and_wait(&req, &resp);
+    if (result != EXEC_OK) return result;
+    if (resp.status != EXEC_OK) return resp.status;
+    
+    return (int)resp.result;  /* 0 on success, negative on error */
 }

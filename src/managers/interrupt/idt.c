@@ -43,14 +43,14 @@ int idt_init(void) {
     }
     
     KLOG_INFO("IDT", "IDT initialized (256 entries cleared)");
-    return 1;  /* Success */
+    return 0;  /* Success */
 }
 
 /* Load IDT into CPU */
 int idt_load(void) {
     asm volatile("lidt %0" : : "m"(idt_pointer));
     KLOG_INFO("IDT", "IDT loaded into CPU");
-    return 1;  /* Success */
+    return 0;  /* Success */
 }
 
 /* Register exception handlers and syscall handler */
@@ -121,7 +121,7 @@ int idt_install_exception_handlers(void) {
     idt_set_entry(33, (unsigned int)irq1_stub, 0x08, 0x8E);
     
     KLOG_INFO("IDT", "Exception handlers (0-19), syscall (0x80), IRQ0/1 installed");
-    return 1;  /* Success */
+    return 0;  /* Success */
 }
 
 extern void irq12_stub(void);  /* Mouse IRQ */

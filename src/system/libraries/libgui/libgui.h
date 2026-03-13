@@ -60,6 +60,23 @@ uint32_t gui_get_screen_height(void);
 int gui_init(void);
 
 /**
+ * gui_flip - Copy back buffer to HW framebuffer.
+ *
+ * All gui drawing targets the RAM back buffer.
+ * Call gui_flip() after a batch of draws to make them visible.
+ * Also refreshes the hardware cursor.
+ */
+void gui_flip(void);
+
+/**
+ * gui_flip_rect - Copy a rectangular region from back buffer to HW fb.
+ *
+ * Only copies the specified rectangle, much faster than gui_flip()
+ * for small changes (e.g. a single window, a button, or cursor blink).
+ */
+void gui_flip_rect(int x, int y, int w, int h);
+
+/**
  * gui_is_initialized - Check if library is initialized
  * 
  * Returns: 1 if initialized, 0 if not

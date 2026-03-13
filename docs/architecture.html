@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MaahiOS 2.0 Architecture</title>
+    <title>MaahiOS Architecture</title>
     <style>
         :root {
             --bg: #0b0f16;
@@ -507,1495 +507,1312 @@
             color: var(--muted);
             padding: 10px 0;
         }
+
+        /* Info table */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--mono);
+            font-size: 11px;
+            margin-top: 6px;
+        }
+        .info-table th {
+            text-align: left;
+            padding: 5px 10px;
+            border-bottom: 1px solid rgba(38,50,70,.85);
+            color: var(--muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            font-size: 10px;
+        }
+        .info-table td {
+            padding: 4px 10px;
+            border-bottom: 1px solid rgba(38,50,70,.4);
+            color: var(--text);
+        }
+        .info-table tr:hover td {
+            background: rgba(122,162,255,.06);
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>ðŸŒ€ MaahiOS 2.0</h1>
-        <p>Architecture Visualization â€¢ Executive Layer Framework â€¢ Ring 3 â†” Ring 0</p>
+        <h1>🌀 MaahiOS</h1>
+        <p>Architecture Visualization · Executive Layer Framework · Ring 3 ↔ Ring 0 · March 2026</p>
     </header>
 
     <div class="controls">
-        <button class="control-btn" onclick="expandAll()">ðŸ“‚ Expand All</button>
-        <button class="control-btn" onclick="collapseAll()">ðŸ“ Collapse All</button>
+        <button class="control-btn" onclick="expandAll()">📂 Expand All</button>
+        <button class="control-btn" onclick="collapseAll()">📁 Collapse All</button>
     </div>
 
     <div class="architecture-container">
 
-        <!-- USER APPLICATIONS LAYER -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- LAYER 1: USER APPLICATIONS                                     -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
         <div class="layer applications">
             <div class="layer-header" onclick="toggleLayer(this)">
                 <div class="layer-title">
-                    <h2>ðŸ“± User Applications</h2>
-                    <span class="layer-badge">apps/</span>
+                    <h2>📱 Layer 1 — User Applications</h2>
+                    <span class="layer-badge">apps/ · systemprograms/</span>
                     <span class="ring-badge ring3">RING 3</span>
                 </div>
-                <span class="collapse-icon">â–¼</span>
+                <span class="collapse-icon">▼</span>
             </div>
             <div class="layer-content">
                 <div class="managers-grid">
-                    <!-- File Manager -->
+                    <!-- sysman -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ“‚</span>
-                                <span class="component-name">File Manager</span>
-                                <span class="priority-badge priority-medium">MEDIUM</span>
+                                <span class="component-icon">⚙️</span>
+                                <span class="component-name">sysman</span>
+                                <span class="priority-badge priority-high">PID 1</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-item"><span class="func-name">Calls libdisk_*, libprocess_*</span></div>
-                            <div class="function-item"><span class="func-name">GUI via libgui_*</span></div>
+                            <div class="function-item"><span class="func-name">First user process — loads all executives</span></div>
+                            <div class="function-item"><span class="func-name">Monitors executive health, restarts on failure</span></div>
+                            <div class="function-item"><span class="func-name">Uses raw syscalls (no executive path yet)</span></div>
+                            <div class="function-item"><span class="func-desc">system program</span></div>
                         </div>
                     </div>
-                    <!-- Disk Manager -->
+                    <!-- orbit -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ’¾</span>
-                                <span class="component-name">Disk Manager</span>
-                                <span class="priority-badge priority-medium">MEDIUM</span>
+                                <span class="component-icon">🖥️</span>
+                                <span class="component-name">orbit</span>
+                                <span class="priority-badge priority-high">SHELL</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-item"><span class="func-name">Calls libdisk_*</span></div>
-                            <div class="function-item"><span class="func-name">GUI via libgui_*</span></div>
+                            <div class="function-item"><span class="func-name">Desktop shell — taskbar, icons, wallpaper</span></div>
+                            <div class="function-item"><span class="func-name">Launches apps via libprocess, reads icons via libfs + libbmp</span></div>
+                            <div class="function-item"><span class="func-desc">system program · gui</span></div>
                         </div>
                     </div>
-                    <!-- SysMan -->
+                    <!-- terminal -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">âš™ï¸</span>
-                                <span class="component-name">SysMan</span>
-                                <span class="priority-badge priority-high">HIGH</span>
+                                <span class="component-icon">💻</span>
+                                <span class="component-name">terminal</span>
+                                <span class="priority-badge priority-medium">TERM</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-item"><span class="func-name">Loads Executives first</span></div>
-                            <div class="function-item"><span class="func-name">Monitors executive health</span></div>
-                            <div class="function-item"><span class="func-name">Restarts failed executives</span></div>
+                            <div class="function-item"><span class="func-name">Console host for .mex apps using libconsole</span></div>
+                            <div class="function-item"><span class="func-name">SHM ring buffer for stdout, 8x16 bitmap font</span></div>
+                            <div class="function-item"><span class="func-desc">system program · gui</span></div>
+                        </div>
+                    </div>
+                    <!-- hello -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">👋</span>
+                                <span class="component-name">hello</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">Minimal "Hello World" console app</span></div>
+                            <div class="function-item"><span class="func-desc">console</span></div>
+                        </div>
+                    </div>
+                    <!-- hellogui -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🎨</span>
+                                <span class="component-name">hellogui</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">Minimal windowed GUI demo app</span></div>
+                            <div class="function-item"><span class="func-desc">gui · windowed</span></div>
+                        </div>
+                    </div>
+                    <!-- boxdrop -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🎮</span>
+                                <span class="component-name">boxdrop</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">Tetris-style falling blocks game</span></div>
+                            <div class="function-item"><span class="func-desc">gui · windowed</span></div>
+                        </div>
+                    </div>
+                    <!-- procman -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">📊</span>
+                                <span class="component-name">procman</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">Process manager — list/kill processes</span></div>
+                            <div class="function-item"><span class="func-desc">console</span></div>
+                        </div>
+                    </div>
+                    <!-- diskman -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">💾</span>
+                                <span class="component-name">diskman</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">Disk manager — list disks, read sectors</span></div>
+                            <div class="function-item"><span class="func-desc">console</span></div>
+                        </div>
+                    </div>
+                    <!-- fileman -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">📂</span>
+                                <span class="component-name">fileman</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">File manager — browse directories, read files</span></div>
+                            <div class="function-item"><span class="func-desc">console</span></div>
+                        </div>
+                    </div>
+                    <!-- sysinfo -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">ℹ️</span>
+                                <span class="component-name">sysinfo</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">System info — CPU, memory, uptime display</span></div>
+                            <div class="function-item"><span class="func-desc">console</span></div>
+                        </div>
+                    </div>
+                    <!-- shutdown -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">⏻</span>
+                                <span class="component-name">shutdown</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">Shutdown/restart via libprocess</span></div>
+                            <div class="function-item"><span class="func-desc">console</span></div>
+                        </div>
+                    </div>
+                    <!-- procexp -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🔍</span>
+                                <span class="component-name">procexp</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">Process explorer — detailed process view</span></div>
+                            <div class="function-item"><span class="func-desc">console</span></div>
+                        </div>
+                    </div>
+                    <!-- diskexp -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🔎</span>
+                                <span class="component-name">diskexp</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">Disk explorer — partition/volume details</span></div>
+                            <div class="function-item"><span class="func-desc">console</span></div>
+                        </div>
+                    </div>
+                    <!-- wordwrite -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">📝</span>
+                                <span class="component-name">wordwrite</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">Text editor — windowed word processor</span></div>
+                            <div class="function-item"><span class="func-desc">gui · windowed</span></div>
+                        </div>
+                    </div>
+                    <!-- logexp -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">📋</span>
+                                <span class="component-name">logexp</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">Log explorer — view kernel log buffer</span></div>
+                            <div class="function-item"><span class="func-desc">console</span></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="ipc-arrow">â¬‡ï¸ <span>Library API Calls</span> â¬‡ï¸</div>
+        <div class="ipc-arrow">⬇️ <span>Library API Calls ↓</span> ⬇️</div>
 
-        <!-- LIBRARIES LAYER -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- LAYER 2: USER LIBRARIES                                        -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
         <div class="layer libraries">
             <div class="layer-header" onclick="toggleLayer(this)">
                 <div class="layer-title">
-                    <h2>ðŸ“š User Libraries</h2>
-                    <span class="layer-badge">system/libraries/</span>
+                    <h2>📚 Layer 2 — User Libraries</h2>
+                    <span class="layer-badge">system/libraries/ · 15 libraries</span>
                     <span class="ring-badge ring3">RING 3</span>
                 </div>
-                <span class="collapse-icon">â–¼</span>
+                <span class="collapse-icon">▼</span>
             </div>
             <div class="layer-content">
                 <div class="managers-grid">
-                    <!-- libcell -->
+                    <!-- core -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ—„ï¸</span>
-                                <span class="component-name">libcell</span>
+                                <span class="component-icon">🔧</span>
+                                <span class="component-name">core</span>
+                                <span class="component-id">CORE</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Init</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">libcell_init()</span><span class="func-return return-int">int (optional)</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Operations</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">libcell_write(key, val, sz)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libcell_read(key, buf, sz)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libcell_write_int(key, val)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libcell_read_int(key, out)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libcell_delete(key)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libcell_exists(key)</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Design</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">Auto-init on first API call</span></div>
-                                <div class="function-item"><span class="func-name">Fallback â†’ direct SYS_CELL_* syscalls</span></div>
-                                <div class="function-item"><span class="func-name">Two-way SHM queues (req + resp)</span></div>
-                                <div class="function-item"><span class="func-name">_send_and_wait() with SYS_SLEEP poll</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- libdisk -->
-                    <div class="component-card">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">ðŸ’¾</span>
-                                <span class="component-name">libdisk</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Operations</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">libdisk_read(disk, lba, count, buf)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libdisk_write(disk, lba, count, data)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libdisk_get_info(disk, info)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libdisk_list(disks, max_count)</span><span class="func-return return-int">int</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- libprocess -->
-                    <div class="component-card">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">ðŸ”„</span>
-                                <span class="component-name">libprocess</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Init</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">libprocess_init()</span><span class="func-return return-int">int (optional)</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Operations</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">libprocess_create(module_idx, load_addr)</span><span class="func-return return-int">int: pid</span></div>
-                                <div class="function-item library"><span class="func-name">libprocess_kill(pid)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libprocess_get_info(pid, info)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libprocess_get_count()</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Design</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">Auto-init on first API call</span></div>
-                                <div class="function-item"><span class="func-name">Fallback â†’ direct SYS_PROCESS_* syscalls</span></div>
-                                <div class="function-item"><span class="func-name">Two-way SHM queues (req + resp)</span></div>
-                                <div class="function-item"><span class="func-name">_send_and_wait() with SYS_SLEEP poll</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- libmemory -->
-                    <div class="component-card">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">ðŸ§ </span>
-                                <span class="component-name">libmemory</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Heap</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">libmem_alloc(size)</span><span class="func-return return-ptr">void*</span></div>
-                                <div class="function-item library"><span class="func-name">libmem_free(ptr)</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item library"><span class="func-name">libmem_realloc(ptr, size)</span><span class="func-return return-ptr">void*</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>SHM</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">libmem_shm_create(size)</span><span class="func-return return-int">int: shm_id</span></div>
-                                <div class="function-item library"><span class="func-name">libmem_shm_attach(shm_id)</span><span class="func-return return-ptr">void*</span></div>
-                                <div class="function-item library"><span class="func-name">libmem_shm_detach(shm_id)</span><span class="func-return return-int">int</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- libgui -->
-                    <div class="component-card">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">ðŸŽ¨</span>
-                                <span class="component-name">libgui</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Windows</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">window_create(...)</span><span class="func-return return-ptr">window_t*</span></div>
-                                <div class="function-item library"><span class="func-name">window_destroy(win)</span><span class="func-return return-void">void</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Widgets</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">button_create(...)</span><span class="func-return return-ptr">button_t*</span></div>
-                                <div class="function-item library"><span class="func-name">label_create(...)</span><span class="func-return return-ptr">label_t*</span></div>
-                                <div class="function-item library"><span class="func-name">textbox_create(...)</span><span class="func-return return-ptr">textbox_t*</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">syscall_helpers.h — inline int 0x80 wrappers</span></div>
+                            <div class="function-item"><span class="func-name">syscall0/1/2/3() macros</span></div>
+                            <div class="function-item"><span class="func-name">Foundation for all other libraries</span></div>
                         </div>
                     </div>
                     <!-- liblog -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ“</span>
+                                <span class="component-icon">📝</span>
                                 <span class="component-name">liblog</span>
+                                <span class="component-id">SYSTEM</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Init</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">liblog_init()</span><span class="func-return return-int">int (optional)</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Operations</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">liblog(level, tag, msg)</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item library"><span class="func-name">liblog_hex(level, tag, msg, val)</span><span class="func-return return-void">void</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Design</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">Auto-init on first API call</span></div>
-                                <div class="function-item"><span class="func-name">Fallback â†’ direct SYS_KLOG syscall</span></div>
-                                <div class="function-item"><span class="func-name">One-way SHM queue (no response)</span></div>
-                                <div class="function-item"><span class="func-name">Reads Log Exec SHM ID from cell</span></div>
-                            </div>
+                            <div class="function-item library"><span class="func-name">liblog(level, tag, msg)</span></div>
+                            <div class="function-item library"><span class="func-name">liblog_hex(level, tag, msg, val)</span></div>
+                            <div class="function-item"><span class="func-name">One-way SHM queue → Log Executive</span></div>
+                            <div class="function-item"><span class="func-name">Fallback → direct SYS_KLOG syscall</span></div>
                         </div>
                     </div>
-                    <!-- libtime -->
+                    <!-- libcell -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ•</span>
-                                <span class="component-name">libtime</span>
+                                <span class="component-icon">🗄️</span>
+                                <span class="component-name">libcell</span>
+                                <span class="component-id">SYSTEM</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Operations</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">libtime_get_datetime(dt)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libtime_get_unix()</span><span class="func-return return-uint">uint32_t</span></div>
-                                <div class="function-item library"><span class="func-name">libtime_get_uptime(up)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libtime_get_ticks()</span><span class="func-return return-uint">uint64_t</span></div>
-                            </div>
+                            <div class="function-item library"><span class="func-name">libcell_write(key, val, sz) / libcell_read(key, buf, sz)</span></div>
+                            <div class="function-item library"><span class="func-name">libcell_write_int / read_int / delete / exists</span></div>
+                            <div class="function-item"><span class="func-name">Two-way SHM queues → Cell Executive</span></div>
+                            <div class="function-item"><span class="func-name">Bootstrap: raw SYS_CELL_READ to find SHM IDs</span></div>
                         </div>
                     </div>
-                    <!-- libcore (basic syscalls) -->
+                    <!-- libprocess -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">âš¡</span>
-                                <span class="component-name">libcore</span>
+                                <span class="component-icon">🔄</span>
+                                <span class="component-name">libprocess</span>
+                                <span class="component-id">SYSTEM</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Operations</span><span class="category-collapse">â–¼</span>
+                            <div class="function-item library"><span class="func-name">libprocess_create / kill / info / list / exec</span></div>
+                            <div class="function-item library"><span class="func-name">libprocess_system_shutdown / system_restart</span></div>
+                            <div class="function-item library"><span class="func-name">libprocess_yield / get_pid / sleep (inline)</span></div>
+                            <div class="function-item"><span class="func-name">Two-way SHM queues → Process Executive</span></div>
+                        </div>
+                    </div>
+                    <!-- libmemory -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🧠</span>
+                                <span class="component-name">libmemory</span>
+                                <span class="component-id">SYSTEM</span>
                             </div>
-                            <div class="function-list">
-                                <div class="function-item library"><span class="func-name">libcore_exit(code)</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item library"><span class="func-name">libcore_yield()</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item library"><span class="func-name">libcore_getpid()</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item library"><span class="func-name">libcore_sleep(ms)</span><span class="func-return return-void">void</span></div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item library"><span class="func-name">libmem_alloc / free / realloc</span></div>
+                            <div class="function-item library"><span class="func-name">libmem_shm_create / attach / detach</span></div>
+                            <div class="function-item"><span class="func-name">SHM queues → Memory Executive</span></div>
+                        </div>
+                    </div>
+                    <!-- libmex -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">📦</span>
+                                <span class="component-name">libmex</span>
+                                <span class="component-id">SYSTEM</span>
                             </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item library"><span class="func-name">mex_parse_header / mex_validate</span></div>
+                            <div class="function-item"><span class="func-name">MEX executable format parser</span></div>
+                            <div class="function-item"><span class="func-name">All .mex binary knowledge lives here</span></div>
+                        </div>
+                    </div>
+                    <!-- libdisk -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">💾</span>
+                                <span class="component-name">libdisk</span>
+                                <span class="component-id">I/O</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item library"><span class="func-name">libdisk_read / write(disk, lba, count, buf)</span></div>
+                            <div class="function-item library"><span class="func-name">libdisk_get_info / list</span></div>
+                            <div class="function-item"><span class="func-name">SHM queues → Disk Executive</span></div>
+                        </div>
+                    </div>
+                    <!-- libfs -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">📂</span>
+                                <span class="component-name">libfs</span>
+                                <span class="component-id">I/O</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item library"><span class="func-name">libfs_list_dir / read_file / file_count / find_dir</span></div>
+                            <div class="function-item library"><span class="func-name">libfs_write_file / delete_file / create_dir</span></div>
+                            <div class="function-item library"><span class="func-name">libfs_vol_count / vol_info</span></div>
+                            <div class="function-item"><span class="func-name">SHM queues → FS Executive</span></div>
+                        </div>
+                    </div>
+                    <!-- libio -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">⌨️</span>
+                                <span class="component-name">libio</span>
+                                <span class="component-id">I/O</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item library"><span class="func-name">libio_dev_read(device_id, buf, max)</span></div>
+                            <div class="function-item"><span class="func-name">Reads from SHM ring buffer (keyboard/mouse)</span></div>
+                            <div class="function-item"><span class="func-name">Ring filled by I/O Executive in background</span></div>
+                        </div>
+                    </div>
+                    <!-- libconsole -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🖨️</span>
+                                <span class="component-name">libconsole</span>
+                                <span class="component-id">I/O</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item library"><span class="func-name">console_print / console_println</span></div>
+                            <div class="function-item"><span class="func-name">Stdout for console .mex apps via SHM → Terminal</span></div>
+                        </div>
+                    </div>
+                    <!-- libgui -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🎨</span>
+                                <span class="component-name">libgui</span>
+                                <span class="component-id">GRAPHICS</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item library"><span class="func-name">gui_init / gui_flip / gui_fill_rect / gui_draw_text</span></div>
+                            <div class="function-item library"><span class="func-name">gui_measure_text / gui_blit_icon</span></div>
+                            <div class="function-item"><span class="func-name">Fonts: libfont (AA Segoe UI 12-24px) + font8x16 (VGA bitmap)</span></div>
+                            <div class="function-item"><span class="func-name">Keyboard input: kbd_read_event</span></div>
+                            <div class="function-item"><span class="func-name">Direct SYS_DEV_IOCTL for gui_flip() (perf bypass)</span></div>
+                        </div>
+                    </div>
+                    <!-- libbmp -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🖼️</span>
+                                <span class="component-name">libbmp</span>
+                                <span class="component-id">GRAPHICS</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item library"><span class="func-name">libbmp_decode(data, size, out)</span></div>
+                            <div class="function-item"><span class="func-name">24/32-bit BMP decoder, no-malloc</span></div>
+                        </div>
+                    </div>
+                    <!-- libwindow -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🪟</span>
+                                <span class="component-name">libwindow</span>
+                                <span class="component-id">WINDOWING</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item library"><span class="func-name">surface_create / surface_draw_text / surface_fill_rect</span></div>
+                            <div class="function-item library"><span class="func-name">window_malloc / window_free</span></div>
+                            <div class="function-item"><span class="func-name">10 controls: label, button, dialog, table, toolbar, statusbar, menubar, treeview, textarea, radiogroup</span></div>
+                            <div class="function-item"><span class="func-name">Theme system: THEME_FONT_BODY, colors, sizes</span></div>
+                        </div>
+                    </div>
+                    <!-- libwm -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🏗️</span>
+                                <span class="component-name">libwm</span>
+                                <span class="component-id">WINDOWING</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item library"><span class="func-name">libwm_create_window / destroy / move / resize</span></div>
+                            <div class="function-item"><span class="func-name">SHM queue → WM Executive for compositing</span></div>
+                        </div>
+                    </div>
+                    <!-- shared -->
+                    <div class="component-card utility">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">📎</span>
+                                <span class="component-name">shared</span>
+                                <span class="utility-badge">SHARED</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">io.h — inb/outb port I/O (kernel-shared)</span></div>
+                            <div class="function-item"><span class="func-name">taskbar_types.h — taskbar window list structs</span></div>
+                            <div class="function-item"><span class="func-name">wm_types.h — window manager protocol types</span></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="ipc-arrow">â¬‡ï¸ <span>SHM Request Queue</span> â¬‡ï¸</div>
+        <div class="ipc-arrow">⬇️ <span>SHM Request Queue ↓</span> ⬇️</div>
 
-        <!-- EXECUTIVES LAYER -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- LAYER 3: EXECUTIVES                                            -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
         <div class="layer executives">
             <div class="layer-header" onclick="toggleLayer(this)">
                 <div class="layer-title">
-                    <h2>ðŸ›ï¸ Executive Layer</h2>
-                    <span class="layer-badge">system/executives/</span>
+                    <h2>🏛️ Layer 3 — Executive Layer</h2>
+                    <span class="layer-badge">system/executives/ · 9 executives + common</span>
                     <span class="ring-badge ring3">RING 3</span>
-                    <span class="priority-badge priority-high">HIGH PRIORITY</span>
+                    <span class="priority-badge priority-high">HIGH PRIORITY (3× slices)</span>
                 </div>
-                <span class="collapse-icon">â–¼</span>
+                <span class="collapse-icon">▼</span>
             </div>
             <div class="layer-content">
                 <div class="managers-grid">
+                    <!-- Common Framework -->
+                    <div class="component-card utility">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🔗</span>
+                                <span class="component-name">Common Framework</span>
+                                <span class="utility-badge">SHARED</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">executive_queue.h/c — SHM queue push/pop helpers</span></div>
+                            <div class="function-item"><span class="func-name">exe_request_queue_push / exe_response_queue_pop</span></div>
+                            <div class="function-item"><span class="func-name">Shared by all 9 executives</span></div>
+                        </div>
+                    </div>
+                    <!-- Log Executive -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">📝</span>
+                                <span class="component-name">Log Executive</span>
+                                <span class="component-id">EXEC 6</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item executive"><span class="func-name">Routes liblog calls → kernel klog syscalls</span></div>
+                            <div class="function-item executive"><span class="func-name">One-way queue (fire-and-forget)</span></div>
+                            <div class="function-item executive"><span class="func-name">SYS_KLOG, SYS_KLOG_HEX dispatch</span></div>
+                        </div>
+                    </div>
                     <!-- Cell Executive -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ—„ï¸</span>
+                                <span class="component-icon">🗄️</span>
                                 <span class="component-name">Cell Executive</span>
-                                <span class="component-id">PID 3</span>
+                                <span class="component-id">EXEC 7</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Lifecycle</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">_start â†’ cell_main()</span><span class="func-return return-void">noreturn</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Request Handlers (10)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">CELL_OP_REGISTER</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">CELL_OP_WRITE</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">CELL_OP_READ</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">CELL_OP_WRITE_INT</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">CELL_OP_READ_INT</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">CELL_OP_DELETE</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">CELL_OP_LOOKUP</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">CELL_OP_EXISTS</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">CELL_OP_GET_INFO</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">CELL_OP_PING</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Syscalls Used (direct)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">SYS_CELL_* (64-69) â€” own service ops</span></div>
-                                <div class="function-item"><span class="func-name">SYS_SHM_CREATE/ATTACH (48-49)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_YIELD (1), SYS_SLEEP (3)</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Info</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">PID 3 Â· Loaded 2nd by SysMan</span></div>
-                                <div class="function-item"><span class="func-name">Load addr: 0x800000</span></div>
-                                <div class="function-item"><span class="func-name">Uses liblog (auto-init) for logging</span></div>
-                                <div class="function-item"><span class="func-name">Dual SHM queues (request + response)</span></div>
-                                <div class="function-item"><span class="func-name">Registry for all executives</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Disk Executive -->
-                    <div class="component-card">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">ðŸ’¾</span>
-                                <span class="component-name">Disk Executive</span>
-                                <span class="component-id">EXEC_ID = 3</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Lifecycle</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">exe_disk_main()</span><span class="func-return return-void">noreturn</span></div>
-                                <div class="function-item executive"><span class="func-name">exe_disk_init()</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Operations</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">DISK_OP_READ</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">DISK_OP_WRITE</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">DISK_OP_GET_INFO</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">DISK_OP_LIST</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Info</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">Load: 0x00840000</span></div>
-                                <div class="function-item"><span class="func-name">ATA/ISO9660 access</span></div>
-                            </div>
+                            <div class="function-item executive"><span class="func-name">Key-value registry access (WRITE/READ/DELETE/EXISTS)</span></div>
+                            <div class="function-item executive"><span class="func-name">WRITE_INT, READ_INT, GET_SHM_ID, LIST</span></div>
+                            <div class="function-item executive"><span class="func-name">Two-way SHM queues (req + resp)</span></div>
                         </div>
                     </div>
                     <!-- Process Executive -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ”„</span>
+                                <span class="component-icon">🔄</span>
                                 <span class="component-name">Process Executive</span>
-                                <span class="component-id">PID 4</span>
+                                <span class="component-id">EXEC 8</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Lifecycle</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">_start â†’ exe_process_main()</span><span class="func-return return-void">noreturn</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Request Handlers (5)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">PROC_OP_CREATE</span><span class="func-return return-int">int (memory guard)</span></div>
-                                <div class="function-item executive"><span class="func-name">PROC_OP_KILL</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">PROC_OP_GET_INFO</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">PROC_OP_GET_COUNT</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">EXEC_OP_PING</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Smart Monitoring</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">exe_process_update_count()</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item executive"><span class="func-name">exe_process_check_memory()</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item"><span class="func-name">Publishes system.process.active_count cell</span></div>
-                                <div class="function-item"><span class="func-name">Publishes system.memory.total/free/used cells</span></div>
-                                <div class="function-item"><span class="func-name">Memory pressure: 0=normal, 1=warn(&lt;10%), 2=critical(&lt;5%)</span></div>
-                                <div class="function-item"><span class="func-name">Refuses PROC_OP_CREATE when pressure=critical</span></div>
-                                <div class="function-item"><span class="func-name">Periodic check every 200 idle cycles (~4s)</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Syscalls Used (direct)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">SYS_PROCESS_CREATE (16), KILL (17)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_PROCESS_INFO (18), GET_COUNT (19)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_MODULE_COPY (97)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_SHM_CREATE/ATTACH (48-49)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_GET_MEM_INFO (244)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_YIELD (1)</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Info</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">PID 4 Â· Loaded 3rd by SysMan</span></div>
-                                <div class="function-item"><span class="func-name">Load addr: 0xA00000</span></div>
-                                <div class="function-item"><span class="func-name">Uses liblog (auto-init) for logging</span></div>
-                                <div class="function-item"><span class="func-name">Uses libcell (auto-init) for cell publishing</span></div>
-                                <div class="function-item"><span class="func-name">Dual SHM queues (request + response)</span></div>
-                                <div class="function-item"><span class="func-name">Module copy + process create pipeline</span></div>
-                                <div class="function-item"><span class="func-name">Smart supervisor: memory-aware process gatekeeper</span></div>
-                            </div>
+                            <div class="function-item executive"><span class="func-name">Process create / kill / list / info</span></div>
+                            <div class="function-item executive"><span class="func-name">EXEC, SET_NAME, GET_COUNT</span></div>
+                            <div class="function-item executive"><span class="func-name">Handles SHUTDOWN / RESTART forwarding</span></div>
                         </div>
                     </div>
                     <!-- Memory Executive -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ§ </span>
+                                <span class="component-icon">🧠</span>
                                 <span class="component-name">Memory Executive</span>
-                                <span class="component-id">PID 5</span>
+                                <span class="component-id">EXEC 9</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Lifecycle</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">_start â†' exe_memory_main()</span><span class="func-return return-void">noreturn</span></div>
-                                <div class="function-item executive"><span class="func-name">exe_memory_init()</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Request Handlers (8)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">MEM_OP_ALLOC_PAGE</span><span class="func-return return-ptr">void*</span></div>
-                                <div class="function-item executive"><span class="func-name">MEM_OP_FREE_PAGE</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">MEM_OP_ALLOC</span><span class="func-return return-ptr">void*</span></div>
-                                <div class="function-item executive"><span class="func-name">MEM_OP_GET_INFO</span><span class="func-return return-int">memory_info_t</span></div>
-                                <div class="function-item executive"><span class="func-name">MEM_OP_SHM_CREATE</span><span class="func-return return-int">int: shm_id</span></div>
-                                <div class="function-item executive"><span class="func-name">MEM_OP_SHM_ATTACH</span><span class="func-return return-ptr">void*</span></div>
-                                <div class="function-item executive"><span class="func-name">MEM_OP_SHM_DETACH</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">MEM_OP_SHM_DELETE</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Syscalls Used (direct)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">SYS_MEM_ALLOC_PAGE (32), FREE_PAGE (33)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_MEM_ALLOC (34)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_GET_MEM_INFO (244)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_SHM_CREATE/ATTACH/DETACH/DESTROY (48-51)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_YIELD (1)</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Info</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">PID 5 Â· Loaded 4th by SysMan</span></div>
-                                <div class="function-item"><span class="func-name">Load addr: 0xC00000</span></div>
-                                <div class="function-item"><span class="func-name">Uses liblog (auto-init) for logging</span></div>
-                                <div class="function-item"><span class="func-name">Uses libcell (auto-init) for registration</span></div>
-                                <div class="function-item"><span class="func-name">Dual SHM queues (request + response)</span></div>
-                                <div class="function-item"><span class="func-name">Page, block, SHM &amp; memory info services</span></div>
-                            </div>
+                            <div class="function-item executive"><span class="func-name">Page alloc / free</span></div>
+                            <div class="function-item executive"><span class="func-name">SHM create / attach / detach / destroy</span></div>
                         </div>
                     </div>
-                    <!-- Spacer for GUI (no executive) -->
-                    <div class="grid-spacer"></div>
-                    <!-- Log Executive -->
+                    <!-- Disk Executive -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ“</span>
-                                <span class="component-name">Log Executive</span>
-                                <span class="component-id">PID 2</span>
+                                <span class="component-icon">💾</span>
+                                <span class="component-name">Disk Executive</span>
+                                <span class="component-id">EXEC 10</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Lifecycle</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">_start â†’ log_main()</span><span class="func-return return-void">noreturn</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Request Handlers (2)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">LOG_FUNC_LOG â†’ SYS_KLOG</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">LOG_FUNC_LOG_HEX â†’ SYS_KLOG_HEX</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Syscalls Used (direct â€” no libs)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">SYS_KLOG (240), SYS_KLOG_HEX (241)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_CELL_WRITE (64) â€” registration</span></div>
-                                <div class="function-item"><span class="func-name">SYS_SHM_CREATE/ATTACH (48-49)</span></div>
-                                <div class="function-item"><span class="func-name">SYS_YIELD (1)</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Info</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">PID 2 Â· Loaded 1st by SysMan</span></div>
-                                <div class="function-item"><span class="func-name">Load addr: 0x900000</span></div>
-                                <div class="function-item"><span class="func-name">Direct klog (no liblog â€” circular dep)</span></div>
-                                <div class="function-item"><span class="func-name">One-way SHM queue (request only)</span></div>
-                                <div class="function-item"><span class="func-name">Receives log msgs from all processes</span></div>
-                            </div>
+                            <div class="function-item executive"><span class="func-name">Raw disk read / write (LBA-based)</span></div>
+                            <div class="function-item executive"><span class="func-name">Disk info / list via SYS_DEV_* syscalls</span></div>
                         </div>
                     </div>
-                    <!-- Executive Common Framework -->
-                    <div class="component-card utility">
+                    <!-- FS Executive -->
+                    <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ”§</span>
-                                <span class="component-name">Common Framework</span>
-                                <span class="utility-badge">SHARED</span>
+                                <span class="component-icon">📂</span>
+                                <span class="component-name">FS Executive</span>
+                                <span class="component-id">EXEC 11</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Structures</span><span class="category-collapse">â–¼</span>
+                            <div class="function-item executive"><span class="func-name">File/dir ops: list, read, write, delete, create_dir</span></div>
+                            <div class="function-item executive"><span class="func-name">Volume info / count</span></div>
+                            <div class="function-item executive"><span class="func-name">Routes via SYS_FS_* syscalls</span></div>
+                        </div>
+                    </div>
+                    <!-- GUI Executive -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🖥️</span>
+                                <span class="component-name">GUI Executive</span>
+                                <span class="component-id">EXEC 12</span>
                             </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">exec_control_block_t (ECB)</span></div>
-                                <div class="function-item"><span class="func-name">exec_request_t</span></div>
-                                <div class="function-item"><span class="func-name">exec_response_t</span></div>
-                                <div class="function-item"><span class="func-name">exec_request_queue_t</span></div>
-                                <div class="function-item"><span class="func-name">exec_response_queue_t</span></div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item executive"><span class="func-name">Display init, framebuffer setup</span></div>
+                            <div class="function-item executive"><span class="func-name">Resolution / mode negotiation</span></div>
+                        </div>
+                    </div>
+                    <!-- I/O Executive -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">⌨️</span>
+                                <span class="component-name">I/O Executive</span>
+                                <span class="component-id">EXEC 13</span>
                             </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Queue Ops</span><span class="category-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item executive"><span class="func-name">Mouse + keyboard input via SYS_DEV_READ</span></div>
+                            <div class="function-item executive"><span class="func-name">Fills SHM ring buffer for libio consumers</span></div>
+                            <div class="function-item executive"><span class="func-name">Background polling loop</span></div>
+                        </div>
+                    </div>
+                    <!-- WM Executive -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🪟</span>
+                                <span class="component-name">WM Executive</span>
+                                <span class="component-id">EXEC 14</span>
                             </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">exe_request_queue_push()</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">exe_request_queue_pop()</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">exe_response_queue_push()</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item executive"><span class="func-name">exe_response_queue_pop_by_id()</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Spinlock</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item executive"><span class="func-name">exe_spinlock_acquire()</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item executive"><span class="func-name">exe_spinlock_release()</span><span class="func-return return-void">void</span></div>
-                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item executive"><span class="func-name">Window compositor — damage-rect, z-order stacking</span></div>
+                            <div class="function-item executive"><span class="func-name">Max 6 simultaneous windows, SHM pixel surfaces</span></div>
+                            <div class="function-item executive"><span class="func-name">Publishes CELL_WM_REGISTRY + CELL_TASKBAR_WINDOWS</span></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="ipc-arrow">â¬‡ï¸ <span>Syscall INT 0x80</span> â¬‡ï¸</div>
+        <div class="ipc-arrow">⬇️ <span>Syscall INT 0x80 ↓</span> ⬇️</div>
 
-        <!-- SYSCALL LAYER -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- LAYER 4: SYSCALL INTERFACE                                     -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
         <div class="layer syscall">
             <div class="layer-header" onclick="toggleLayer(this)">
                 <div class="layer-title">
-                    <h2>ðŸ”Œ Syscall Layer</h2>
-                    <span class="layer-badge">INT 0x80 Entry Point</span>
+                    <h2>🔌 Layer 4 — Syscall Interface</h2>
+                    <span class="layer-badge">managers/syscall/ · 64 syscalls · 10 domains</span>
                     <span class="ring-badge ring0">RING 0</span>
-                    <span style="font-size:0.75rem; color:var(--good); margin-left:8px;">âœ… Verified</span>
                 </div>
-                <span class="collapse-icon">â–¼</span>
+                <span class="collapse-icon">▼</span>
             </div>
             <div class="layer-content">
-                <div class="component-card" style="max-width: 100%;">
-                    <div class="component-header" onclick="toggleComponent(this)">
-                        <div class="component-title">
-                            <span class="component-icon">ðŸŽ¯</span>
-                            <span class="component-name">Syscall Manager</span>
-                            <span style="font-size:0.7rem; color:var(--muted);">managers/syscall/syscall_manager.c</span>
+                <div class="hierarchy-grid">
+                    <div class="component-card" style="grid-column: 1 / -1;">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">📡</span>
+                                <span class="component-name">syscall_manager.c — Dispatcher</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
                         </div>
-                        <span class="component-collapse">â–¼</span>
-                    </div>
-                    <div class="component-functions">
-                        <div class="function-category" onclick="toggleCategory(this)">
-                            <span>Init</span><span class="category-collapse">â–¼</span>
-                        </div>
-                        <div class="function-list">
-                            <div class="function-item init"><span class="func-name">syscall_manager_init()</span><span class="func-return return-int">int</span></div>
-                        </div>
-                        <div class="function-category" onclick="toggleCategory(this)">
-                            <span>Dispatch</span><span class="category-collapse">â–¼</span>
-                        </div>
-                        <div class="function-list">
-                            <div class="function-item syscall"><span class="func-name">syscall_dispatch(num, arg1, arg2, arg3, arg4, user_esp)</span><span class="func-return return-uint">uint32</span></div>
-                            <div class="function-item"><span class="func-name">syscall_register(num, handler)</span><span class="func-return return-int">int</span></div>
-                            <div class="function-item"><span class="func-name">syscall_get_count(num)</span><span class="func-return return-uint">uint32</span></div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">Routes INT 0x80 by syscall number to domain-specific handler files</span></div>
+                            <table class="info-table">
+                                <tr><th>Domain</th><th>Range</th><th>Count</th><th>Key Syscalls</th></tr>
+                                <tr><td>Core</td><td>0–5</td><td>6</td><td>EXIT, YIELD, GETPID, SLEEP, SHUTDOWN, RESTART</td></tr>
+                                <tr><td>Process</td><td>16–22</td><td>7</td><td>CREATE, KILL, INFO, GET_COUNT, EXEC, LIST, SET_NAME</td></tr>
+                                <tr><td>Memory</td><td>32–35</td><td>4</td><td>ALLOC_PAGE, FREE_PAGE, ALLOC, ATOMIC_COPY</td></tr>
+                                <tr><td>SHM</td><td>48–52</td><td>5</td><td>CREATE, ATTACH, DETACH, DESTROY, INFO</td></tr>
+                                <tr><td>Cell</td><td>64–69</td><td>6</td><td>WRITE, READ, DELETE, EXISTS, GET_SHM_ID, LIST</td></tr>
+                                <tr><td>Device</td><td>80–87</td><td>8</td><td>OPEN, CLOSE, READ, WRITE, IOCTL, POLL, LIST, DISK_FORMAT</td></tr>
+                                <tr><td>Module</td><td>96–100</td><td>5</td><td>GET_COUNT, GET_INFO, GET_ADDR, GET_SIZE, COPY</td></tr>
+                                <tr><td>Time</td><td>112–117</td><td>6</td><td>GET_DATETIME, GET_UNIX, GET_UPTIME, GET_TICKS, GET_TICK_FREQ, GET_SHM_ID</td></tr>
+                                <tr><td>Filesystem</td><td>128–137</td><td>10</td><td>LIST_DIR, READ_FILE, FILE_COUNT, FIND_DIR, GET_ROOT_INFO, WRITE_FILE, DELETE_FILE, CREATE_DIR, VOL_COUNT, VOL_INFO</td></tr>
+                                <tr><td>Debug/KLog</td><td>240–246</td><td>7</td><td>KLOG, KLOG_HEX, KLOG_GET_SHM, GET_CPU_INFO, GET_MEM_INFO, GET_PIC_MASK, KLOG_READ</td></tr>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- HANDLERS LAYER -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- LAYER 5: SYSCALL HANDLERS                                      -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
         <div class="layer handlers">
             <div class="layer-header" onclick="toggleLayer(this)">
                 <div class="layer-title">
-                    <h2>ðŸ”— Syscall Handlers</h2>
-                    <span class="layer-badge">managers/syscall/handlers/</span>
+                    <h2>⚡ Layer 5 — Syscall Handlers</h2>
+                    <span class="layer-badge">managers/syscall/handlers/ · 10 handler files</span>
                     <span class="ring-badge ring0">RING 0</span>
-                    <span style="font-size:0.75rem; color:var(--good); margin-left:8px;">âœ… 47 handlers verified</span>
                 </div>
-                <span class="collapse-icon">â–¼</span>
+                <span class="collapse-icon">▼</span>
             </div>
             <div class="layer-content">
                 <div class="managers-grid">
-                    <!-- Cell Handler (Col 1 - aligns with libcell, Cell Executive) -->
+                    <!-- core_handlers -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ“¦</span>
-                                <span class="component-name">cell_handlers.c</span>
-                                <span style="font-size:0.65rem; color:var(--muted);">SYS 64â€“69 (6)</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-item syscall"><span class="func-name">sys_cell_write(key, val, sz)</span><span class="func-desc">SYS 64</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_cell_read(key, buf, sz)</span><span class="func-desc">SYS 65</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_cell_delete(key)</span><span class="func-desc">SYS 66</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_cell_exists(key)</span><span class="func-desc">SYS 67</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_cell_list(prefix, keys, max)</span><span class="func-desc">SYS 68</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_cell_get_shm_id()</span><span class="func-desc">SYS 69</span></div>
-                        </div>
-                    </div>
-                    <!-- Spacer (Col 2 - Queue uses SHM, no direct handler) -->
-                    <div class="grid-spacer"></div>
-                    <!-- Device Handler (Col 3 - aligns with libdisk, Disk Executive) -->
-                    <div class="component-card">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">ðŸ“‹</span>
-                                <span class="component-name">device_handlers.c</span>
-                                <span style="font-size:0.65rem; color:var(--muted);">SYS 80â€“86 (7)</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-item syscall"><span class="func-name">sys_dev_open(id, flags)</span><span class="func-desc">SYS 80</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_dev_close(id, handle)</span><span class="func-desc">SYS 81</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_dev_read(id, buf, sz)</span><span class="func-desc">SYS 82</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_dev_write(id, buf, sz)</span><span class="func-desc">SYS 83</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_dev_ioctl(id, cmd, arg)</span><span class="func-desc">SYS 84</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_dev_poll(id)</span><span class="func-desc">SYS 85</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_dev_list(list, max)</span><span class="func-desc">SYS 86</span></div>
-                        </div>
-                    </div>
-                    <!-- Process Handler (Col 4 - aligns with libprocess, Process Executive) -->
-                    <div class="component-card">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">ðŸ”„</span>
-                                <span class="component-name">process_handlers.c</span>
-                                <span style="font-size:0.65rem; color:var(--muted);">SYS 16â€“19 (4)</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-item syscall"><span class="func-name">sys_process_create(entry)</span><span class="func-desc">SYS 16</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_process_kill(pid)</span><span class="func-desc">SYS 17</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_process_info(pid, info)</span><span class="func-desc">SYS 18</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_process_get_count()</span><span class="func-desc">SYS 19</span></div>
-                        </div>
-                    </div>
-                    <!-- Memory + SHM Handlers (Col 5 - aligns with libmemory, Memory Executive) -->
-                    <div class="component-card">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">ðŸ§ </span>
-                                <span class="component-name">memory + shm handlers</span>
-                                <span style="font-size:0.65rem; color:var(--muted);">SYS 32â€“35 + 48â€“52 (9)</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Memory (SYS 32â€“35)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item syscall"><span class="func-name">sys_mem_alloc_page()</span><span class="func-desc">SYS 32</span></div>
-                                <div class="function-item syscall"><span class="func-name">sys_mem_free_page(addr)</span><span class="func-desc">SYS 33</span></div>
-                                <div class="function-item syscall"><span class="func-name">sys_mem_alloc(size)</span><span class="func-desc">SYS 34</span></div>
-                                <div class="function-item syscall"><span class="func-name">sys_mem_get_stats(stats)</span><span class="func-desc">SYS 35</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>SHM (SYS 48â€“52)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item syscall"><span class="func-name">sys_shm_create(size)</span><span class="func-desc">SYS 48</span></div>
-                                <div class="function-item syscall"><span class="func-name">sys_shm_attach(id, addr)</span><span class="func-desc">SYS 49</span></div>
-                                <div class="function-item syscall"><span class="func-name">sys_shm_detach(id)</span><span class="func-desc">SYS 50</span></div>
-                                <div class="function-item syscall"><span class="func-name">sys_shm_destroy(id)</span><span class="func-desc">SYS 51</span></div>
-                                <div class="function-item syscall"><span class="func-name">sys_shm_get_info(id, info)</span><span class="func-desc">SYS 52</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Debug Handler (Col 6) -->
-                    <div class="component-card">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">ðŸ›</span>
-                                <span class="component-name">debug_handlers.c</span>
-                                <span style="font-size:0.65rem; color:var(--muted);">SYS 240â€“245 (6)</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Logging</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item syscall"><span class="func-name">sys_klog(level, tag, msg)</span><span class="func-desc">SYS 240 â†’ [U]</span></div>
-                                <div class="function-item syscall"><span class="func-name">sys_klog_hex(level, tag, msg, val)</span><span class="func-desc">SYS 241 â†’ [U]</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Diagnostics</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item syscall"><span class="func-name">sys_debug_dump_processes()</span><span class="func-desc">SYS 242</span></div>
-                                <div class="function-item syscall"><span class="func-name">sys_debug_dump_memory()</span><span class="func-desc">SYS 243</span></div>
-                                <div class="function-item syscall"><span class="func-name">sys_get_mem_info(buf)</span><span class="func-desc">SYS 244 â†' PMM stats</span></div>
-                                <div class="function-item syscall"><span class="func-name">sys_debug_dump_devices()</span><span class="func-desc">SYS 245</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Time Handler (Col 7 - aligns with libtime) -->
-                    <div class="component-card">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">ðŸ•</span>
-                                <span class="component-name">time_handlers.c</span>
-                                <span style="font-size:0.65rem; color:var(--muted);">SYS 112â€“117 (6)</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-item syscall"><span class="func-name">sys_time_get_datetime(dt)</span><span class="func-desc">SYS 112</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_time_get_unix()</span><span class="func-desc">SYS 113</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_time_get_uptime(up)</span><span class="func-desc">SYS 114</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_time_get_ticks()</span><span class="func-desc">SYS 115</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_time_get_tick_freq()</span><span class="func-desc">SYS 116</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_time_get_shm_id()</span><span class="func-desc">SYS 117</span></div>
-                        </div>
-                    </div>
-                    <!-- Core Handler (Col 8 - aligns with libcore, Common Framework) -->
-                    <div class="component-card">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">âš¡</span>
+                                <span class="component-icon">🔧</span>
                                 <span class="component-name">core_handlers.c</span>
-                                <span style="font-size:0.65rem; color:var(--muted);">SYS 0â€“3 (4)</span>
+                                <span class="component-id">SYS 0–5</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-item syscall"><span class="func-name">sys_exit(code)</span><span class="func-desc">SYS 0</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_yield()</span><span class="func-desc">SYS 1</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_getpid()</span><span class="func-desc">SYS 2</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_sleep(ticks)</span><span class="func-desc">SYS 3</span></div>
+                            <div class="function-item syscall"><span class="func-name">EXIT — terminate calling process</span></div>
+                            <div class="function-item syscall"><span class="func-name">YIELD — voluntary reschedule</span></div>
+                            <div class="function-item syscall"><span class="func-name">GETPID — return current PID</span></div>
+                            <div class="function-item syscall"><span class="func-name">SLEEP — sleep for N ticks</span></div>
+                            <div class="function-item syscall"><span class="func-name">SHUTDOWN — power off system</span></div>
+                            <div class="function-item syscall"><span class="func-name">RESTART — reboot system</span></div>
                         </div>
                     </div>
-                    <!-- Module Handler - NEW -->
+                    <!-- process_handlers -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ“¦</span>
-                                <span class="component-name">module_handlers.c</span>
-                                <span style="font-size:0.65rem; color:var(--muted);">SYS 96â€“100 (5)</span>
+                                <span class="component-icon">🔄</span>
+                                <span class="component-name">process_handlers.c</span>
+                                <span class="component-id">SYS 16–22</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-item syscall"><span class="func-name">sys_module_load(name)</span><span class="func-desc">SYS 96</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_module_get_address(idx)</span><span class="func-desc">SYS 97</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_module_get_size(idx)</span><span class="func-desc">SYS 98</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_module_get_name(idx, buf, sz)</span><span class="func-desc">SYS 99</span></div>
-                            <div class="function-item syscall"><span class="func-name">sys_module_get_count()</span><span class="func-desc">SYS 100</span></div>
+                            <div class="function-item syscall"><span class="func-name">CREATE — spawn new process from module</span></div>
+                            <div class="function-item syscall"><span class="func-name">KILL — terminate process by PID</span></div>
+                            <div class="function-item syscall"><span class="func-name">INFO — get process info struct</span></div>
+                            <div class="function-item syscall"><span class="func-name">GET_COUNT / EXEC / LIST / SET_NAME</span></div>
+                        </div>
+                    </div>
+                    <!-- memory_handlers -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🧠</span>
+                                <span class="component-name">memory_handlers.c</span>
+                                <span class="component-id">SYS 32–35</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item syscall"><span class="func-name">ALLOC_PAGE — allocate physical page</span></div>
+                            <div class="function-item syscall"><span class="func-name">FREE_PAGE — release physical page</span></div>
+                            <div class="function-item syscall"><span class="func-name">ALLOC — allocate N bytes from heap</span></div>
+                            <div class="function-item syscall"><span class="func-name">ATOMIC_COPY — copy memory atomically</span></div>
+                        </div>
+                    </div>
+                    <!-- shm_handlers -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🔗</span>
+                                <span class="component-name">shm_handlers.c</span>
+                                <span class="component-id">SYS 48–52</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item syscall"><span class="func-name">CREATE — create shared memory region</span></div>
+                            <div class="function-item syscall"><span class="func-name">ATTACH — map SHM into process</span></div>
+                            <div class="function-item syscall"><span class="func-name">DETACH / DESTROY / INFO</span></div>
+                        </div>
+                    </div>
+                    <!-- cell_handlers -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🗄️</span>
+                                <span class="component-name">cell_handlers.c</span>
+                                <span class="component-id">SYS 64–69</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item syscall"><span class="func-name">WRITE — store key-value pair</span></div>
+                            <div class="function-item syscall"><span class="func-name">READ — retrieve value by key</span></div>
+                            <div class="function-item syscall"><span class="func-name">DELETE / EXISTS / GET_SHM_ID / LIST</span></div>
+                        </div>
+                    </div>
+                    <!-- device_handlers -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🔌</span>
+                                <span class="component-name">device_handlers.c</span>
+                                <span class="component-id">SYS 80–87</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item syscall"><span class="func-name">OPEN / CLOSE — device lifecycle</span></div>
+                            <div class="function-item syscall"><span class="func-name">READ / WRITE — data transfer</span></div>
+                            <div class="function-item syscall"><span class="func-name">IOCTL / POLL / LIST / DISK_FORMAT</span></div>
+                        </div>
+                    </div>
+                    <!-- module_handlers -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">📦</span>
+                                <span class="component-name">module_handlers.c</span>
+                                <span class="component-id">SYS 96–100</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item syscall"><span class="func-name">GET_COUNT — number of GRUB modules</span></div>
+                            <div class="function-item syscall"><span class="func-name">GET_INFO / GET_ADDR / GET_SIZE</span></div>
+                            <div class="function-item syscall"><span class="func-name">COPY — copy module data to buffer</span></div>
+                        </div>
+                    </div>
+                    <!-- time_handlers -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🕐</span>
+                                <span class="component-name">time_handlers.c</span>
+                                <span class="component-id">SYS 112–117</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item syscall"><span class="func-name">GET_DATETIME — wall clock date/time</span></div>
+                            <div class="function-item syscall"><span class="func-name">GET_UNIX / GET_UPTIME / GET_TICKS</span></div>
+                            <div class="function-item syscall"><span class="func-name">GET_TICK_FREQ / GET_SHM_ID</span></div>
+                        </div>
+                    </div>
+                    <!-- fs_handlers -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">📂</span>
+                                <span class="component-name">fs_handlers.c</span>
+                                <span class="component-id">SYS 128–137</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item syscall"><span class="func-name">LIST_DIR / READ_FILE / FILE_COUNT / FIND_DIR</span></div>
+                            <div class="function-item syscall"><span class="func-name">GET_ROOT_INFO / WRITE_FILE / DELETE_FILE</span></div>
+                            <div class="function-item syscall"><span class="func-name">CREATE_DIR / VOL_COUNT / VOL_INFO</span></div>
+                        </div>
+                    </div>
+                    <!-- debug_handlers -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">🐛</span>
+                                <span class="component-name">debug_handlers.c</span>
+                                <span class="component-id">SYS 240–246</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item syscall"><span class="func-name">KLOG / KLOG_HEX — kernel log write</span></div>
+                            <div class="function-item syscall"><span class="func-name">KLOG_GET_SHM / KLOG_READ — log buffer access</span></div>
+                            <div class="function-item syscall"><span class="func-name">GET_CPU_INFO / GET_MEM_INFO / GET_PIC_MASK</span></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- MANAGERS LAYER -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- LAYER 6: KERNEL MANAGERS                                       -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
         <div class="layer managers">
             <div class="layer-header" onclick="toggleLayer(this)">
                 <div class="layer-title">
-                    <h2>ðŸŽ›ï¸ Kernel Managers</h2>
-                    <span class="layer-badge">KERNEL / managers/</span>
+                    <h2>🏗️ Layer 6 — Kernel Managers</h2>
+                    <span class="layer-badge">managers/ · 8 managers + infrastructure</span>
                     <span class="ring-badge ring0">RING 0</span>
-                    <span style="font-size:0.75rem; color:var(--good); margin-left:8px;">âœ… All verified</span>
                 </div>
-                <span class="collapse-icon">â–¼</span>
+                <span class="collapse-icon">▼</span>
             </div>
             <div class="layer-content">
                 <div class="managers-grid">
-
-                    <!-- Cell Manager (Col 1 - aligns with libcell, Cell Executive, cell_handlers) -->
+                    <!-- cell_manager -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ—„ï¸</span>
-                                <span class="component-name">Cell Manager</span>
+                                <span class="component-icon">🗄️</span>
+                                <span class="component-name">cell_manager</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Init</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">cell_manager_init()</span><span class="func-return return-int">int: shm_id</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Kernel API</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">kernel_cell_write(key, value, size)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">kernel_cell_read(key, buf, sz, actual)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">kernel_cell_delete(key)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">kernel_cell_exists(key)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">kernel_cell_list(prefix, keys, max)</span><span class="func-return return-int">int</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">Key-value registry for system-wide state</span></div>
+                            <div class="function-item"><span class="func-name">kernel_cell_write / read / delete / exists / list</span></div>
+                            <div class="function-item"><span class="func-name">Used by drivers to publish device info</span></div>
                         </div>
                     </div>
-
-                    <!-- Spacer (Col 2 - Queue has no kernel manager, uses SHM) -->
-                    <div class="grid-spacer"></div>
-
-                    <!-- Device Manager (Col 3 - aligns with libdisk, Disk Executive, device_handlers) -->
+                    <!-- device_manager -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ“‹</span>
-                                <span class="component-name">Device Manager</span>
+                                <span class="component-icon">🔌</span>
+                                <span class="component-name">device_manager</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Init</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">device_manager_init()</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Lifecycle</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">register_device(id, name, ops)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">unregister_device(id)</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Kernel API</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">kernel_device_open(id, flags)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">kernel_device_read/write/ioctl</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">kernel_device_poll(id)</span><span class="func-return return-int">int</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">Unified device ops via function pointers</span></div>
+                            <div class="function-item"><span class="func-name">kernel_device_open / close / read / write / ioctl / poll</span></div>
+                            <div class="function-item"><span class="func-name">Routes to correct driver via ops table</span></div>
                         </div>
                     </div>
-
-                    <!-- Process Manager (Col 4 - aligns with libprocess, Process Executive, process_handlers) -->
+                    <!-- process_manager -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ”„</span>
-                                <span class="component-name">Process Manager</span>
+                                <span class="component-icon">🔄</span>
+                                <span class="component-name">process_manager</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Init</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">process_manager_init()</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Kernel API</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">kernel_process_create(entry)</span><span class="func-return return-int">int: pid</span></div>
-                                <div class="function-item"><span class="func-name">kernel_process_terminate(pid)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">kernel_process_get_by_pid(pid)</span><span class="func-return return-ptr">process_t*</span></div>
-                                <div class="function-item"><span class="func-name">process_manager_get_count()</span><span class="func-return return-int">int</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">PCB table, process create / kill / info</span></div>
+                            <div class="function-item"><span class="func-name">MEX binary loading, address space setup</span></div>
+                            <div class="function-item"><span class="func-name">Process state machine (READY/RUNNING/SLEEPING/DEAD)</span></div>
                         </div>
                     </div>
-
-                    <!-- Memory + SHM Manager (Col 5 - aligns with libmemory, Memory Executive, memory+shm handlers) -->
+                    <!-- scheduler -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ§ </span>
-                                <span class="component-name">Memory + SHM Manager</span>
+                                <span class="component-icon">⏱️</span>
+                                <span class="component-name">scheduler</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Init</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">pmm_init(mbi)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item init"><span class="func-name">paging_init(mbi)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item init"><span class="func-name">shm_manager_init()</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>PMM</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">pmm_alloc_page()</span><span class="func-return return-ptr">void*</span></div>
-                                <div class="function-item"><span class="func-name">pmm_free_page(addr)</span><span class="func-return return-void">void</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>SHM</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">kernel_shm_create(size, pid)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">kernel_shm_attach(id, pid, virt)</span><span class="func-return return-uint">uint</span></div>
-                                <div class="function-item"><span class="func-name">kernel_shm_detach(id, pid)</span><span class="func-return return-int">int</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">Round-robin with priority levels</span></div>
+                            <div class="function-item"><span class="func-name">Executives: 3× time slices, Apps: 1×</span></div>
+                            <div class="function-item"><span class="func-name">Context switch on PIT IRQ0 tick</span></div>
                         </div>
                     </div>
-
-                    <!-- Klog Manager (Col 6 - aligns with libgui, debug_handlers) -->
+                    <!-- shm_manager -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ“</span>
-                                <span class="component-name">Klog Manager</span>
+                                <span class="component-icon">🔗</span>
+                                <span class="component-name">shm_manager</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Init</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">klog_manager_init()</span><span class="func-return return-void">void</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Kernel Logs [K]</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">klog(level, tag, msg)</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item"><span class="func-name">klog_hex(level, tag, msg, val)</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item"><span class="func-name">klog_hex2(level, tag, msg, v1, v2)</span><span class="func-return return-void">void</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>User Logs [U]</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">ulog(level, tag, msg)</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item"><span class="func-name">ulog_hex(level, tag, msg, val)</span><span class="func-return return-void">void</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Design</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">[K] = direct kernel call (orange)</span></div>
-                                <div class="function-item"><span class="func-name">[U] = via syscall from ring3 (cyan)</span></div>
-                                <div class="function-item"><span class="func-name">[MM-DD HH:MM:SS] timestamps</span></div>
-                                <div class="function-item"><span class="func-name">Direct serial output (COM1)</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">Shared memory region management (up to 64)</span></div>
+                            <div class="function-item"><span class="func-name">kernel_shm_create / attach / detach / destroy / info</span></div>
                         </div>
                     </div>
-
-                    <!-- Time Manager (Col 7 - aligns with libtime, time_handlers) -->
+                    <!-- grub_module_manager -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ•</span>
-                                <span class="component-name">Time Manager</span>
+                                <span class="component-icon">📦</span>
+                                <span class="component-name">grub_module_manager</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Init</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">time_manager_init()</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Query</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">time_get_datetime(dt)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">time_get_unix()</span><span class="func-return return-uint">uint32_t</span></div>
-                                <div class="function-item"><span class="func-name">time_get_uptime(up)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">time_get_ticks()</span><span class="func-return return-uint">uint64_t</span></div>
-                                <div class="function-item"><span class="func-name">time_get_tick_frequency()</span><span class="func-return return-uint">uint32_t</span></div>
-                                <div class="function-item"><span class="func-name">time_get_shared_shm_id()</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Info</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">boot + (ticks/50) = current</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">GRUB multiboot module loading (indices 0–12)</span></div>
+                            <div class="function-item"><span class="func-name">get_module_count / info / addr / size / copy</span></div>
                         </div>
                     </div>
-
-                    <!-- Scheduler + Core Managers (Col 8) -->
+                    <!-- time_manager -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">â±ï¸</span>
-                                <span class="component-name">Scheduler + Core</span>
+                                <span class="component-icon">🕐</span>
+                                <span class="component-name">time_manager</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Init</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">scheduler_init()</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item init"><span class="func-name">gdt_init() / idt_init()</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item init"><span class="func-name">irq_manager_init()</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item init"><span class="func-name">pit_init(freq)</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item init"><span class="func-name">kheap_init()</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Scheduler</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">scheduler_enable/disable()</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item"><span class="func-name">scheduler_add_process(...)</span><span class="func-return return-void">void</span></div>
-                                <div class="function-item"><span class="func-name">scheduler_get_current_pid()</span><span class="func-return return-int">int</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Ring3</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">ring3_switch(entry)</span><span class="func-return return-void">noreturn</span></div>
-                                <div class="function-item"><span class="func-name">manual_first_switch()</span><span class="func-return return-void">noreturn</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">Wall clock, uptime, tick counter</span></div>
+                            <div class="function-item"><span class="func-name">Reads RTC, maintains monotonic time</span></div>
                         </div>
                     </div>
-
-                    <!-- GRUB Module Manager -->
+                    <!-- memory (pmm+paging+kheap) -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ“¦</span>
-                                <span class="component-name">GRUB Module Manager</span>
+                                <span class="component-icon">🧠</span>
+                                <span class="component-name">memory (PMM + Paging + KHeap)</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Init</span><span class="category-collapse">â–¼</span>
+                            <div class="function-item"><span class="func-name">PMM: bitmap-based physical page allocator</span></div>
+                            <div class="function-item"><span class="func-name">Paging: page directory/table management</span></div>
+                            <div class="function-item"><span class="func-name">KHeap: bump + free-list allocator at 0x01000000 (4 MB)</span></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Infrastructure row -->
+                <div style="margin-top: 10px;">
+                    <div class="hierarchy-grid">
+                        <div class="component-card utility">
+                            <div class="component-header" onclick="toggleComponent(this)">
+                                <div class="component-title">
+                                    <span class="component-icon">📐</span>
+                                    <span class="component-name">GDT</span>
+                                    <span class="utility-badge">INFRA</span>
+                                </div>
+                                <span class="component-collapse">▼</span>
                             </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">grub_module_manager_init(mbi)</span><span class="func-return return-int">int</span></div>
+                            <div class="component-functions">
+                                <div class="function-item"><span class="func-name">Global Descriptor Table — segment setup for Ring 0/3</span></div>
                             </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Kernel API</span><span class="category-collapse">â–¼</span>
+                        </div>
+                        <div class="component-card utility">
+                            <div class="component-header" onclick="toggleComponent(this)">
+                                <div class="component-title">
+                                    <span class="component-icon">⚡</span>
+                                    <span class="component-name">IDT / Interrupts</span>
+                                    <span class="utility-badge">INFRA</span>
+                                </div>
+                                <span class="component-collapse">▼</span>
                             </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">grub_module_get_count()</span><span class="func-return return-int">int</span></div>
-                                <div class="function-item"><span class="func-name">grub_module_get_address(idx)</span><span class="func-return return-uint">uint32_t</span></div>
-                                <div class="function-item"><span class="func-name">grub_module_get_size(idx)</span><span class="func-return return-uint">uint32_t</span></div>
-                                <div class="function-item"><span class="func-name">grub_module_get_name(idx)</span><span class="func-return return-ptr">char*</span></div>
+                            <div class="component-functions">
+                                <div class="function-item"><span class="func-name">Interrupt Descriptor Table, exception handlers</span></div>
+                            </div>
+                        </div>
+                        <div class="component-card utility">
+                            <div class="component-header" onclick="toggleComponent(this)">
+                                <div class="component-title">
+                                    <span class="component-icon">🔀</span>
+                                    <span class="component-name">IRQ</span>
+                                    <span class="utility-badge">INFRA</span>
+                                </div>
+                                <span class="component-collapse">▼</span>
+                            </div>
+                            <div class="component-functions">
+                                <div class="function-item"><span class="func-name">IRQ routing, PIC (8259) management</span></div>
+                            </div>
+                        </div>
+                        <div class="component-card utility">
+                            <div class="component-header" onclick="toggleComponent(this)">
+                                <div class="component-title">
+                                    <span class="component-icon">🚀</span>
+                                    <span class="component-name">Ring3</span>
+                                    <span class="utility-badge">INFRA</span>
+                                </div>
+                                <span class="component-collapse">▼</span>
+                            </div>
+                            <div class="component-functions">
+                                <div class="function-item"><span class="func-name">Ring 0 → Ring 3 switching for user processes</span></div>
+                            </div>
+                        </div>
+                        <div class="component-card utility">
+                            <div class="component-header" onclick="toggleComponent(this)">
+                                <div class="component-title">
+                                    <span class="component-icon">⏰</span>
+                                    <span class="component-name">Timer (PIT)</span>
+                                    <span class="utility-badge">INFRA</span>
+                                </div>
+                                <span class="component-collapse">▼</span>
+                            </div>
+                            <div class="component-functions">
+                                <div class="function-item"><span class="func-name">Programmable Interval Timer — ~50Hz system tick</span></div>
+                            </div>
+                        </div>
+                        <div class="component-card utility">
+                            <div class="component-header" onclick="toggleComponent(this)">
+                                <div class="component-title">
+                                    <span class="component-icon">📋</span>
+                                    <span class="component-name">KLog</span>
+                                    <span class="utility-badge">INFRA</span>
+                                </div>
+                                <span class="component-collapse">▼</span>
+                            </div>
+                            <div class="component-functions">
+                                <div class="function-item"><span class="func-name">Kernel logging — ring buffer, serial output</span></div>
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
 
-        <div class="connection-arrow">â¬‡ï¸</div>
+        <div class="ipc-arrow">⬇️ <span>Hardware I/O ↓</span> ⬇️</div>
 
-        <!-- DRIVERS LAYER - Common/Shared Layer -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- LAYER 7: HARDWARE DRIVERS                                      -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
         <div class="layer drivers">
             <div class="layer-header" onclick="toggleLayer(this)">
                 <div class="layer-title">
-                    <h2>âš¡ Hardware Drivers</h2>
-                    <span class="layer-badge">KERNEL / drivers/</span>
+                    <h2>🔩 Layer 7 — Hardware Drivers</h2>
+                    <span class="layer-badge">drivers/ · 8 driver areas</span>
                     <span class="ring-badge ring0">RING 0</span>
-                    <span class="utility-badge">COMMON LAYER</span>
-                    <span style="font-size:0.75rem; color:var(--good); margin-left:8px;">âœ… All verified</span>
                 </div>
-                <span class="collapse-icon">â–¼</span>
+                <span class="collapse-icon">▼</span>
             </div>
             <div class="layer-content">
-                <p style="color:var(--muted); margin-bottom: 16px; font-size: 0.85rem;">
-                    ðŸ“Œ Hardware drivers are shared across all subsystems - they register with Device Manager and provide a common device_ops_t interface.
-                </p>
                 <div class="managers-grid">
-
-                    <!-- MOUSE DRIVER -->
+                    <!-- Display -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ–±ï¸</span>
-                                <span class="component-name">Mouse</span>
-                                <span class="component-id">DEV_MOUSE = 1</span>
+                                <span class="component-icon">🖥️</span>
+                                <span class="component-name">Display (BGA + VBE)</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Path</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">drivers/mouse/mouse.c</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Device Operations</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">mouse_init() â†’ register_device()</span></div>
-                                <div class="function-item internal"><span class="func-name">mouse_handler() [IRQ12]</span></div>
-                                <div class="function-item"><span class="func-name">open/close/read/ioctl/poll</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>IOCTL Commands</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">MOUSE_IOCTL_GET_STATE = 1</span></div>
-                                <div class="function-item"><span class="func-name">MOUSE_IOCTL_GET_IRQ_COUNT = 2</span></div>
-                                <div class="function-item"><span class="func-name">MOUSE_IOCTL_RESET = 3</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">1280×800×32bpp linear framebuffer</span></div>
+                            <div class="function-item"><span class="func-name">BGA (Bochs) or VBE (real HW) auto-detect</span></div>
+                            <div class="function-item"><span class="func-name">display_init / display_flip / display_get_fb</span></div>
                         </div>
                     </div>
-
-                    <!-- KEYBOARD DRIVER -->
+                    <!-- Keyboard -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">âŒ¨ï¸</span>
+                                <span class="component-icon">⌨️</span>
                                 <span class="component-name">Keyboard</span>
-                                <span class="component-id">DEV_KEYBOARD = 2</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Path</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">drivers/keyboard/keyboard.c</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Device Operations</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">keyboard_init() â†’ register_device()</span></div>
-                                <div class="function-item internal"><span class="func-name">keyboard_irq_handler() [IRQ1]</span></div>
-                                <div class="function-item"><span class="func-name">open/close/read/ioctl/poll</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>IOCTL Commands</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">KB_IOCTL_GET_SCANCODE = 1</span></div>
-                                <div class="function-item"><span class="func-name">KB_IOCTL_SET_LEDS = 2</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">PS/2 IRQ1, scancode → key event ring buffer</span></div>
+                            <div class="function-item"><span class="func-name">Shift/Ctrl/Alt modifier tracking</span></div>
                         </div>
                     </div>
-
-                    <!-- DISPLAY DRIVER -->
+                    <!-- Mouse -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ–¥ï¸</span>
-                                <span class="component-name">Display (GFX)</span>
-                                <span class="component-id">DEV_DISPLAY = 3</span>
+                                <span class="component-icon">🖱️</span>
+                                <span class="component-name">Mouse</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>ðŸ“ Structure: drivers/display/</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">â”œâ”€â”€ display.c</span><span class="func-desc">âœ“ Registered</span></div>
-                                <div class="function-item"><span class="func-name">â”œâ”€â”€ bga.c</span><span class="func-desc">HW Driver</span></div>
-                                <div class="function-item"><span class="func-name">â”œâ”€â”€ bga_mouse.c</span><span class="func-desc">HW Cursor</span></div>
-                                <div class="function-item"><span class="func-name">â””â”€â”€ cursor.c</span><span class="func-desc">SW Cursor</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>GFX API (Registered)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">gfx_init() â†’ register_device()</span></div>
-                                <div class="function-item"><span class="func-name">gfx_clear/fill_rect/draw_string</span></div>
-                                <div class="function-item"><span class="func-name">gfx_get_framebuffer()</span></div>
-                                <div class="function-item"><span class="func-name">open/close/read/ioctl/poll</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>BGA Driver (Internal)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item internal"><span class="func-name">bga_is_available()</span><span class="func-desc">Detect via PCI</span></div>
-                                <div class="function-item internal"><span class="func-name">bga_init(w, h, bpp)</span><span class="func-desc">Set mode</span></div>
-                                <div class="function-item internal"><span class="func-name">bga_get_framebuffer_addr()</span><span class="func-desc">0xE0000000</span></div>
-                                <div class="function-item"><span class="func-name">Ports: 0x01CE/0x01CF</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>IOCTL Commands</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">DISPLAY_IOCTL_GET_INFO = 1</span></div>
-                                <div class="function-item"><span class="func-name">DISPLAY_IOCTL_SET_MODE = 2</span></div>
-                                <div class="function-item"><span class="func-name">DISPLAY_IOCTL_GET_FB = 3</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">PS/2 IRQ12, absolute coordinate tracking</span></div>
+                            <div class="function-item"><span class="func-name">Button state, movement delta → event ring</span></div>
                         </div>
                     </div>
-
-                    <!-- DRIVE SUBSYSTEM (NEW - expanded) -->
-                    <div class="component-card" style="grid-column: span 2;">
+                    <!-- Drive subsystem -->
+                    <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ’¾</span>
+                                <span class="component-icon">💿</span>
                                 <span class="component-name">Drive Subsystem</span>
-                                <span class="component-id">DEV_DISK = 4</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>ðŸ“ Structure: drivers/drive/</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">â”œâ”€â”€ ata/ata.c</span><span class="func-desc">HW Transport</span></div>
-                                <div class="function-item"><span class="func-name">â”œâ”€â”€ disk/disk_subsystem.c</span><span class="func-desc">âœ“ Registered</span></div>
-                                <div class="function-item"><span class="func-name">â””â”€â”€ iso9660/iso9660.c</span><span class="func-desc">Filesystem</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>ATA Driver (Internal)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item internal"><span class="func-name">ata_init()</span><span class="func-desc">Detect drives</span></div>
-                                <div class="function-item internal"><span class="func-name">ata_read_sector(drive, lba, buf)</span><span class="func-desc">PIO read</span></div>
-                                <div class="function-item internal"><span class="func-name">ata_get_drive(id)</span><span class="func-desc">Get drive info</span></div>
-                                <div class="function-item"><span class="func-name">Ports: 0x1F0-0x1F7 (Primary), 0x170-0x177 (Secondary)</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Disk Subsystem (Registered)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">disk_subsystem_init() â†’ register_device()</span></div>
-                                <div class="function-item"><span class="func-name">disk_dev_open/close/read/write/ioctl/poll</span></div>
-                                <div class="function-item"><span class="func-name">disk_subsystem_scan()</span><span class="func-desc">Find disks</span></div>
-                                <div class="function-item"><span class="func-name">disk_subsystem_read_sector()</span><span class="func-desc">Read sector</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>ISO9660 Filesystem (Internal)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item internal"><span class="func-name">iso9660_init()</span><span class="func-desc">Read vol desc</span></div>
-                                <div class="function-item internal"><span class="func-name">iso9660_list_root(entries, max)</span><span class="func-desc">List files</span></div>
-                                <div class="function-item internal"><span class="func-name">iso9660_read_file(lba, size, buf)</span><span class="func-desc">Read file</span></div>
-                                <div class="function-item internal"><span class="func-name">atapi_read_sector(drive, lba, buf)</span><span class="func-desc">2048-byte CD sector</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>IOCTL Commands</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">DISK_IOCTL_GET_INFO = 1</span></div>
-                                <div class="function-item"><span class="func-name">DISK_IOCTL_GET_SECTOR_SIZE = 2</span></div>
-                                <div class="function-item"><span class="func-name">DISK_IOCTL_GET_SECTOR_COUNT = 3</span></div>
-                                <div class="function-item"><span class="func-name">DISK_IOCTL_FLUSH = 4</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">ATA/IDE — PIO disk read/write</span></div>
+                            <div class="function-item"><span class="func-name">Disk abstraction layer (disk_subsystem)</span></div>
+                            <div class="function-item"><span class="func-name">ISO 9660 — CD-ROM filesystem driver</span></div>
+                            <div class="function-item"><span class="func-name">MFS — MaahiOS native filesystem</span></div>
+                            <div class="function-item"><span class="func-name">Partition (MBR) + Volume mount manager</span></div>
                         </div>
                     </div>
-
-                    <!-- RTC DRIVER -->
+                    <!-- PCI -->
                     <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ•°ï¸</span>
-                                <span class="component-name">RTC (CMOS)</span>
-                                <span class="component-id">DEV_RTC = 7</span>
-                            </div>
-                            <span class="component-collapse">â–¼</span>
-                        </div>
-                        <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Path</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">drivers/rtc/rtc.c</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Device Operations</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item init"><span class="func-name">rtc_init() â†’ register_device()</span></div>
-                                <div class="function-item"><span class="func-name">rtc_read_datetime()</span></div>
-                                <div class="function-item"><span class="func-name">rtc_get_unix_time()</span></div>
-                                <div class="function-item"><span class="func-name">open/close/read/ioctl</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>IOCTL Commands</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">RTC_IOCTL_GET_TIME = 1</span></div>
-                                <div class="function-item"><span class="func-name">RTC_IOCTL_GET_UNIX = 2</span></div>
-                                <div class="function-item"><span class="func-name">Ports: CMOS 0x70/0x71</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- PCI UTILITY -->
-                    <div class="component-card utility">
-                        <div class="component-header" onclick="toggleComponent(this)">
-                            <div class="component-title">
-                                <span class="component-icon">ðŸ”Œ</span>
+                                <span class="component-icon">🔍</span>
                                 <span class="component-name">PCI</span>
-                                <span class="utility-badge">UTILITY</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Path</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">drivers/pci/pci.c</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Functions</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">pci_config_read_byte/word/dword()</span></div>
-                                <div class="function-item"><span class="func-name">pci_config_write_byte/word/dword()</span></div>
-                                <div class="function-item"><span class="func-name">Ports: 0xCF8/0xCFC</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">PCI bus enumeration, device discovery</span></div>
+                            <div class="function-item"><span class="func-name">pci_read_config / find_device</span></div>
                         </div>
                     </div>
-
-                    <!-- VGA TEXT MODE -->
-                    <div class="component-card utility">
+                    <!-- RTC -->
+                    <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ“º</span>
-                                <span class="component-name">VGA Text</span>
-                                <span class="utility-badge">EARLY BOOT</span>
+                                <span class="component-icon">🕐</span>
+                                <span class="component-name">RTC</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Path</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">drivers/vga/vga.c</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Functions</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">vga_clear/print/putchar</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">Real-time clock — CMOS date/time read</span></div>
+                            <div class="function-item"><span class="func-name">BCD → binary conversion</span></div>
                         </div>
                     </div>
-
-                    <!-- Shared I/O -->
-                    <div class="component-card utility">
+                    <!-- VGA -->
+                    <div class="component-card">
                         <div class="component-header" onclick="toggleComponent(this)">
                             <div class="component-title">
-                                <span class="component-icon">ðŸ”§</span>
-                                <span class="component-name">Shared I/O</span>
-                                <span class="utility-badge">UTILITY</span>
+                                <span class="component-icon">📺</span>
+                                <span class="component-name">VGA</span>
                             </div>
-                            <span class="component-collapse">â–¼</span>
+                            <span class="component-collapse">▼</span>
                         </div>
                         <div class="component-functions">
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Path</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">system/libraries/shared/io.h</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Functions</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">inb/outb (8-bit)</span></div>
-                                <div class="function-item"><span class="func-name">inw/outw (16-bit)</span></div>
-                                <div class="function-item"><span class="func-name">inl/outl (32-bit)</span></div>
-                                <div class="function-item"><span class="func-name">io_wait()</span></div>
-                            </div>
-                            <div class="function-category" onclick="toggleCategory(this)">
-                                <span>Used by (10 files)</span><span class="category-collapse">â–¼</span>
-                            </div>
-                            <div class="function-list">
-                                <div class="function-item"><span class="func-name">All drivers + irq_manager + pit</span></div>
-                            </div>
+                            <div class="function-item"><span class="func-name">Text mode 80×25 — early boot output only</span></div>
+                            <div class="function-item"><span class="func-name">Replaced by BGA/VBE after display_init</span></div>
                         </div>
                     </div>
-
+                    <!-- Timer (PIT) -->
+                    <div class="component-card">
+                        <div class="component-header" onclick="toggleComponent(this)">
+                            <div class="component-title">
+                                <span class="component-icon">⏰</span>
+                                <span class="component-name">Timer (PIT)</span>
+                            </div>
+                            <span class="component-collapse">▼</span>
+                        </div>
+                        <div class="component-functions">
+                            <div class="function-item"><span class="func-name">IRQ0, ~50Hz system tick via 8253/8254 PIT</span></div>
+                            <div class="function-item"><span class="func-name">Drives scheduler context switches</span></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- Legend -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- LEGEND                                                         -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <div class="legend">
         <div class="legend-section">
             <div class="legend-section-title">Privilege Rings</div>
@@ -2007,37 +1824,58 @@
         <div class="legend-section">
             <div class="legend-section-title">Priority Levels</div>
             <div class="legend-row">
-                <div class="legend-item"><span class="priority-badge priority-high" style="margin:0">HIGH</span><span>Executives (3x slices)</span></div>
-                <div class="legend-item"><span class="priority-badge priority-medium" style="margin:0">MEDIUM</span><span>Applications (1x slice)</span></div>
-                <div class="legend-item"><span class="priority-badge priority-low" style="margin:0">LOW</span><span>Background (1 per 3 cycles)</span></div>
+                <div class="legend-item"><span class="priority-badge priority-high" style="margin:0">HIGH</span><span>Executives (3× slices)</span></div>
+                <div class="legend-item"><span class="priority-badge priority-medium" style="margin:0">MEDIUM</span><span>Applications (1× slice)</span></div>
             </div>
         </div>
         <div class="legend-section">
-            <div class="legend-section-title">Function Types</div>
+            <div class="legend-section-title">Card Types</div>
             <div class="legend-row">
-                <div class="legend-item"><div class="legend-color init"></div><span>Initialization</span></div>
                 <div class="legend-item"><div class="legend-color syscall"></div><span>Syscall Handler</span></div>
-                <div class="legend-item"><div class="legend-color api"></div><span>Kernel API</span></div>
-                <div class="legend-item"><div class="legend-color internal"></div><span>Internal/IRQ</span></div>
                 <div class="legend-item"><div class="legend-color" style="background:var(--cyan)"></div><span>Executive</span></div>
                 <div class="legend-item"><div class="legend-color" style="background:var(--orange)"></div><span>Library</span></div>
+                <div class="legend-item"><div class="legend-color api"></div><span>Kernel API</span></div>
             </div>
         </div>
         <div class="legend-section">
-            <div class="legend-section-title">Return Types</div>
+            <div class="legend-section-title">Layer Dots</div>
             <div class="legend-row">
-                <div class="legend-item"><span class="func-return return-int" style="font-size:0.75rem">int</span><span>Integer</span></div>
-                <div class="legend-item"><span class="func-return return-void" style="font-size:0.75rem">void</span><span>No Return</span></div>
-                <div class="legend-item"><span class="func-return return-ptr" style="font-size:0.75rem">ptr</span><span>Pointer</span></div>
-                <div class="legend-item"><span class="func-return return-uint" style="font-size:0.75rem">uint</span><span>Unsigned</span></div>
+                <div class="legend-item"><div class="legend-color" style="background:var(--pink); border-radius:50%;"></div><span>Applications / Handlers</span></div>
+                <div class="legend-item"><div class="legend-color" style="background:var(--orange); border-radius:50%;"></div><span>Libraries</span></div>
+                <div class="legend-item"><div class="legend-color" style="background:var(--cyan); border-radius:50%;"></div><span>Executives</span></div>
+                <div class="legend-item"><div class="legend-color" style="background:var(--purple); border-radius:50%;"></div><span>Syscall Interface</span></div>
+                <div class="legend-item"><div class="legend-color" style="background:var(--accent); border-radius:50%;"></div><span>Managers</span></div>
+                <div class="legend-item"><div class="legend-color" style="background:var(--good); border-radius:50%;"></div><span>Drivers</span></div>
             </div>
         </div>
         <div class="legend-section">
             <div class="legend-section-title">IPC Flow</div>
             <div class="legend-row">
-                <div class="legend-item" style="font-size:0.75rem">App â†’ Library â†’ SHM Queue â†’ Executive â†’ Syscall â†’ Kernel</div>
+                <div class="legend-item" style="font-size:0.75rem">App → Library → SHM Queue → Executive → Syscall → Manager → Driver → Hardware</div>
             </div>
         </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- GRUB MODULE TABLE                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="legend" style="flex-direction: column; align-items: stretch;">
+        <div class="legend-section-title" style="text-align: center; margin-bottom: 8px;">📦 GRUB Module Assignments (Indices 0–11)</div>
+        <table class="info-table">
+            <tr><th>Idx</th><th>Binary</th><th>Component</th></tr>
+            <tr><td>0</td><td>sysman.bin</td><td>Sysman (PID 1 — loads all others)</td></tr>
+            <tr><td>1</td><td>logexec.bin</td><td>Log Executive</td></tr>
+            <tr><td>2</td><td>cellexec.bin</td><td>Cell Executive</td></tr>
+            <tr><td>3</td><td>procexec.bin</td><td>Process Executive</td></tr>
+            <tr><td>4</td><td>memexec.bin</td><td>Memory Executive</td></tr>
+            <tr><td>5</td><td>diskexec.bin</td><td>Disk Executive</td></tr>
+            <tr><td>6</td><td>fsexec.bin</td><td>FS Executive</td></tr>
+            <tr><td>7</td><td>guiexec.bin</td><td>GUI Executive</td></tr>
+            <tr><td>8</td><td>ioexec.bin</td><td>I/O Executive</td></tr>
+            <tr><td>9</td><td>wmexec.bin</td><td>WM Executive</td></tr>
+            <tr><td>10</td><td>orbit.bin</td><td>Orbit (desktop shell)</td></tr>
+            <tr><td>11</td><td>terminal.bin</td><td>Terminal</td></tr>
+        </table>
     </div>
 
     <script>

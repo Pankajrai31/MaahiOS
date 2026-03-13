@@ -169,6 +169,7 @@ static void exe_fs_handle_list_dir(const exec_request_t *req, exec_response_t *r
     fs_file_entry_t *shm_data = (fs_file_entry_t *)exe_shm_attach(shm_id);
     if (!shm_data) {
         liblog(LOG_ERROR, "FSEXEC", "LIST_DIR: failed to attach SHM");
+        syscall1(SYS_SHM_DESTROY, shm_id);
         resp->msg_id = req->msg_id;
         resp->status = EXEC_ERR_NO_MEMORY;
         resp->payload_size = 0;
@@ -183,6 +184,9 @@ static void exe_fs_handle_list_dir(const exec_request_t *req, exec_response_t *r
         shm_data[i].is_directory = g_entries_buf[i].is_directory;
         shm_data[i].fs_type = FS_TYPE_ISO9660;
     }
+
+    /* Detach our side — caller will attach, copy, detach, destroy */
+    syscall1(SYS_SHM_DETACH, shm_id);
 
     /* Build response */
     fs_list_dir_resp_t *resp_payload = (fs_list_dir_resp_t *)resp->payload;
@@ -224,6 +228,7 @@ static void exe_fs_handle_read_file(const exec_request_t *req, exec_response_t *
     void *shm_buf = exe_shm_attach(shm_id);
     if (!shm_buf) {
         liblog(LOG_ERROR, "FSEXEC", "READ_FILE: failed to attach SHM");
+        syscall1(SYS_SHM_DESTROY, shm_id);
         resp->msg_id = req->msg_id;
         resp->status = EXEC_ERR_NO_MEMORY;
         resp->payload_size = 0;
@@ -235,7 +240,8 @@ static void exe_fs_handle_read_file(const exec_request_t *req, exec_response_t *
 
     if (bytes_read < 0) {
         liblog(LOG_WARN, "FSEXEC", "READ_FILE: file not found or read error");
-        /* Destroy unused SHM */
+        /* Detach and destroy unused SHM */
+        syscall1(SYS_SHM_DETACH, shm_id);
         syscall1(SYS_SHM_DESTROY, shm_id);
         resp->msg_id = req->msg_id;
         resp->status = EXEC_ERR_NOT_FOUND;
@@ -244,6 +250,9 @@ static void exe_fs_handle_read_file(const exec_request_t *req, exec_response_t *
     }
 
     liblog_hex(LOG_DEBUG, "FSEXEC", "READ_FILE: bytes read:", (uint32_t)bytes_read);
+
+    /* Detach our side — caller will attach, copy, detach, destroy */
+    syscall1(SYS_SHM_DETACH, shm_id);
 
     /* Build response */
     fs_read_file_resp_t *resp_payload = (fs_read_file_resp_t *)resp->payload;
@@ -268,6 +277,87 @@ static void exe_fs_handle_file_count(const exec_request_t *req, exec_response_t 
     resp->msg_id = req->msg_id;
     resp->status = (count >= 0) ? EXEC_OK : EXEC_ERR_NOT_FOUND;
     resp->result = (count >= 0) ? (uint32_t)count : 0;
+    resp->payload_size = 0;
+}
+
+/**
+ * Handle WRITE_FILE: write data to a file on MFS volume.
+ * Caller passes data in a SHM block (data_shm_id).
+ * Executive attaches to the SHM, calls SYS_FS_WRITE_FILE syscall.
+ * Response result = bytes written (or 0 on success).
+ */
+static void exe_fs_handle_write_file(const exec_request_t *req, exec_response_t *resp) {
+    fs_write_file_req_t *payload = (fs_write_file_req_t *)req->payload;
+
+    liblog(LOG_DEBUG, "FSEXEC", "WRITE_FILE request");
+
+    /* Attach to caller's data SHM */
+    void *data_buf = (void *)0;
+    if (payload->size > 0 && payload->data_shm_id >= 0) {
+        data_buf = exe_shm_attach(payload->data_shm_id);
+        if (!data_buf) {
+            liblog(LOG_ERROR, "FSEXEC", "WRITE_FILE: failed to attach data SHM");
+            resp->msg_id = req->msg_id;
+            resp->status = EXEC_ERR_NO_MEMORY;
+            resp->payload_size = 0;
+            return;
+        }
+    }
+
+    /* Call kernel write syscall */
+    int result = (int)syscall4(SYS_FS_WRITE_FILE,
+                               (uint32_t)payload->dir_path,
+                               (uint32_t)payload->filename,
+                               (uint32_t)data_buf,
+                               (uint32_t)payload->size);
+
+    if (result < 0) {
+        liblog(LOG_WARN, "FSEXEC", "WRITE_FILE: kernel returned error");
+    } else {
+        liblog(LOG_DEBUG, "FSEXEC", "WRITE_FILE: success");
+    }
+
+    resp->msg_id = req->msg_id;
+    resp->status = (result >= 0) ? EXEC_OK : EXEC_ERR_NOT_FOUND;
+    resp->result = (result >= 0) ? (uint32_t)result : 0;
+    resp->payload_size = 0;
+}
+
+/**
+ * Handle DELETE_FILE: delete a file from MFS volume.
+ * Response result = 0 on success.
+ */
+static void exe_fs_handle_delete_file(const exec_request_t *req, exec_response_t *resp) {
+    fs_delete_file_req_t *payload = (fs_delete_file_req_t *)req->payload;
+
+    liblog(LOG_DEBUG, "FSEXEC", "DELETE_FILE request");
+
+    int result = (int)syscall2(SYS_FS_DELETE_FILE,
+                               (uint32_t)payload->dir_path,
+                               (uint32_t)payload->filename);
+
+    resp->msg_id = req->msg_id;
+    resp->status = (result >= 0) ? EXEC_OK : EXEC_ERR_NOT_FOUND;
+    resp->result = (result >= 0) ? 0 : (uint32_t)result;
+    resp->payload_size = 0;
+}
+
+/**
+ * Handle CREATE_DIR: create a directory on MFS volume.
+ * Response result = 0 on success.
+ */
+static void exe_fs_handle_create_dir(const exec_request_t *req, exec_response_t *resp) {
+    fs_create_dir_req_t *payload = (fs_create_dir_req_t *)req->payload;
+
+    liblog(LOG_DEBUG, "FSEXEC", "CREATE_DIR request");
+
+    int result = (int)syscall2(SYS_FS_CREATE_DIR,
+                               (uint32_t)payload->parent_path,
+                               (uint32_t)payload->dirname);
+
+    resp->msg_id = req->msg_id;
+    resp->status = (result >= 0) ? EXEC_OK : EXEC_ERR_NOT_FOUND;
+    resp->result = (result >= 0) ? 0 : (uint32_t)result;
     resp->payload_size = 0;
 }
 
@@ -299,6 +389,18 @@ static void exe_fs_dispatch(const exec_request_t *req, exec_response_t *resp) {
 
         case FS_OP_FILE_COUNT:
             exe_fs_handle_file_count(req, resp);
+            break;
+
+        case FS_OP_WRITE_FILE:
+            exe_fs_handle_write_file(req, resp);
+            break;
+
+        case FS_OP_DELETE_FILE:
+            exe_fs_handle_delete_file(req, resp);
+            break;
+
+        case FS_OP_CREATE_DIR:
+            exe_fs_handle_create_dir(req, resp);
             break;
 
         default:

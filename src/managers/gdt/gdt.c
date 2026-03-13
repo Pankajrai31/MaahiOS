@@ -108,7 +108,7 @@ int gdt_init(void) {
     tss.iomap_base = sizeof(struct tss_entry);  /* No I/O port bitmap */
     
     KLOG_INFO("GDT", "6 entries configured (null,kcode,kdata,ucode,udata,tss)");
-    return 1;  /* Success */
+    return 0;  /* Success */
 }
 
 int gdt_load(void) {
@@ -131,7 +131,7 @@ int gdt_load(void) {
                  "ltr %ax");
     
     KLOG_INFO("GDT", "GDT and TSS loaded successfully");
-    return 1;  /* Success */
+    return 0;  /* Success */
 }
 
 /**

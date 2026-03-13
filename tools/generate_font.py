@@ -29,7 +29,7 @@ FONT_PATHS = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
 ]
 
-OUTPUT_FILE = "../src/managers/gui/font/segoe_font_data.h"
+OUTPUT_FILE = "../src/system/libraries/libgui/fonts/segoe_font_data.h"
 
 # =============================================================================
 # FONT LOADING

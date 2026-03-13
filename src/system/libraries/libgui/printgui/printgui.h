@@ -16,6 +16,7 @@
 #define PRINTGUI_H
 
 #include <stdint.h>
+#include "../fonts/libfont.h"
 
 /*=============================================================================
  * RECTANGLE / FILL OPERATIONS
@@ -109,5 +110,57 @@ void gui_draw_cursor(int px, int py, uint32_t color);
  * @bg_color: Background color to restore (0x00RRGGBB)
  */
 void gui_erase_cursor(int px, int py, uint32_t bg_color);
+
+/*=============================================================================
+ * PROPORTIONAL TEXT (anti-aliased via libfont)
+ *===========================================================================*/
+
+/**
+ * gui_draw_text - Draw a string using proportional anti-aliased font
+ * @x:     Left edge (pixels)
+ * @y:     Top edge (pixels, top of text line)
+ * @str:   Null-terminated string
+ * @fg:    Foreground color (0x00RRGGBB)
+ * @size:  Font size (FONT_SMALL .. FONT_TITLE)
+ *
+ * Renders onto the global framebuffer (for Orbit and other direct-draw apps).
+ */
+void gui_draw_text(int x, int y, const char *str,
+                   uint32_t fg, font_size_t size);
+
+/**
+ * gui_measure_text - Get pixel width of a string in proportional font
+ * @str:  Null-terminated string
+ * @size: Font size
+ *
+ * Returns: Width in pixels
+ */
+int gui_measure_text(const char *str, font_size_t size);
+
+/**
+ * gui_text_height - Get line height for a font size
+ * @size: Font size
+ *
+ * Returns: Line height in pixels
+ */
+int gui_text_height(font_size_t size);
+
+/*=============================================================================
+ * ICON BLIT (color-key transparency)
+ *===========================================================================*/
+
+/**
+ * gui_blit_icon - Blit a decoded icon onto the framebuffer
+ * @x:         Destination X (pixels)
+ * @y:         Destination Y (pixels)
+ * @pixels:    Pre-decoded 0x00RRGGBB pixel data (top-down row order)
+ * @w:         Icon width (pixels)
+ * @h:         Icon height (pixels)
+ * @colorkey:  Color treated as transparent (e.g. 0x00000000 = black)
+ *
+ * Pixels matching colorkey are skipped (not drawn).
+ */
+void gui_blit_icon(int x, int y, const uint32_t *pixels,
+                   int w, int h, uint32_t colorkey);
 
 #endif /* PRINTGUI_H */

@@ -84,6 +84,7 @@ typedef enum {
 #define EXEC_ERR_NO_MEMORY      -5
 #define EXEC_ERR_TIMEOUT        -6
 #define EXEC_ERR_NOT_RUNNING    -7
+#define EXEC_ERR_PROTECTED      -8   /* Cannot modify system process */
 
 /*=============================================================================
  * REQUEST MESSAGE (sent by libraries to executives)

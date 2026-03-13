@@ -27,6 +27,7 @@
 #define SYS_PROCESS_GET_COUNT   19
 #define SYS_PROCESS_EXEC        20
 #define SYS_PROCESS_LIST        21
+#define SYS_PROCESS_SET_NAME    22
 
 /* ═══════════════════════════════════════════════════════════════════
  * DOMAIN 32-47: MEMORY
@@ -65,6 +66,7 @@
 #define SYS_DEV_IOCTL           84
 #define SYS_DEV_POLL            85
 #define SYS_DEV_LIST            86
+#define SYS_DISK_FORMAT         87
 
 /* ═══════════════════════════════════════════════════════════════════
  * DOMAIN 96-111: GRUB MODULE
@@ -93,6 +95,11 @@
 #define SYS_FS_FILE_COUNT       130
 #define SYS_FS_FIND_DIR         131
 #define SYS_FS_GET_ROOT_INFO    132
+#define SYS_FS_WRITE_FILE       133
+#define SYS_FS_DELETE_FILE      134
+#define SYS_FS_CREATE_DIR       135
+#define SYS_FS_VOL_COUNT        136
+#define SYS_FS_VOL_INFO         137
 
 /* ═══════════════════════════════════════════════════════════════════
  * DOMAIN 240-255: DEBUG/KLOG

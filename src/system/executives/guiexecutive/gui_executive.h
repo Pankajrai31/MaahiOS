@@ -36,8 +36,9 @@
  * CONSTANTS
  *===========================================================================*/
 
-#define GUI_SCREEN_WIDTH        1024
-#define GUI_SCREEN_HEIGHT       768
+/* Screen dimensions are queried at runtime from the display device.
+ * No hardcoded width/height here — kernel.c gfx_init() is the single
+ * source of truth.  BPP is always 32 for our framebuffer. */
 #define GUI_SCREEN_BPP          32
 
 /*=============================================================================

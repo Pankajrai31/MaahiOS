@@ -70,11 +70,22 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
     /*=========================================================================
      * STEP 3: Memory Management
      *=======================================================================*/
-    uint32_t fb_addr = 0xFD000000;
-    uint32_t fb_size = 1024 * 768 * 4;
+    /* Detect graphics framebuffer address (BGA on QEMU, VBE everywhere else) */
+    uint32_t fb_addr = 0;
+    uint32_t fb_size = 1280 * 800 * 4;
+    
+    if (bga_is_available()) {
+        fb_addr = bga_get_framebuffer_addr();
+        KLOG_INFO("KERNEL", "BGA framebuffer detected");
+    } else if (vbe_is_available()) {
+        fb_addr = vbe_get_framebuffer_addr();
+        KLOG_INFO("KERNEL", "VBE framebuffer detected");
+    } else {
+        kernel_panic("No display hardware found!");
+    }
     
     KLOG_INFO("PMM", "Initializing Physical Memory Manager");
-    if (!pmm_init(mbi)) {
+    if (pmm_init(mbi) != 0) {
         kernel_panic("PMM initialization failed!");
     }
     KLOG_INFO("PMM", "PMM initialized successfully");
@@ -83,25 +94,25 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
     pmm_mark_region_used(fb_addr, fb_addr + fb_size);
     
     KLOG_INFO("PAGING", "Initializing virtual memory");
-    if (!paging_init(mbi)) {
+    if (paging_init(mbi) != 0) {
         kernel_panic("Paging initialization failed!");
     }
     KLOG_INFO("PAGING", "Paging initialized successfully");
     
-    /* Map framebuffer */
+    /* Map framebuffer into virtual address space */
     identity_map_region(kernel_page_directory, fb_addr, fb_addr + fb_size);
     
     /*=========================================================================
      * STEP 4: CPU Setup - GDT, IDT, IRQ
      *=======================================================================*/
     KLOG_INFO("GDT", "Initializing Global Descriptor Table");
-    if (!gdt_init() || !gdt_load()) {
+    if (gdt_init() != 0 || gdt_load() != 0) {
         kernel_panic("GDT initialization failed!");
     }
     KLOG_INFO("GDT", "GDT loaded successfully");
     
     KLOG_INFO("IDT", "Initializing Interrupt Descriptor Table");
-    if (!idt_init() || !idt_load()) {
+    if (idt_init() != 0 || idt_load() != 0) {
         kernel_panic("IDT initialization failed!");
     }
     KLOG_INFO("IDT", "IDT loaded successfully");
@@ -109,27 +120,18 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
     KLOG_INFO("IRQ", "Remapping PIC (IRQ 0-15 to INT 0x20-0x2F)");
     irq_manager_init();
     
-    if (!idt_install_exception_handlers()) {
+    if (idt_install_exception_handlers() != 0) {
         kernel_panic("Exception handler installation failed!");
     }
     KLOG_INFO("IDT", "Exception handlers installed");
     
     /*=========================================================================
-     * STEP 5: Graphics Initialization
+     * STEP 5: Graphics Initialization (BGA on QEMU, VBE fallback elsewhere)
      *=======================================================================*/
-    KLOG_INFO("BGA", "Checking BGA hardware availability");
-    if (!bga_is_available()) {
-        kernel_panic("BGA hardware not found!");
+    KLOG_INFO("GFX", "Initializing graphics layer");
+    if (gfx_init(1280, 800, 32) != 0) {
+        kernel_panic("Graphics initialization failed!");
     }
-    
-    KLOG_INFO("BGA", "Initializing BGA 1024x768x32");
-    if (!bga_init(1024, 768, 32)) {
-        kernel_panic("BGA initialization failed!");
-    }
-    KLOG_INFO("BGA", "BGA initialized successfully");
-    
-    /* Initialize graphics layer */
-    gfx_init(1024, 768, 32);
     gfx_clear(0x001020);  /* Dark blue background */
     KLOG_INFO("GFX", "Graphics layer initialized");
     
@@ -172,6 +174,13 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
      *=======================================================================*/
     KLOG_INFO("KERNEL", "Initializing Device Manager (auto-discovery)");
     device_manager_init();
+    
+    /* Initialize partition and volume layers (builds on disk_init from device_manager) */
+    KLOG_INFO("PART", "Initializing partition driver");
+    partdrive_init();
+    
+    KLOG_INFO("VOL", "Initializing volume driver (auto-mount)");
+    voldrive_init();
     
     /* Initialize GRUB module manager (records module locations) */
     KLOG_INFO("GRUBMOD", "Initializing GRUB module manager");

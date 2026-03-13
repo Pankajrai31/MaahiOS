@@ -5,8 +5,7 @@
  */
 
 #include "../../system/libraries/liblog/liblog.h"
-#include "../../system/libraries/core/syscall_helpers.h"
-#include "../../system/syscalls/syscall_numbers.h"
+#include "../../system/libraries/libprocess/libprocess.h"
 
 /* ─── Application entry point ─── */
 
@@ -14,11 +13,11 @@ void mex_main(void) {
     liblog_init();
 
     liblog(LOG_INFO, "HELLO", "Hello from the first .mex application!");
-    liblog_hex(LOG_INFO, "HELLO", "My PID is", syscall0(SYS_GETPID));
+    liblog_hex(LOG_INFO, "HELLO", "My PID is", libprocess_get_pid());
     liblog(LOG_INFO, "HELLO", "Entering idle loop...");
 
     /* Stay alive */
     while (1) {
-        syscall1(SYS_SLEEP, 1000);
+        libprocess_sleep(1000);
     }
 }

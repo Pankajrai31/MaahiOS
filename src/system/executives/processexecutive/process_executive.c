@@ -59,8 +59,8 @@ static inline int exe_proc_get_count(void) {
     return syscall0(SYS_PROCESS_GET_COUNT);
 }
 
-static inline int exe_proc_exec(uint32_t base, uint32_t data, uint32_t size, uint32_t entry_off) {
-    return syscall4(SYS_PROCESS_EXEC, (int)base, (int)data, (int)size, (int)entry_off);
+static inline int exe_proc_exec(uint32_t base, uint32_t data, uint32_t size, uint32_t entry_off, uint32_t bss_size) {
+    return syscall5(SYS_PROCESS_EXEC, (int)base, (int)data, (int)size, (int)entry_off, (int)bss_size);
 }
 
 static inline int exe_mod_copy(int index, uint32_t target) {
@@ -77,6 +77,10 @@ static inline uint32_t exe_mod_get_size(int index) {
 
 static inline int exe_proc_list(void *buffer, int max) {
     return syscall2(SYS_PROCESS_LIST, (int)buffer, max);
+}
+
+static inline int exe_proc_set_name(int32_t pid, const char *name, uint8_t type) {
+    return syscall3(SYS_PROCESS_SET_NAME, pid, (int)name, (int)type);
 }
 
 static inline void exe_system_shutdown(void) {
@@ -223,8 +227,9 @@ static void exe_process_handle_create(const exec_request_t *req, exec_response_t
     liblog_hex(LOG_INFO, "PROCEXEC", "Module size:", mod_size);
     
     /* Create process with per-process page directory via SYS_PROCESS_EXEC.
-     * Binary is mapped at PROCESS_VIRTUAL_BASE in a cloned page directory. */
-    int pid = exe_proc_exec(PROCESS_VIRTUAL_BASE, mod_addr, mod_size, 0);
+     * Binary is mapped at PROCESS_VIRTUAL_BASE in a cloned page directory.
+     * bss_size forwarded from caller (Orbit passes it from desktop_app_entry). */
+    int pid = exe_proc_exec(PROCESS_VIRTUAL_BASE, mod_addr, mod_size, 0, payload->bss_size);
     
     resp->msg_id = req->msg_id;
     resp->status = (pid >= 0) ? EXEC_OK : pid;
@@ -244,6 +249,28 @@ static void exe_process_handle_kill(const exec_request_t *req, exec_response_t *
     
     liblog_hex(LOG_INFO, "PROCEXEC", "Kill: pid=", (uint32_t)payload->pid);
     
+    /* Check if target is a system process before attempting kill */
+    process_info_t target_info;
+    exe_memset(&target_info, 0, sizeof(target_info));
+    int info_result = exe_proc_info(payload->pid, &target_info);
+    if (info_result < 0) {
+        resp->msg_id = req->msg_id;
+        resp->status = EXEC_ERR_NOT_FOUND;
+        resp->result = 0;
+        resp->payload_size = 0;
+        return;
+    }
+    
+    if (target_info.type == PROC_TYPE_SYSTEM) {
+        liblog(LOG_WARN, "PROCEXEC", "Kill DENIED: target is system process");
+        liblog_hex(LOG_WARN, "PROCEXEC", "Protected PID:", (uint32_t)payload->pid);
+        resp->msg_id = req->msg_id;
+        resp->status = EXEC_ERR_PROTECTED;
+        resp->result = 0;
+        resp->payload_size = 0;
+        return;
+    }
+    
     int result = exe_proc_kill(payload->pid);
     
     resp->msg_id = req->msg_id;
@@ -260,17 +287,17 @@ static void exe_process_handle_get_info(const exec_request_t *req, exec_response
     proc_info_req_t *payload = (proc_info_req_t *)req->payload;
     proc_info_resp_t *resp_data = (proc_info_resp_t *)resp->payload;
     
-    /* Kernel returns [pid, state] into a 2-int buffer */
-    uint32_t info_buf[2] = {0, 0};
-    int result = exe_proc_info(payload->pid, info_buf);
+    /* Kernel returns 48 bytes: [pid:4][state:4][name:32][type:1][pad:3][mem:4] */
+    process_info_t info;
+    exe_memset(&info, 0, sizeof(info));
+    int result = exe_proc_info(payload->pid, &info);
     
     resp->msg_id = req->msg_id;
     resp->status = (result >= 0) ? EXEC_OK : result;
     resp->result = 0;
     
     if (result >= 0) {
-        resp_data->info.pid   = (int32_t)info_buf[0];
-        resp_data->info.state = info_buf[1];
+        resp_data->info = info;
         resp->payload_size = sizeof(proc_info_resp_t);
     } else {
         resp->payload_size = 0;
@@ -346,7 +373,8 @@ static void exe_process_handle_exec(const exec_request_t *req, exec_response_t *
     /* Call kernel to create process in new address space.
      * binary_data now points to valid memory in our address space. */
     int pid = exe_proc_exec(payload->base_address, (uint32_t)binary_data,
-                            payload->binary_size, payload->entry_offset);
+                            payload->binary_size, payload->entry_offset,
+                            payload->bss_size);
     
     /* Detach SHM — kernel has already copied the binary into the new
      * process's physical memory, so we no longer need it. The caller
@@ -383,8 +411,8 @@ static void exe_process_handle_list(const exec_request_t *req, exec_response_t *
         return;
     }
     
-    /* Each entry is 8 bytes: [pid:4][state:4] */
-    uint32_t shm_size = (uint32_t)(count * 8);
+    /* Each entry is 48 bytes (rich format) */
+    uint32_t shm_size = (uint32_t)(count * 48);
     int shm_id = exe_shm_create(shm_size);
     if (shm_id < 0) {
         liblog(LOG_ERROR, "PROCEXEC", "List: failed to create SHM");
@@ -396,6 +424,7 @@ static void exe_process_handle_list(const exec_request_t *req, exec_response_t *
     void *shm_ptr = exe_shm_attach(shm_id);
     if (!shm_ptr || (uint32_t)shm_ptr == 0xFFFFFFFF) {
         liblog(LOG_ERROR, "PROCEXEC", "List: failed to attach SHM");
+        syscall1(SYS_SHM_DESTROY, shm_id);
         resp->status = EXEC_ERR_NO_MEMORY;
         resp->result = 0;
         return;
@@ -406,6 +435,7 @@ static void exe_process_handle_list(const exec_request_t *req, exec_response_t *
     exe_shm_detach(shm_id);
     
     if (actual < 0) {
+        syscall1(SYS_SHM_DESTROY, shm_id);
         resp->status = EXEC_ERR_INVALID;
         resp->result = 0;
         return;
@@ -504,6 +534,16 @@ static void exe_process_dispatch(const exec_request_t *req, exec_response_t *res
         case PROC_OP_SYS_RESTART:
             exe_process_handle_restart(req, resp);
             return;  /* Response already pushed, don't push again */
+            
+        case PROC_OP_SET_NAME: {
+            proc_set_name_req_t *snp = (proc_set_name_req_t *)req->payload;
+            int result = exe_proc_set_name(snp->pid, snp->name, snp->type);
+            resp->msg_id = req->msg_id;
+            resp->status = (result >= 0) ? EXEC_OK : result;
+            resp->result = 0;
+            resp->payload_size = 0;
+            break;
+        }
             
         default:
             resp->msg_id = req->msg_id;

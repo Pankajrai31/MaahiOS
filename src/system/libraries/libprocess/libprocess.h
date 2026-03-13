@@ -10,7 +10,7 @@
  * Usage:
  *   #include "libprocess.h"
  *   
- *   int pid = libprocess_create(4, 0);  // just call it
+ *   int pid = libprocess_create(4, 0, 16384);  // just call it
  *   int count = libprocess_get_count();
  *   No init() needed — handled automatically.
  * 
@@ -53,13 +53,14 @@ void libprocess_shutdown(void);
  * libprocess_create - Create a new process from a GRUB module
  * @module_index: GRUB module index containing the binary
  * @load_address: Target address to load the module into
+ * @bss_size:     BSS section size (0 = kernel uses MIN_BSS_RESERVE)
  * 
  * Process Executive copies the module and creates the process.
  * Fallback: caller must have already copied module; direct syscall.
  * 
  * Returns: PID on success, negative on error
  */
-int libprocess_create(uint32_t module_index, uint32_t load_address);
+int libprocess_create(uint32_t module_index, uint32_t load_address, uint32_t bss_size);
 
 /**
  * libprocess_exec - Load and execute a binary in a new address space
@@ -67,6 +68,7 @@ int libprocess_create(uint32_t module_index, uint32_t load_address);
  * @binary_data:   Pointer to binary code+data
  * @binary_size:   Size of binary in bytes
  * @entry_offset:  Entry point offset from base
+ * @bss_size:      BSS section size (extra zeroed memory after binary)
  * 
  * Routes through Process Executive for validation and security.
  * The executive clones a page directory and maps the binary privately.
@@ -74,7 +76,8 @@ int libprocess_create(uint32_t module_index, uint32_t load_address);
  * Returns: PID on success, negative on error
  */
 int libprocess_exec(uint32_t base_address, const void *binary_data,
-                    uint32_t binary_size, uint32_t entry_offset);
+                    uint32_t binary_size, uint32_t entry_offset,
+                    uint32_t bss_size);
 
 /**
  * libprocess_kill - Terminate a process
@@ -87,7 +90,7 @@ int libprocess_kill(int32_t pid);
 /**
  * libprocess_get_info - Get process information
  * @pid: Process ID to query
- * @info: Output structure (pid + state)
+ * @info: Output structure (pid, state, name, type, memory_alloc)
  * 
  * Returns: 0 on success, negative on error
  */
@@ -109,6 +112,15 @@ int libprocess_get_count(void);
 int libprocess_list(process_info_t *infos, int max);
 
 /**
+ * Set process name and type.
+ * @param pid   Process ID
+ * @param name  Name string (max 31 chars)
+ * @param type  PROC_TYPE_SYSTEM(0) or PROC_TYPE_USER(1)
+ * @return 0 on success, negative on error
+ */
+int libprocess_set_name(int32_t pid, const char *name, uint8_t type);
+
+/**
  * Request system power off (via Process Executive → SYS_SHUTDOWN).
  * Does not return on success.
  */
@@ -119,5 +131,43 @@ void libprocess_system_shutdown(void);
  * Does not return on success.
  */
 void libprocess_system_restart(void);
+
+/*=============================================================================
+ * LIGHTWEIGHT INLINE WRAPPERS
+ *
+ * These are thin wrappers for Core-domain syscalls (YIELD, GETPID, SLEEP).
+ * They do NOT route through the Process Executive because:
+ *   - They are per-process scheduler operations, not management operations
+ *   - SHM queue round-trip would defeat the purpose of yielding/sleeping
+ *   - SYS_SLEEP through executive would sleep the executive, not the caller
+ * Apps should call these instead of raw syscall0/1() so they never need
+ * to include syscall_helpers.h or syscall_numbers.h directly.
+ *===========================================================================*/
+
+#include "../core/syscall_helpers.h"
+#include "../../syscalls/syscall_numbers.h"
+
+/**
+ * libprocess_yield - Voluntarily yield the CPU to other processes
+ */
+static inline void libprocess_yield(void) {
+    syscall0(SYS_YIELD);
+}
+
+/**
+ * libprocess_get_pid - Get the calling process's PID
+ * Returns: PID of the calling process
+ */
+static inline uint32_t libprocess_get_pid(void) {
+    return (uint32_t)syscall0(SYS_GETPID);
+}
+
+/**
+ * libprocess_sleep - Put the calling process to sleep
+ * @ticks: Number of timer ticks to sleep
+ */
+static inline void libprocess_sleep(uint32_t ticks) {
+    syscall1(SYS_SLEEP, (int)ticks);
+}
 
 #endif /* LIBPROCESS_H */

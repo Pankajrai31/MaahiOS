@@ -8,7 +8,7 @@
  *   Process Executive is not yet running.
  * 
  * Usage:
- *   int pid = libprocess_create(4, 0);  // just call it
+ *   int pid = libprocess_create(4, 0, 16384);  // just call it
  *   No init() needed — handled automatically.
  * 
  * Author: MaahiOS Team
@@ -138,7 +138,7 @@ void libprocess_shutdown(void) {
 /* Standard virtual base for all user processes (per-process page directories) */
 #define PROCESS_VIRTUAL_BASE    0x10000000
 
-int libprocess_create(uint32_t module_index, uint32_t load_address) {
+int libprocess_create(uint32_t module_index, uint32_t load_address, uint32_t bss_size) {
     /* Auto-init on first call */
     if (!g_initialized) _libprocess_try_init();
     
@@ -154,6 +154,7 @@ int libprocess_create(uint32_t module_index, uint32_t load_address) {
         proc_create_req_t *payload = (proc_create_req_t *)req.payload;
         payload->module_index = module_index;
         payload->load_address = load_address;
+        payload->bss_size = bss_size;
         req.payload_size = sizeof(proc_create_req_t);
         
         int result = _send_and_wait(&req, &resp);
@@ -170,12 +171,13 @@ int libprocess_create(uint32_t module_index, uint32_t load_address) {
     uint32_t mod_size = (uint32_t)syscall1(SYS_MOD_GET_SIZE, (int)module_index);
     if (mod_size == 0) return -1;
     
-    return syscall4(SYS_PROCESS_EXEC, PROCESS_VIRTUAL_BASE,
-                    (int)mod_addr, (int)mod_size, 0);
+    return syscall5(SYS_PROCESS_EXEC, PROCESS_VIRTUAL_BASE,
+                    (int)mod_addr, (int)mod_size, 0, (int)bss_size);
 }
 
 int libprocess_exec(uint32_t base_address, const void *binary_data,
-                    uint32_t binary_size, uint32_t entry_offset) {
+                    uint32_t binary_size, uint32_t entry_offset,
+                    uint32_t bss_size) {
     /* Auto-init on first call */
     if (!g_initialized) _libprocess_try_init();
     
@@ -208,10 +210,19 @@ int libprocess_exec(uint32_t base_address, const void *binary_data,
             return EXEC_ERR_NO_MEMORY;
         }
         
-        /* Copy binary data into SHM */
+        /* Copy binary data into SHM (word-aligned fast copy) */
         const uint8_t *src = (const uint8_t *)binary_data;
         uint8_t *dst = (uint8_t *)shm_ptr;
-        for (uint32_t i = 0; i < binary_size; i++) {
+        uint32_t i = 0;
+        /* Word-copy aligned portion */
+        uint32_t words = binary_size / 4;
+        const uint32_t *src32 = (const uint32_t *)src;
+        uint32_t *dst32 = (uint32_t *)dst;
+        for (uint32_t w = 0; w < words; w++) {
+            dst32[w] = src32[w];
+        }
+        /* Byte-copy remainder */
+        for (i = words * 4; i < binary_size; i++) {
             dst[i] = src[i];
         }
         
@@ -226,6 +237,7 @@ int libprocess_exec(uint32_t base_address, const void *binary_data,
         payload->binary_shm_id = bin_shm_id;
         payload->binary_size   = binary_size;
         payload->entry_offset  = entry_offset;
+        payload->bss_size      = bss_size;
         req.payload_size = sizeof(proc_exec_req_t);
         
         int result = _send_and_wait(&req, &resp);
@@ -239,8 +251,9 @@ int libprocess_exec(uint32_t base_address, const void *binary_data,
     }
     
     /* Fallback: direct kernel syscall (Process Executive not running) */
-    return syscall4(SYS_PROCESS_EXEC, (int)base_address,
-                    (int)binary_data, (int)binary_size, (int)entry_offset);
+    return syscall5(SYS_PROCESS_EXEC, (int)base_address,
+                    (int)binary_data, (int)binary_size, (int)entry_offset,
+                    (int)bss_size);
 }
 
 int libprocess_kill(int32_t pid) {
@@ -284,17 +297,16 @@ int libprocess_get_info(int32_t pid, process_info_t *info) {
         if (resp.status != EXEC_OK) return resp.status;
         
         proc_info_resp_t *resp_data = (proc_info_resp_t *)resp.payload;
-        info->pid   = resp_data->info.pid;
-        info->state = resp_data->info.state;
+        *info = resp_data->info;
         return EXEC_OK;
     }
     
-    /* Fallback: direct kernel syscall */
-    uint32_t info_buf[2] = {0, 0};
-    int result = syscall2(SYS_PROCESS_INFO, pid, (int)info_buf);
+    /* Fallback: direct kernel syscall — returns 48-byte info */
+    process_info_t raw;
+    exe_memset(&raw, 0, sizeof(raw));
+    int result = syscall2(SYS_PROCESS_INFO, pid, (int)&raw);
     if (result >= 0) {
-        info->pid   = (int32_t)info_buf[0];
-        info->state = info_buf[1];
+        *info = raw;
     }
     return result;
 }
@@ -342,7 +354,7 @@ int libprocess_list(process_info_t *infos, int max) {
         proc_list_resp_t *pl = (proc_list_resp_t *)resp.payload;
         if (pl->shm_id < 0) return EXEC_ERR_INVALID;
         
-        /* Attach SHM, copy process entries, cleanup */
+        /* Attach SHM, copy process entries (48 bytes each), cleanup */
         void *shm_ptr = (void *)syscall2(SYS_SHM_ATTACH, pl->shm_id, 0);
         if (!shm_ptr || (uint32_t)shm_ptr == 0xFFFFFFFF) {
             syscall1(SYS_SHM_DESTROY, pl->shm_id);
@@ -350,10 +362,15 @@ int libprocess_list(process_info_t *infos, int max) {
         }
         
         int to_copy = (count < max) ? count : max;
-        uint32_t *src = (uint32_t *)shm_ptr;
+        uint8_t *src = (uint8_t *)shm_ptr;
         for (int i = 0; i < to_copy; i++) {
-            infos[i].pid   = (int32_t)src[i * 2];
-            infos[i].state = src[i * 2 + 1];
+            uint8_t *entry = src + (i * 48);
+            infos[i].pid          = *(int32_t *)(entry + 0);
+            infos[i].state        = *(uint32_t *)(entry + 4);
+            for (int j = 0; j < PROC_NAME_MAX; j++)
+                infos[i].name[j] = (char)entry[8 + j];
+            infos[i].type         = entry[40];
+            infos[i].memory_alloc = *(uint32_t *)(entry + 44);
         }
         
         syscall1(SYS_SHM_DETACH, pl->shm_id);
@@ -362,17 +379,51 @@ int libprocess_list(process_info_t *infos, int max) {
         return to_copy;
     }
     
-    /* Fallback: direct kernel syscall */
-    uint32_t buf[128];  /* 64 entries * 2 uint32_t each */
-    int fmax = (max < 64) ? max : 64;
+    /* Fallback: direct kernel syscall — 48 bytes per entry */
+    uint8_t buf[48 * 32];  /* Max 32 entries */
+    int fmax = (max < 32) ? max : 32;
     int count = syscall2(SYS_PROCESS_LIST, (int)buf, fmax);
     if (count < 0) return count;
     
     for (int i = 0; i < count; i++) {
-        infos[i].pid   = (int32_t)buf[i * 2];
-        infos[i].state = buf[i * 2 + 1];
+        uint8_t *entry = buf + (i * 48);
+        infos[i].pid          = *(int32_t *)(entry + 0);
+        infos[i].state        = *(uint32_t *)(entry + 4);
+        for (int j = 0; j < PROC_NAME_MAX; j++)
+            infos[i].name[j] = (char)entry[8 + j];
+        infos[i].type         = entry[40];
+        infos[i].memory_alloc = *(uint32_t *)(entry + 44);
     }
     return count;
+}
+
+int libprocess_set_name(int32_t pid, const char *name, uint8_t type) {
+    if (!name || pid <= 0) return EXEC_ERR_INVALID;
+    if (!g_initialized) _libprocess_try_init();
+    
+    if (g_initialized) {
+        exec_request_t req;
+        exec_response_t resp;
+        exe_memset(&req, 0, sizeof(req));
+        
+        req.func_id = PROC_OP_SET_NAME;
+        proc_set_name_req_t *payload = (proc_set_name_req_t *)req.payload;
+        payload->pid = pid;
+        payload->type = type;
+        /* Safe copy name */
+        int i;
+        for (i = 0; i < PROC_NAME_MAX - 1 && name[i]; i++)
+            payload->name[i] = name[i];
+        payload->name[i] = '\0';
+        req.payload_size = sizeof(proc_set_name_req_t);
+        
+        int result = _send_and_wait(&req, &resp);
+        if (result != EXEC_OK) return result;
+        return resp.status;
+    }
+    
+    /* Fallback: direct kernel syscall */
+    return syscall3(SYS_PROCESS_SET_NAME, pid, (int)name, (int)type);
 }
 
 void libprocess_system_shutdown(void) {

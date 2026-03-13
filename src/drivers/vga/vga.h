@@ -38,4 +38,12 @@ void vga_putint(int num);
  */
 void vga_draw_rect(int x, int y, int width, int height, unsigned char color);
 
+/**
+ * Print string at specific position
+ * @param x Column (0-79)
+ * @param y Row (0-24)
+ * @param s String to print
+ */
+void vga_print_at(int x, int y, const char *s);
+
 #endif /* VGA_H */

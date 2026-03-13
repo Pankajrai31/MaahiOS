@@ -44,4 +44,24 @@ int mouse_init(void);
  */
 void mouse_handler(void);
 
+/**
+ * Erase cursor from HW framebuffer (restore saved background).
+ * Must be called with IRQs disabled (cli).
+ * After this, saved_cx = -1 so no stale restore can occur.
+ */
+void mouse_erase_cursor(void);
+
+/**
+ * Refresh cursor on HW framebuffer after a flip.
+ * Saves background at current position and redraws cursor sprite.
+ * Called from gfx_flip() with IRQs disabled.
+ */
+void mouse_refresh_cursor(void);
+
+/**
+ * Suppress IRQ12 cursor drawing (e.g. during framebuffer flip).
+ * 1 = suppress, 0 = allow.
+ */
+void mouse_set_cursor_suppress(int suppress);
+
 #endif /* MOUSE_H */

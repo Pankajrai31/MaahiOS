@@ -31,6 +31,9 @@
 #define FS_OP_READ_FILE         (EXEC_OP_CUSTOM_BASE + 1)   /* Read file data */
 #define FS_OP_FILE_INFO         (EXEC_OP_CUSTOM_BASE + 2)   /* Get file info */
 #define FS_OP_FILE_COUNT        (EXEC_OP_CUSTOM_BASE + 3)   /* Get file count */
+#define FS_OP_WRITE_FILE        (EXEC_OP_CUSTOM_BASE + 4)   /* Write/create file (MFS) */
+#define FS_OP_DELETE_FILE       (EXEC_OP_CUSTOM_BASE + 5)   /* Delete file (MFS) */
+#define FS_OP_CREATE_DIR        (EXEC_OP_CUSTOM_BASE + 6)   /* Create directory (MFS) */
 
 /*=============================================================================
  * FILESYSTEM TYPE CONSTANTS
@@ -80,6 +83,26 @@ typedef struct {
 typedef struct {
     char path[128];             /* Directory path */
 } fs_file_count_req_t;
+
+/* WRITE_FILE request — dir path + filename + data SHM ID + size */
+typedef struct {
+    char dir_path[64];          /* Directory to write into */
+    char filename[64];          /* Filename (with extension) */
+    int32_t data_shm_id;       /* SHM ID containing file data (caller creates) */
+    uint32_t size;              /* Data size in bytes */
+} fs_write_file_req_t;
+
+/* DELETE_FILE request — dir path + filename */
+typedef struct {
+    char dir_path[64];          /* Directory containing the file */
+    char filename[64];          /* File to delete */
+} fs_delete_file_req_t;
+
+/* CREATE_DIR request — parent path + directory name */
+typedef struct {
+    char parent_path[64];       /* Parent directory path */
+    char dirname[64];           /* New directory name */
+} fs_create_dir_req_t;
 
 /*=============================================================================
  * RESPONSE PAYLOADS

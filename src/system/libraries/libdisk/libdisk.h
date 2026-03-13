@@ -118,4 +118,20 @@ int libdisk_get_sector_size(uint8_t disk_index);
  */
 int libdisk_read_sector(uint8_t disk_index, uint32_t lba, uint32_t count);
 
+/*=============================================================================
+ * DISK FORMAT
+ *===========================================================================*/
+
+/**
+ * libdisk_format - Format a disk with MBR + MFS filesystem
+ * @disk_index: Disk index (0-based, must be HDD)
+ * @label: Volume label (max 31 chars, NULL for default "MaahiOS")
+ * 
+ * Creates one partition spanning the entire disk, formats it with MFS,
+ * and mounts the new volume.
+ * 
+ * Returns: 0 on success, negative on error
+ */
+int libdisk_format(uint8_t disk_index, const char *label);
+
 #endif /* LIBDISK_H */

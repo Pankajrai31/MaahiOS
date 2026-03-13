@@ -1,60 +1,96 @@
 /**
  * Filesystem Syscall Handlers
- * Domain: 128-143 (fs_list_dir, read_file, file_count, find_dir, get_root_info)
+ * Domain: 128-143 (list_dir, read_file, file_count, find_dir, get_root_info,
+ *                   write_file, delete_file, create_dir, vol_count, vol_info)
  * 
- * Wraps the kernel ISO9660 driver for Ring 3 access.
- * Future: Will also route to MFS driver when available.
+ * Routes all FS operations through the volume driver (voldrive),
+ * which dispatches to ISO9660 or MFS based on volume type.
  */
 
 #include "../syscall_manager.h"
 #include "../syscall_numbers.h"
 #include "../../klog/klog.h"
+#include "../../../drivers/drive/partition/partdrive.h"
 #include <stdint.h>
 
 /* ===========================================================================
- * ISO9660 DRIVER TYPES (duplicated from iso9660.h for handler use)
+ * EXTERN KERNEL APIs (from Volume Driver)
  * =========================================================================== */
 
+/* Volume driver types */
 typedef struct {
     char     name[64];
     uint32_t size;
     uint32_t lba;
     uint8_t  is_directory;
-} iso_file_entry_t;
+} vol_file_entry_t;
+
+extern int  voldrive_get_default(void);
+extern int  voldrive_find_by_letter(char letter);
+extern int  voldrive_get_count(void);
+extern int  voldrive_list_dir(uint8_t vol_index, const char *path,
+                              vol_file_entry_t *entries, int max);
+extern int  voldrive_read_file(uint8_t vol_index, const char *dir_path,
+                               const char *filename, void *buffer, uint32_t max_size);
+extern int  voldrive_file_count(uint8_t vol_index, const char *path);
+extern int  voldrive_find_dir(uint8_t vol_index, const char *name,
+                              uint32_t *out_lba, uint32_t *out_size);
+extern int  voldrive_get_root_info(uint8_t vol_index, uint32_t *out_lba, uint32_t *out_size);
+extern int  voldrive_write_file(uint8_t vol_index, const char *dir_path,
+                                const char *filename, const void *data, uint32_t size);
+extern int  voldrive_delete_file(uint8_t vol_index, const char *dir_path,
+                                 const char *filename);
+extern int  voldrive_create_dir(uint8_t vol_index, const char *parent_path,
+                                const char *dirname);
+
+/* Volume info (for SYS_FS_VOL_INFO) */
+typedef struct {
+    uint8_t  mounted;
+    uint8_t  fs_type;
+    uint8_t  part_index;
+    char     drive_letter;
+    uint32_t size_mb;
+    char     label[32];
+    char     fs_str[16];
+} vol_info_user_t;
+
+extern void *voldrive_get_volume(uint8_t index);
 
 /* ===========================================================================
- * EXTERN KERNEL APIs (from ISO9660 driver)
+ * VOLUME RESOLUTION HELPER
+ *
+ * Parses optional drive letter prefix from paths:
+ *   "D:/"     → volume for 'D', path becomes "/"
+ *   "D:/BOOT" → volume for 'D', path becomes "/BOOT"
+ *   "/"       → default volume (first mounted)
+ *
+ * Returns volume index, updates *path_ptr to skip the prefix.
  * =========================================================================== */
 
-extern int      iso9660_list_root(iso_file_entry_t *entries, int max_entries);
-extern int      iso9660_list_directory(uint32_t dir_lba, uint32_t dir_size,
-                                       iso_file_entry_t *entries, int max_entries);
-extern int      iso9660_find_directory(const char *name, uint32_t *out_lba,
-                                        uint32_t *out_size);
-extern int      iso9660_read_file(uint32_t file_lba, uint32_t file_size,
-                                   void *buffer, uint32_t max_size);
-extern int      iso9660_find_and_read_file(uint32_t dir_lba, uint32_t dir_size,
-                                            const char *filename, void *buffer,
-                                            uint32_t max_size);
-extern int      iso9660_get_file_count(void);
-extern uint32_t iso9660_get_root_lba(void);
-extern uint32_t iso9660_get_root_size(void);
+static int resolve_volume(const char **path_ptr) {
+    const char *p = *path_ptr;
+    if (!p) return voldrive_get_default();
 
-/* ===========================================================================
- * INTERNAL HELPERS
- * =========================================================================== */
-
-/**
- * Simple string compare (case-insensitive, for path matching)
- */
-static int fs_streq(const char *a, const char *b) {
-    while (*a && *b) {
-        char ca = (*a >= 'a' && *a <= 'z') ? *a - 32 : *a;
-        char cb = (*b >= 'a' && *b <= 'z') ? *b - 32 : *b;
-        if (ca != cb) return 0;
-        a++; b++;
+    /* Check for "X:/" or "X:\" pattern */
+    if (((p[0] >= 'A' && p[0] <= 'Z') || (p[0] >= 'a' && p[0] <= 'z'))
+        && p[1] == ':') {
+        int vol = voldrive_find_by_letter(p[0]);
+        if (vol >= 0) {
+            /* Advance past "X:" — leave the "/" */
+            if (p[2] == '/' || p[2] == '\\') {
+                *path_ptr = &p[2];
+            } else if (p[2] == '\0') {
+                /* "D:" alone → treat as root "/" */
+                static const char root[] = "/";
+                *path_ptr = root;
+            } else {
+                *path_ptr = &p[2];  /* "D:path" → "path" */
+            }
+            return vol;
+        }
     }
-    return (*a == *b);
+
+    return voldrive_get_default();
 }
 
 /* ===========================================================================
@@ -64,7 +100,7 @@ static int fs_streq(const char *a, const char *b) {
 /**
  * sys_fs_list_dir - List files in a directory
  * arg1 = path string pointer (e.g., "/" or "/BOOT")
- * arg2 = pointer to iso_file_entry_t array (output buffer)
+ * arg2 = pointer to vol_file_entry_t array (output buffer)
  * arg3 = max entries
  * Returns: count on success, negative on error
  */
@@ -73,30 +109,18 @@ static int sys_fs_list_dir(uint32_t path_ptr, uint32_t entries_ptr,
     (void)arg4; (void)arg5;
 
     const char *path = (const char *)path_ptr;
-    iso_file_entry_t *entries = (iso_file_entry_t *)entries_ptr;
+    vol_file_entry_t *entries = (vol_file_entry_t *)entries_ptr;
 
     if (!path || !entries || max_entries == 0) {
         return SYSCALL_ERR_INVALID;
     }
 
-    KLOG_DEBUG("SYSCALL", "fs_list_dir: path=%s", path);
+    int vol = resolve_volume(&path);
+    if (vol < 0) return SYSCALL_ERR_IO;
 
-    /* Root directory */
-    if (path[0] == '/' && path[1] == '\0') {
-        return iso9660_list_root(entries, (int)max_entries);
-    }
+    KLOG_DEBUG("SYSCALL", "fs_list_dir: path=%s vol=%d", path, vol);
 
-    /* Subdirectory: skip leading '/' */
-    const char *dirname = path;
-    if (dirname[0] == '/') dirname++;
-
-    uint32_t dir_lba, dir_size;
-    if (iso9660_find_directory(dirname, &dir_lba, &dir_size) != 0) {
-        KLOG_WARN("SYSCALL", "fs_list_dir: directory not found: %s", dirname);
-        return SYSCALL_ERR_NOTFOUND;
-    }
-
-    return iso9660_list_directory(dir_lba, dir_size, entries, (int)max_entries);
+    return voldrive_list_dir((uint8_t)vol, path, entries, (int)max_entries);
 }
 
 /**
@@ -119,23 +143,12 @@ static int sys_fs_read_file(uint32_t dir_path_ptr, uint32_t filename_ptr,
         return SYSCALL_ERR_INVALID;
     }
 
+    int vol = resolve_volume(&dir_path);
+    if (vol < 0) return SYSCALL_ERR_IO;
+
     KLOG_DEBUG("SYSCALL", "fs_read_file: dir=%s file=%s", dir_path, filename);
 
-    uint32_t dir_lba, dir_size;
-
-    /* Resolve directory */
-    if (dir_path[0] == '/' && dir_path[1] == '\0') {
-        dir_lba = iso9660_get_root_lba();
-        dir_size = iso9660_get_root_size();
-    } else {
-        const char *dirname = dir_path;
-        if (dirname[0] == '/') dirname++;
-        if (iso9660_find_directory(dirname, &dir_lba, &dir_size) != 0) {
-            return SYSCALL_ERR_NOTFOUND;
-        }
-    }
-
-    return iso9660_find_and_read_file(dir_lba, dir_size, filename, buffer, max_size);
+    return voldrive_read_file((uint8_t)vol, dir_path, filename, buffer, max_size);
 }
 
 /**
@@ -150,22 +163,10 @@ static int sys_fs_file_count(uint32_t path_ptr, uint32_t arg2, uint32_t arg3,
     const char *path = (const char *)path_ptr;
     if (!path) return SYSCALL_ERR_INVALID;
 
-    /* Root directory */
-    if (path[0] == '/' && path[1] == '\0') {
-        return iso9660_get_file_count();
-    }
+    int vol = resolve_volume(&path);
+    if (vol < 0) return SYSCALL_ERR_IO;
 
-    /* Subdirectory: list and count */
-    const char *dirname = path;
-    if (dirname[0] == '/') dirname++;
-
-    uint32_t dir_lba, dir_size;
-    if (iso9660_find_directory(dirname, &dir_lba, &dir_size) != 0) {
-        return SYSCALL_ERR_NOTFOUND;
-    }
-
-    iso_file_entry_t tmp[32];
-    return iso9660_list_directory(dir_lba, dir_size, tmp, 32);
+    return voldrive_file_count((uint8_t)vol, path);
 }
 
 /**
@@ -187,7 +188,10 @@ static int sys_fs_find_dir(uint32_t name_ptr, uint32_t out_lba_ptr,
         return SYSCALL_ERR_INVALID;
     }
 
-    return iso9660_find_directory(name, out_lba, out_size);
+    int vol = resolve_volume(&name);
+    if (vol < 0) return SYSCALL_ERR_IO;
+
+    return voldrive_find_dir((uint8_t)vol, name, out_lba, out_size);
 }
 
 /**
@@ -207,10 +211,153 @@ static int sys_fs_get_root_info(uint32_t out_lba_ptr, uint32_t out_size_ptr,
         return SYSCALL_ERR_INVALID;
     }
 
-    *out_lba = iso9660_get_root_lba();
-    *out_size = iso9660_get_root_size();
+    /* No path to parse drive from — use arg3 as drive letter if provided */
+    int vol;
+    if (arg3 && ((char)arg3 >= 'A' && (char)arg3 <= 'Z')) {
+        vol = voldrive_find_by_letter((char)arg3);
+        if (vol < 0) vol = voldrive_get_default();
+    } else {
+        vol = voldrive_get_default();
+    }
+    if (vol < 0) return SYSCALL_ERR_IO;
 
-    return (*out_lba != 0) ? SYSCALL_OK : SYSCALL_ERR_IO;
+    return voldrive_get_root_info((uint8_t)vol, out_lba, out_size);
+}
+
+/**
+ * sys_fs_write_file - Write a file (MFS only)
+ * arg1 = directory path
+ * arg2 = filename
+ * arg3 = data buffer
+ * arg4 = size
+ * Returns: 0 on success, negative on error
+ */
+static int sys_fs_write_file(uint32_t dir_path_ptr, uint32_t filename_ptr,
+                             uint32_t buf_ptr, uint32_t size, uint32_t arg5) {
+    (void)arg5;
+
+    const char *dir_path = (const char *)dir_path_ptr;
+    const char *filename = (const char *)filename_ptr;
+    const void *data = (const void *)buf_ptr;
+
+    if (!dir_path || !filename) {
+        return SYSCALL_ERR_INVALID;
+    }
+    if (size > 0 && !data) {
+        return SYSCALL_ERR_INVALID;
+    }
+
+    int vol = resolve_volume(&dir_path);
+    if (vol < 0) return SYSCALL_ERR_IO;
+
+    return voldrive_write_file((uint8_t)vol, dir_path, filename, data, size);
+}
+
+/**
+ * sys_fs_delete_file - Delete a file (MFS only)
+ * arg1 = directory path
+ * arg2 = filename
+ * Returns: 0 on success, negative on error
+ */
+static int sys_fs_delete_file(uint32_t dir_path_ptr, uint32_t filename_ptr,
+                              uint32_t arg3, uint32_t arg4, uint32_t arg5) {
+    (void)arg3; (void)arg4; (void)arg5;
+
+    const char *dir_path = (const char *)dir_path_ptr;
+    const char *filename = (const char *)filename_ptr;
+
+    if (!dir_path || !filename) {
+        return SYSCALL_ERR_INVALID;
+    }
+
+    int vol = resolve_volume(&dir_path);
+    if (vol < 0) return SYSCALL_ERR_IO;
+
+    return voldrive_delete_file((uint8_t)vol, dir_path, filename);
+}
+
+/**
+ * sys_fs_create_dir - Create a directory (MFS only)
+ * arg1 = parent directory path
+ * arg2 = new directory name
+ * Returns: 0 on success, negative on error
+ */
+static int sys_fs_create_dir(uint32_t parent_path_ptr, uint32_t dirname_ptr,
+                             uint32_t arg3, uint32_t arg4, uint32_t arg5) {
+    (void)arg3; (void)arg4; (void)arg5;
+
+    const char *parent_path = (const char *)parent_path_ptr;
+    const char *dirname = (const char *)dirname_ptr;
+
+    if (!parent_path || !dirname) {
+        return SYSCALL_ERR_INVALID;
+    }
+
+    int vol = resolve_volume(&parent_path);
+    if (vol < 0) return SYSCALL_ERR_IO;
+
+    return voldrive_create_dir((uint8_t)vol, parent_path, dirname);
+}
+
+/**
+ * sys_fs_vol_count - Get number of mounted volumes
+ * Returns: volume count
+ */
+static int sys_fs_vol_count(uint32_t arg1, uint32_t arg2, uint32_t arg3,
+                            uint32_t arg4, uint32_t arg5) {
+    (void)arg1; (void)arg2; (void)arg3; (void)arg4; (void)arg5;
+    return voldrive_get_count();
+}
+
+/**
+ * sys_fs_vol_info - Get volume info
+ * arg1 = volume index
+ * arg2 = pointer to vol_info_user_t struct
+ * Returns: 0 on success, negative on error
+ */
+static int sys_fs_vol_info(uint32_t vol_index, uint32_t info_ptr,
+                           uint32_t arg3, uint32_t arg4, uint32_t arg5) {
+    (void)arg3; (void)arg4; (void)arg5;
+
+    vol_info_user_t *info = (vol_info_user_t *)info_ptr;
+    if (!info) return SYSCALL_ERR_INVALID;
+
+    /* Get volume struct (opaque pointer, copy relevant fields) */
+    /* Volume struct starts with: mounted, fs_type, part_index, drive_letter, label[32] */
+    uint8_t *vol_raw = (uint8_t *)voldrive_get_volume((uint8_t)vol_index);
+    if (!vol_raw) return SYSCALL_ERR_NOTFOUND;
+
+    info->mounted      = vol_raw[0];
+    info->fs_type      = vol_raw[1];
+    info->part_index   = vol_raw[2];
+    info->drive_letter = (char)vol_raw[3];
+
+    /* Copy label (starts at offset 4 in volume_t) */
+    for (int i = 0; i < 31; i++) {
+        info->label[i] = (char)vol_raw[4 + i];
+        if (!vol_raw[4 + i]) break;
+    }
+    info->label[31] = '\0';
+
+    /* Get size from the partition */
+    info->size_mb = 0;
+    {
+        partition_info_t *pinfo = partdrive_get_info(info->part_index);
+        if (pinfo) {
+            info->size_mb = pinfo->size_mb;
+        }
+    }
+
+    /* FS type string */
+    info->fs_str[0] = '\0';
+    if (info->fs_type == 1) {       /* VOL_FS_ISO9660 */
+        const char *s = "ISO 9660";
+        for (int i = 0; s[i] && i < 15; i++) { info->fs_str[i] = s[i]; info->fs_str[i+1] = '\0'; }
+    } else if (info->fs_type == 2) { /* VOL_FS_MFS */
+        info->fs_str[0] = 'M'; info->fs_str[1] = 'F'; info->fs_str[2] = 'S'; info->fs_str[3] = '\0';
+    }
+
+    return SYSCALL_OK;
 }
 
 /* ===========================================================================
@@ -223,6 +370,11 @@ void syscall_register_fs_handlers(void) {
     syscall_register(SYS_FS_FILE_COUNT,    sys_fs_file_count);
     syscall_register(SYS_FS_FIND_DIR,      sys_fs_find_dir);
     syscall_register(SYS_FS_GET_ROOT_INFO, sys_fs_get_root_info);
+    syscall_register(SYS_FS_WRITE_FILE,    sys_fs_write_file);
+    syscall_register(SYS_FS_DELETE_FILE,   sys_fs_delete_file);
+    syscall_register(SYS_FS_CREATE_DIR,    sys_fs_create_dir);
+    syscall_register(SYS_FS_VOL_COUNT,     sys_fs_vol_count);
+    syscall_register(SYS_FS_VOL_INFO,      sys_fs_vol_info);
 
     KLOG_DEBUG("SYSCALL", "Filesystem handlers registered (128-143)");
 }

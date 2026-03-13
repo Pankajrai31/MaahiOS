@@ -38,6 +38,8 @@
 #define MOUSE_IOCTL_GET_STATE       1   /* Get x, y, buttons in one call */
 #define MOUSE_IOCTL_GET_IRQ_COUNT   2   /* Debug: get IRQ count */
 #define MOUSE_IOCTL_RESET           3   /* Reset mouse */
+#define MOUSE_IOCTL_CURSOR_HIDE     4   /* Hide SW cursor (restore bg) */
+#define MOUSE_IOCTL_CURSOR_SHOW     5   /* Show SW cursor (redraw) */
 
 /* Keyboard IOCTL */
 #define KB_IOCTL_GET_SCANCODE       1   /* Get raw scancode */
@@ -53,6 +55,8 @@
 #define DISPLAY_IOCTL_GET_INFO      1   /* Get resolution, bpp */
 #define DISPLAY_IOCTL_SET_MODE      2   /* Set video mode */
 #define DISPLAY_IOCTL_GET_FB        3   /* Get framebuffer address */
+#define DISPLAY_IOCTL_FLIP          4   /* Copy back buffer → HW framebuffer */
+#define DISPLAY_IOCTL_FLIP_RECT     5   /* Copy rectangle back buf → HW fb   */
 
 /* ============================================
  * Error Codes

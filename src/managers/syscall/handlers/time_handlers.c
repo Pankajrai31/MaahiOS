@@ -24,7 +24,7 @@ static int sys_time_get_datetime(uint32_t dt_ptr, uint32_t arg2, uint32_t arg3,
         return SYSCALL_ERR_INVALID;
     }
     
-    return time_get_datetime((sys_datetime_t *)dt_ptr);
+    return kernel_time_get_datetime((sys_datetime_t *)dt_ptr);
 }
 
 /**
@@ -34,7 +34,7 @@ static int sys_time_get_unix(uint32_t arg1, uint32_t arg2, uint32_t arg3,
                               uint32_t arg4, uint32_t arg5) {
     (void)arg1; (void)arg2; (void)arg3; (void)arg4; (void)arg5;
     
-    return (int)time_get_unix();
+    return (int)kernel_time_get_unix();
 }
 
 /**
@@ -48,7 +48,7 @@ static int sys_time_get_uptime(uint32_t up_ptr, uint32_t arg2, uint32_t arg3,
         return SYSCALL_ERR_INVALID;
     }
     
-    return time_get_uptime((sys_uptime_t *)up_ptr);
+    return kernel_time_get_uptime((sys_uptime_t *)up_ptr);
 }
 
 /**
@@ -59,7 +59,7 @@ static int sys_time_get_ticks(uint32_t arg1, uint32_t arg2, uint32_t arg3,
     (void)arg1; (void)arg2; (void)arg3; (void)arg4; (void)arg5;
     
     /* Return lower 32 bits of tick count */
-    return (int)(time_get_ticks() & 0xFFFFFFFF);
+    return (int)(kernel_time_get_ticks() & 0xFFFFFFFF);
 }
 
 /**
@@ -69,7 +69,7 @@ static int sys_time_get_tick_freq(uint32_t arg1, uint32_t arg2, uint32_t arg3,
                                    uint32_t arg4, uint32_t arg5) {
     (void)arg1; (void)arg2; (void)arg3; (void)arg4; (void)arg5;
     
-    return (int)time_get_tick_frequency();
+    return (int)kernel_time_get_tick_frequency();
 }
 
 /**
@@ -79,7 +79,7 @@ static int sys_time_get_shm_id(uint32_t arg1, uint32_t arg2, uint32_t arg3,
                                 uint32_t arg4, uint32_t arg5) {
     (void)arg1; (void)arg2; (void)arg3; (void)arg4; (void)arg5;
     
-    return time_get_shared_shm_id();
+    return kernel_time_get_shared_shm_id();
 }
 
 /* ===========================================================================

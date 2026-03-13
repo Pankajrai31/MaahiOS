@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include "../../managers/klog/klog.h"
 #include "../../system/libraries/shared/io.h"
+#include "../pci/pci.h"
 
 /* ============================================
  * State
@@ -182,17 +183,11 @@ static void bga_set_video_mode(uint16_t width, uint16_t height, uint16_t bpp) {
     bga_write_register(VBE_DISPI_INDEX_ENABLE, VBE_DISPI_ENABLED | VBE_DISPI_LFB_ENABLED);
 }
 
-static uint32_t pci_read_config(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
-    uint32_t address = (uint32_t)((bus << 16) | (slot << 11) | (func << 8) | (offset & 0xFC) | 0x80000000);
-    outl(0xCF8, address);
-    return inl(0xCFC);
-}
-
 uint32_t bga_get_framebuffer_addr(void) {
     for (uint8_t slot = 0; slot < 32; slot++) {
-        uint32_t vendor_device = pci_read_config(0, slot, 0, 0x00);
+        uint32_t vendor_device = pci_config_read_dword(0, slot, 0, 0x00);
         if (vendor_device == 0x11111234) {
-            uint32_t bar0 = pci_read_config(0, slot, 0, 0x10);
+            uint32_t bar0 = pci_config_read_dword(0, slot, 0, 0x10);
             if (bar0 != 0 && bar0 != 0xFFFFFFFF) {
                 return bar0 & 0xFFFFFFF0;
             }
@@ -213,7 +208,7 @@ int bga_init(uint16_t width, uint16_t height, uint16_t bpp) {
     
     if (!bga_is_available()) {
         KLOG_ERROR("BGA", "BGA hardware not available");
-        return 0;
+        return -1;
     }
     
     bga_set_video_mode(width, height, bpp);
@@ -224,7 +219,7 @@ int bga_init(uint16_t width, uint16_t height, uint16_t bpp) {
     framebuffer = (uint32_t *)bga_get_framebuffer_addr();
     
     KLOG_INFO("BGA", "Mode set, framebuffer mapped");
-    return 1;
+    return 0;
 }
 
 /* ============================================

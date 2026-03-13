@@ -1,7 +1,7 @@
 .set ALIGN,      1<<0
 .set MEMINFO,    1<<1
 .set VIDEO_MODE, 1<<2       /* Request video mode */
-.set FLAGS,      ALIGN | MEMINFO    /* DON'T request video mode - let GRUB use text mode */
+.set FLAGS,      ALIGN | MEMINFO | VIDEO_MODE   /* Ask GRUB to set up graphics (VBE fallback for Hyper-V) */
 .set MAGIC,      0x1BADB002
 .set CHECKSUM,   -(MAGIC + FLAGS)
 

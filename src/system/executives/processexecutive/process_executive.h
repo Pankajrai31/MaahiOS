@@ -33,15 +33,31 @@
 #define PROC_OP_LIST        (EXEC_OP_CUSTOM_BASE + 5)   /* List all active processes */
 #define PROC_OP_SYS_SHUTDOWN (EXEC_OP_CUSTOM_BASE + 6)  /* System power off */
 #define PROC_OP_SYS_RESTART  (EXEC_OP_CUSTOM_BASE + 7)  /* System restart */
+#define PROC_OP_SET_NAME    (EXEC_OP_CUSTOM_BASE + 8)   /* Set process name + type */
 
 /*=============================================================================
- * PROCESS INFO STRUCTURE (returned to callers)
+ * PROCESS TYPE CONSTANTS (match kernel PROC_TYPE_*)
+ *===========================================================================*/
+
+#define PROC_TYPE_SYSTEM       0   /* System process */
+#define PROC_TYPE_USER         1   /* User application */
+
+/* Process name max length */
+#define PROC_NAME_MAX          32
+
+/*=============================================================================
+ * PROCESS INFO STRUCTURE (returned to callers — 48 bytes)
+ * Layout must match kernel's process_manager_list() output.
  *===========================================================================*/
 
 typedef struct {
-    int32_t  pid;
-    uint32_t state;         /* PROCESS_STATE_READY=1, RUNNING=2 */
-} process_info_t;
+    int32_t  pid;                           /* 4 bytes, offset 0  */
+    uint32_t state;                         /* 4 bytes, offset 4  */
+    char     name[PROC_NAME_MAX];           /* 32 bytes, offset 8 */
+    uint8_t  type;                          /* 1 byte, offset 40  */
+    uint8_t  _pad[3];                       /* 3 bytes, offset 41 */
+    uint32_t memory_alloc;                  /* 4 bytes, offset 44 */
+} process_info_t;  /* TOTAL: 48 bytes */
 
 /*=============================================================================
  * REQUEST PAYLOADS
@@ -51,6 +67,7 @@ typedef struct {
 typedef struct {
     uint32_t module_index;      /* GRUB module index to load from */
     uint32_t load_address;      /* Target address to copy module to */
+    uint32_t bss_size;          /* BSS section size (0 = use MIN_BSS_RESERVE) */
 } proc_create_req_t;
 
 /* Exec binary request (load .mex app in new address space) */
@@ -59,6 +76,7 @@ typedef struct {
     int32_t  binary_shm_id;     /* SHM region containing binary data */
     uint32_t binary_size;       /* Size of binary in bytes */
     uint32_t entry_offset;      /* Entry point offset from base */
+    uint32_t bss_size;          /* BSS section size (additional zero memory needed) */
 } proc_exec_req_t;
 
 /* Kill process request */
@@ -72,6 +90,13 @@ typedef struct {
 } proc_info_req_t;
 
 /* Get count request — no payload needed */
+
+/* Set name request */
+typedef struct {
+    int32_t  pid;               /* PID to name */
+    char     name[PROC_NAME_MAX]; /* Process name */
+    uint8_t  type;              /* PROC_TYPE_SYSTEM or PROC_TYPE_USER */
+} proc_set_name_req_t;
 
 /*=============================================================================
  * RESPONSE PAYLOADS

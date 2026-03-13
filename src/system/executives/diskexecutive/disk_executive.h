@@ -37,6 +37,7 @@
 #define DISK_OP_READ_SECTOR     (EXEC_OP_CUSTOM_BASE + 3)   /* Read raw sector */
 #define DISK_OP_WRITE_SECTOR    (EXEC_OP_CUSTOM_BASE + 4)   /* Write raw sector */
 #define DISK_OP_GET_SECTOR_SIZE (EXEC_OP_CUSTOM_BASE + 5)   /* Get sector size */
+#define DISK_OP_FORMAT          (EXEC_OP_CUSTOM_BASE + 6)   /* Format disk (MBR+MFS) */
 
 /*=============================================================================
  * CONSTANTS
@@ -110,6 +111,13 @@ typedef struct {
 typedef struct {
     uint8_t disk_index;         /* Which disk */
 } disk_get_sector_size_req_t;
+
+/* FORMAT request */
+typedef struct {
+    uint8_t  disk_index;        /* Which disk to format */
+    uint8_t  reserved[3];
+    char     label[32];         /* Volume label (null-terminated) */
+} disk_format_req_t;
 
 /*=============================================================================
  * RESPONSE PAYLOADS

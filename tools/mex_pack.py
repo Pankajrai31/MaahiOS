@@ -33,6 +33,7 @@ import struct
 import sys
 import zlib
 import os
+import subprocess
 
 # Constants (must match src/managers/process/mex.h)
 MEX_MAGIC       = 0x0058454D   # "MEX\0" little-endian
@@ -71,6 +72,39 @@ def parse_flags(flag_str):
 def compute_crc32(data):
     """Compute CRC32 checksum of binary data."""
     return zlib.crc32(data) & 0xFFFFFFFF
+
+
+def detect_bss_size(elf_path):
+    """Auto-detect BSS size from an ELF file using i686-elf-size.
+    
+    Runs `i686-elf-size <elf>` which outputs:
+       text    data     bss     dec     hex filename
+      12345     100    5678   18153    46E9 app.elf
+    
+    Returns BSS size in bytes, or 0 if detection fails.
+    """
+    if not elf_path or not os.path.exists(elf_path):
+        return 0
+    
+    # Try i686-elf-size first, then fall back to plain 'size'
+    for tool in ['i686-elf-size', 'size']:
+        try:
+            result = subprocess.run(
+                [tool, elf_path],
+                capture_output=True, text=True, timeout=10
+            )
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                if len(lines) >= 2:
+                    # Parse second line: "  text    data     bss     dec     hex filename"
+                    parts = lines[1].split()
+                    if len(parts) >= 3:
+                        bss = int(parts[2])
+                        return bss
+        except (FileNotFoundError, subprocess.TimeoutExpired, ValueError):
+            continue
+    
+    return 0
 
 
 def build_header(app_name, app_type, flags, code_size, bss_size, stack_size, entry_offset, checksum):
@@ -115,8 +149,10 @@ def main():
     parser.add_argument('--flags', default='', help='Comma-separated flags: gui, console')
     parser.add_argument('--stack-size', type=int, default=16384,
                         help='Stack size in bytes (default: 16384 = 16KB)')
-    parser.add_argument('--bss-size', type=int, default=0,
-                        help='BSS size in bytes (default: 0, auto-detected from binary)')
+    parser.add_argument('--bss-size', type=int, default=-1,
+                        help='BSS size in bytes (default: auto-detect from --elf)')
+    parser.add_argument('--elf', default=None,
+                        help='ELF file to auto-detect BSS size from (before objcopy stripping)')
     parser.add_argument('--entry-offset', type=int, default=0,
                         help='Entry point offset from base (default: 0)')
     parser.add_argument('--verbose', '-v', action='store_true',
@@ -142,13 +178,21 @@ def main():
     flags = parse_flags(args.flags)
     checksum = compute_crc32(binary_data)
 
+    # Determine BSS size: explicit > auto-detect from ELF > 0
+    if args.bss_size >= 0:
+        bss_size = args.bss_size
+    elif args.elf:
+        bss_size = detect_bss_size(args.elf)
+    else:
+        bss_size = 0
+
     # Build header
     header = build_header(
         app_name=args.name,
         app_type=app_type,
         flags=flags,
         code_size=code_size,
-        bss_size=args.bss_size,
+        bss_size=bss_size,
         stack_size=args.stack_size,
         entry_offset=args.entry_offset,
         checksum=checksum,
@@ -162,22 +206,22 @@ def main():
     total_size = MEX_HEADER_SIZE + code_size
 
     if args.verbose:
-        print(f"╔══════════════════════════════════════════╗")
-        print(f"║         MEX Packer - MaahiOS             ║")
-        print(f"╠══════════════════════════════════════════╣")
-        print(f"║ Input:       {args.input:<27s} ║")
-        print(f"║ Output:      {args.output:<27s} ║")
-        print(f"║ Name:        {args.name:<27s} ║")
-        print(f"║ Type:        {args.type:<27s} ║")
-        print(f"║ Flags:       {args.flags if args.flags else '(none)':<27s} ║")
-        print(f"║ Base:        0x{MEX_APP_BASE:08X}                 ║")
-        print(f"║ Entry:       0x{args.entry_offset:08X}                 ║")
-        print(f"║ Code size:   {code_size:>10d} bytes           ║")
-        print(f"║ BSS size:    {args.bss_size:>10d} bytes           ║")
-        print(f"║ Stack size:  {args.stack_size:>10d} bytes           ║")
-        print(f"║ CRC32:       0x{checksum:08X}                 ║")
-        print(f"║ Total:       {total_size:>10d} bytes           ║")
-        print(f"╚══════════════════════════════════════════╝")
+        print(f"+==========================================+")
+        print(f"|         MEX Packer - MaahiOS             |")
+        print(f"+==========================================+")
+        print(f"| Input:       {args.input:<27s} |")
+        print(f"| Output:      {args.output:<27s} |")
+        print(f"| Name:        {args.name:<27s} |")
+        print(f"| Type:        {args.type:<27s} |")
+        print(f"| Flags:       {args.flags if args.flags else '(none)':<27s} |")
+        print(f"| Base:        0x{MEX_APP_BASE:08X}                 |")
+        print(f"| Entry:       0x{args.entry_offset:08X}                 |")
+        print(f"| Code size:   {code_size:>10d} bytes           |")
+        print(f"| BSS size:    {bss_size:>10d} bytes           |")
+        print(f"| Stack size:  {args.stack_size:>10d} bytes           |")
+        print(f"| CRC32:       0x{checksum:08X}                 |")
+        print(f"| Total:       {total_size:>10d} bytes           |")
+        print(f"+==========================================+")
     else:
         print(f"[mex_pack] {args.name}: {code_size} bytes code, CRC32=0x{checksum:08X} -> {args.output} ({total_size} bytes)")
 

@@ -557,6 +557,7 @@
             <a href="#syscalls">Syscalls</a>
             <a href="#executives">Executives</a>
             <a href="#libraries">Libraries</a>
+            <a href="#apps">Apps</a>
         </nav>
     </header>
 
@@ -707,7 +708,7 @@
                                 </li>
                                 <li>
                                     <a href="#syscall-domains" class="nav-link">
-                                        7.2 Domains (9)
+                                        7.2 Domains (10)
                                     </a>
                                 </li>
                                 <li>
@@ -747,6 +748,31 @@
                                         8.5 Memory Executive
                                     </a>
                                 </li>
+                                <li>
+                                    <a href="#exec-disk" class="nav-link">
+                                        8.6 Disk Executive
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#exec-fs" class="nav-link">
+                                        8.7 FS Executive
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#exec-gui" class="nav-link">
+                                        8.8 GUI Executive
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#exec-io" class="nav-link">
+                                        8.9 I/O Executive
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#exec-wm" class="nav-link">
+                                        8.10 WM Executive
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                         <li>
@@ -777,6 +803,73 @@
                                 <li>
                                     <a href="#lib-libmemory" class="nav-link">
                                         9.5 libmemory
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libdisk" class="nav-link">
+                                        9.6 libdisk
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libfs" class="nav-link">
+                                        9.7 libfs
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libio" class="nav-link">
+                                        9.8 libio
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libgui" class="nav-link">
+                                        9.9 libgui
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libwindow" class="nav-link">
+                                        9.10 libwindow
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libwm" class="nav-link">
+                                        9.11 libwm
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libbmp" class="nav-link">
+                                        9.12 libbmp
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libconsole" class="nav-link">
+                                        9.13 libconsole
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-libmex" class="nav-link">
+                                        9.14 libmex
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#lib-core" class="nav-link">
+                                        9.15 core / shared
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#apps" class="nav-link">
+                                🚀 10. Applications
+                            </a>
+                            <ul>
+                                <li>
+                                    <a href="#apps-system" class="nav-link">
+                                        10.1 System Programs
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#apps-user" class="nav-link">
+                                        10.2 User Apps
                                     </a>
                                 </li>
                             </ul>
@@ -2132,12 +2225,12 @@ int my_driver_init(void) {
                             <p>Computes current datetime from RTC boot snapshot + PIT tick count. Provides uptime, unix time, and tick queries.</p>
                             <div class="inner-box flow-text">
                                 <div class="mono-item"><span class="name">time_manager_init()</span><span class="info">→ int</span></div>
-                                <div class="mono-item"><span class="name">time_get_datetime(dt)</span><span class="info">→ int</span></div>
-                                <div class="mono-item"><span class="name">time_get_unix()</span><span class="info">→ uint32_t</span></div>
-                                <div class="mono-item"><span class="name">time_get_uptime(up)</span><span class="info">→ int</span></div>
-                                <div class="mono-item"><span class="name">time_get_ticks()</span><span class="info">→ uint64_t</span></div>
-                                <div class="mono-item"><span class="name">time_get_tick_frequency()</span><span class="info">→ uint32_t</span></div>
-                                <div class="mono-item"><span class="name">time_get_shared_shm_id()</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">kernel_time_get_datetime(dt)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">kernel_time_get_unix()</span><span class="info">→ uint32_t</span></div>
+                                <div class="mono-item"><span class="name">kernel_time_get_uptime(up)</span><span class="info">→ int</span></div>
+                                <div class="mono-item"><span class="name">kernel_time_get_ticks()</span><span class="info">→ uint64_t</span></div>
+                                <div class="mono-item"><span class="name">kernel_time_get_tick_frequency()</span><span class="info">→ uint32_t</span></div>
+                                <div class="mono-item"><span class="name">kernel_time_get_shared_shm_id()</span><span class="info">→ int</span></div>
                             </div>
                             <div>Formula: boot_time + (ticks / 50) = current_time</div>
                         </div>
@@ -2201,9 +2294,9 @@ int my_driver_init(void) {
                     <span class="icon">🔌</span>
                     <div>
                         <h2>7. Syscall Layer</h2>
-                        <p>INT 0x80 dispatch — 47 syscalls across 9 domains ✅</p>
+                        <p>INT 0x80 dispatch — 64 syscalls across 10 domains ✅</p>
                     </div>
-                    <span class="pill pill-green">✅ 47 VERIFIED</span>
+                    <span class="pill pill-green">✅ 64 VERIFIED</span>
                 </div>
 
                 <!-- 7.1 Overview -->
@@ -2242,17 +2335,18 @@ int my_driver_init(void) {
                             <div class="tree-indent">
                                 <div>├── syscall_manager.c    <span>← Dispatch table</span></div>
                                 <div>├── syscall_manager.h    <span>← API</span></div>
-                                <div>├── syscall_numbers.h    <span>← All 47 numbers</span></div>
+                                <div>├── syscall_numbers.h    <span>← All 64 numbers</span></div>
                                 <div>└── handlers/</div>
-                                <div class="tree-indent-2">├── core_handlers.c      <span>(4 syscalls)</span></div>
-                                <div class="tree-indent-2">├── process_handlers.c   <span>(4 syscalls)</span></div>
+                                <div class="tree-indent-2">├── core_handlers.c      <span>(6 syscalls)</span></div>
+                                <div class="tree-indent-2">├── process_handlers.c   <span>(7 syscalls)</span></div>
                                 <div class="tree-indent-2">├── memory_handlers.c    <span>(4 syscalls)</span></div>
                                 <div class="tree-indent-2">├── shm_handlers.c       <span>(5 syscalls)</span></div>
                                 <div class="tree-indent-2">├── cell_handlers.c      <span>(6 syscalls)</span></div>
-                                <div class="tree-indent-2">├── device_handlers.c    <span>(7 syscalls)</span></div>
+                                <div class="tree-indent-2">├── device_handlers.c    <span>(8 syscalls)</span></div>
                                 <div class="tree-indent-2">├── module_handlers.c    <span>(5 syscalls)</span></div>
                                 <div class="tree-indent-2">├── time_handlers.c      <span>(6 syscalls)</span></div>
-                                <div class="tree-indent-2">└── debug_handlers.c     <span>(6 syscalls)</span></div>
+                                <div class="tree-indent-2">├── fs_handlers.c        <span>(10 syscalls)</span></div>
+                                <div class="tree-indent-2">└── debug_handlers.c     <span>(7 syscalls)</span></div>
                             </div>
                         </div>
                     </div>
@@ -2266,7 +2360,7 @@ int my_driver_init(void) {
                     
                     <div class="wiki-card">
                         <p>
-                            Syscalls are grouped into 9 domains with reserved number ranges (16 numbers per block).
+                            Syscalls are grouped into 10 domains with reserved number ranges (16 numbers per block).
                             Each domain corresponds to a kernel manager.
                         </p>
 
@@ -2284,15 +2378,15 @@ int my_driver_init(void) {
                                 <tbody>
                                     <tr>
                                         <td class="name">Core</td>
-                                        <td>0 – 3</td>
-                                        <td>4</td>
+                                        <td>0 – 5</td>
+                                        <td>6</td>
                                         <td>core_handlers.c</td>
                                         <td>scheduler, process</td>
                                     </tr>
                                     <tr>
                                         <td class="name">Process</td>
-                                        <td>16 – 19</td>
-                                        <td>4</td>
+                                        <td>16 – 22</td>
+                                        <td>7</td>
                                         <td>process_handlers.c</td>
                                         <td>process_manager</td>
                                     </tr>
@@ -2319,8 +2413,8 @@ int my_driver_init(void) {
                                     </tr>
                                     <tr>
                                         <td class="name">Device</td>
-                                        <td>80 – 86</td>
-                                        <td>7</td>
+                                        <td>80 – 87</td>
+                                        <td>8</td>
                                         <td>device_handlers.c</td>
                                         <td>device_manager</td>
                                     </tr>
@@ -2339,9 +2433,16 @@ int my_driver_init(void) {
                                         <td>time_manager</td>
                                     </tr>
                                     <tr>
+                                        <td class="name">Filesystem</td>
+                                        <td>128 – 137</td>
+                                        <td>10</td>
+                                        <td>fs_handlers.c</td>
+                                        <td>iso9660 / mfs / volume</td>
+                                    </tr>
+                                    <tr>
                                         <td class="name">Debug</td>
-                                        <td>240 – 245</td>
-                                        <td>6</td>
+                                        <td>240 – 246</td>
+                                        <td>7</td>
                                         <td>debug_handlers.c</td>
                                         <td>klog + diagnostics</td>
                                     </tr>
@@ -2350,8 +2451,8 @@ int my_driver_init(void) {
                                     <tr>
                                         <td>Total</td>
                                         <td></td>
-                                        <td class="name">47</td>
-                                        <td>9 files</td>
+                                        <td class="name">64</td>
+                                        <td>10 files</td>
                                         <td></td>
                                     </tr>
                                 </tfoot>
@@ -2363,29 +2464,34 @@ int my_driver_init(void) {
                 <!-- 7.3 Handler Files -->
                 <article id="syscall-handlers">
                     <h3>
-                        <span class="name">§</span> 7.3 All 47 Syscall Handlers
+                        <span class="name">§</span> 7.3 All 64 Syscall Handlers
                     </h3>
                     
                     <div>
                         <!-- Core -->
                         <div class="wiki-card">
-                            <h4>⚡ core_handlers.c — Core (SYS 0–3)</h4>
+                            <h4>⚡ core_handlers.c — Core (SYS 0–5)</h4>
                             <div class="grid-2 mono-list">
                                 <div class="mono-item"><span class="name">sys_exit(code)</span><span class="info">SYS 0</span></div>
                                 <div class="mono-item"><span class="name">sys_yield()</span><span class="info">SYS 1</span></div>
                                 <div class="mono-item"><span class="name">sys_getpid()</span><span class="info">SYS 2</span></div>
                                 <div class="mono-item"><span class="name">sys_sleep(ticks)</span><span class="info">SYS 3</span></div>
+                                <div class="mono-item"><span class="name">sys_shutdown()</span><span class="info">SYS 4</span></div>
+                                <div class="mono-item"><span class="name">sys_restart()</span><span class="info">SYS 5</span></div>
                             </div>
                         </div>
 
                         <!-- Process -->
                         <div class="wiki-card">
-                            <h4>🔄 process_handlers.c — Process (SYS 16–19)</h4>
+                            <h4>🔄 process_handlers.c — Process (SYS 16–22)</h4>
                             <div class="grid-2 mono-list">
                                 <div class="mono-item"><span class="name">sys_process_create(entry)</span><span class="info">SYS 16</span></div>
                                 <div class="mono-item"><span class="name">sys_process_kill(pid)</span><span class="info">SYS 17</span></div>
                                 <div class="mono-item"><span class="name">sys_process_info(pid, info)</span><span class="info">SYS 18</span></div>
                                 <div class="mono-item"><span class="name">sys_process_get_count()</span><span class="info">SYS 19</span></div>
+                                <div class="mono-item"><span class="name">sys_process_exec(base, data, sz, off)</span><span class="info">SYS 20</span></div>
+                                <div class="mono-item"><span class="name">sys_process_list(buf, max)</span><span class="info">SYS 21</span></div>
+                                <div class="mono-item"><span class="name">sys_process_set_name(pid, name)</span><span class="info">SYS 22</span></div>
                             </div>
                         </div>
 
@@ -2427,7 +2533,7 @@ int my_driver_init(void) {
 
                         <!-- Device -->
                         <div class="wiki-card">
-                            <h4>📋 device_handlers.c — Device (SYS 80–86)</h4>
+                            <h4>📋 device_handlers.c — Device (SYS 80–87)</h4>
                             <div class="grid-2 mono-list">
                                 <div class="mono-item"><span class="name">sys_dev_open(id, flags)</span><span class="info">SYS 80</span></div>
                                 <div class="mono-item"><span class="name">sys_dev_close(id, handle)</span><span class="info">SYS 81</span></div>
@@ -2436,6 +2542,7 @@ int my_driver_init(void) {
                                 <div class="mono-item"><span class="name">sys_dev_ioctl(id, cmd, arg)</span><span class="info">SYS 84</span></div>
                                 <div class="mono-item"><span class="name">sys_dev_poll(id)</span><span class="info">SYS 85</span></div>
                                 <div class="mono-item"><span class="name">sys_dev_list(list, max)</span><span class="info">SYS 86</span></div>
+                                <div class="mono-item"><span class="name">sys_dev_disk_format(id, type)</span><span class="info">SYS 87</span></div>
                             </div>
                         </div>
 
@@ -2443,11 +2550,28 @@ int my_driver_init(void) {
                         <div class="wiki-card">
                             <h4>📦 module_handlers.c — Module (SYS 96–100)</h4>
                             <div class="grid-2 mono-list">
-                                <div class="mono-item"><span class="name">sys_module_load(name)</span><span class="info">SYS 96</span></div>
-                                <div class="mono-item"><span class="name">sys_module_get_address(idx)</span><span class="info">SYS 97</span></div>
-                                <div class="mono-item"><span class="name">sys_module_get_size(idx)</span><span class="info">SYS 98</span></div>
-                                <div class="mono-item"><span class="name">sys_module_get_name(idx, buf, sz)</span><span class="info">SYS 99</span></div>
-                                <div class="mono-item"><span class="name">sys_module_get_count()</span><span class="info">SYS 100</span></div>
+                                <div class="mono-item"><span class="name">sys_module_get_count()</span><span class="info">SYS 96</span></div>
+                                <div class="mono-item"><span class="name">sys_module_get_info(idx, info)</span><span class="info">SYS 97</span></div>
+                                <div class="mono-item"><span class="name">sys_module_get_address(idx)</span><span class="info">SYS 98</span></div>
+                                <div class="mono-item"><span class="name">sys_module_get_size(idx)</span><span class="info">SYS 99</span></div>
+                                <div class="mono-item"><span class="name">sys_module_copy(idx, dest, sz)</span><span class="info">SYS 100</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Filesystem -->
+                        <div class="wiki-card">
+                            <h4>📂 fs_handlers.c — Filesystem (SYS 128–137)</h4>
+                            <div class="grid-2 mono-list">
+                                <div class="mono-item"><span class="name">sys_fs_list_dir(path, entries, max)</span><span class="info">SYS 128</span></div>
+                                <div class="mono-item"><span class="name">sys_fs_read_file(dir, name, buf, max)</span><span class="info">SYS 129</span></div>
+                                <div class="mono-item"><span class="name">sys_fs_file_count(path)</span><span class="info">SYS 130</span></div>
+                                <div class="mono-item"><span class="name">sys_fs_find_dir(name, lba, sz)</span><span class="info">SYS 131</span></div>
+                                <div class="mono-item"><span class="name">sys_fs_get_root_info(lba, sz)</span><span class="info">SYS 132</span></div>
+                                <div class="mono-item"><span class="name">sys_fs_write_file(dir, name, data, sz)</span><span class="info">SYS 133</span></div>
+                                <div class="mono-item"><span class="name">sys_fs_delete_file(dir, name)</span><span class="info">SYS 134</span></div>
+                                <div class="mono-item"><span class="name">sys_fs_create_dir(parent, name)</span><span class="info">SYS 135</span></div>
+                                <div class="mono-item"><span class="name">sys_fs_vol_count()</span><span class="info">SYS 136</span></div>
+                                <div class="mono-item"><span class="name">sys_fs_vol_info(idx, info)</span><span class="info">SYS 137</span></div>
                             </div>
                         </div>
 
@@ -2466,14 +2590,15 @@ int my_driver_init(void) {
 
                         <!-- Debug -->
                         <div class="wiki-card">
-                            <h4>🐛 debug_handlers.c — Debug (SYS 240–245)</h4>
+                            <h4>🐛 debug_handlers.c — Debug / KLog (SYS 240–246)</h4>
                             <div class="grid-2 mono-list">
                                 <div class="mono-item"><span class="name">sys_klog(level, tag, msg)</span><span class="info">SYS 240</span></div>
                                 <div class="mono-item"><span class="name">sys_klog_hex(level, tag, msg, val)</span><span class="info">SYS 241</span></div>
-                                <div class="mono-item"><span class="name">sys_debug_dump_processes()</span><span class="info">SYS 242</span></div>
-                                <div class="mono-item"><span class="name">sys_debug_dump_memory()</span><span class="info">SYS 243</span></div>
-                                <div class="mono-item"><span class="name">sys_get_mem_info(buf)</span><span class="info">SYS 244 — PMM stats</span></div>
-                                <div class="mono-item"><span class="name">sys_debug_dump_devices()</span><span class="info">SYS 245</span></div>
+                                <div class="mono-item"><span class="name">sys_klog_get_shm()</span><span class="info">SYS 242</span></div>
+                                <div class="mono-item"><span class="name">sys_get_cpu_info(buf)</span><span class="info">SYS 243</span></div>
+                                <div class="mono-item"><span class="name">sys_get_mem_info(buf)</span><span class="info">SYS 244</span></div>
+                                <div class="mono-item"><span class="name">sys_get_pic_mask()</span><span class="info">SYS 245</span></div>
+                                <div class="mono-item"><span class="name">sys_klog_read(buf, max_entries)</span><span class="info">SYS 246</span></div>
                             </div>
                         </div>
                     </div>
@@ -2523,7 +2648,12 @@ libXXX_write(key, val)
                                     <p>3. <strong>Cell Executive</strong> (PID 3) — loaded 2nd</p>
                                     <p>4. <strong>Process Executive</strong> (PID 4) — loaded 3rd</p>
                                     <p>5. <strong>Memory Executive</strong> (PID 5) — loaded 4th</p>
-                                    <p>6. <strong>TestApp</strong> (PID 6) — loaded 5th</p>
+                                    <p>6. <strong>Disk Executive</strong> — loaded 5th</p>
+                                    <p>7. <strong>FS Executive</strong> — loaded 6th</p>
+                                    <p>8. <strong>GUI Executive</strong> — loaded 7th</p>
+                                    <p>9. <strong>I/O Executive</strong> — loaded 8th</p>
+                                    <p>10. <strong>WM Executive</strong> — loaded 9th</p>
+                                    <p>11. <strong>Orbit + Terminal</strong> — loaded last</p>
                                 </div>
                             </div>
                             <div class="inner-box">
@@ -2894,6 +3024,23 @@ libXXX_write(key, val)
                             </div>
                         </div>
                         <div class="wiki-card">
+                        <h4>Inline Wrappers (direct syscall — no executive round-trip)</h4>
+                        <div>
+                            <div class="mono-item">
+                                <span class="name">libprocess_yield()</span>
+                                <span class="info">void</span>
+                            </div>
+                            <div class="mono-item">
+                                <span class="name">libprocess_get_pid()</span>
+                                <span class="info">uint32_t</span>
+                            </div>
+                            <div class="mono-item">
+                                <span class="name">libprocess_sleep(ticks)</span>
+                                <span class="info">void</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
                             <h4>Design Notes</h4>
                             <div class="notes-grid">
                                 <div>
@@ -2926,8 +3073,232 @@ libXXX_write(key, val)
                         <p>Logging via <code>liblog</code> (auto-init) · Cell registration via <code>libcell</code> (auto-init)</p>
                     </div>
                 </article>
+
+                <!-- 8.6 Disk Executive -->
+                <article id="exec-disk">
+                    <h3>
+                        <span class="num">8.6</span> Disk Executive
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">💾</span>
+                            <div>
+                                <h4>Disk Executive</h4>
+                                <p class="card-sub">system/executives/diskexecutive/disk_executive.c</p>
+                            </div>
+                        </div>
+                        <p>
+                            Provides disk read/write/info/list operations for user-space callers via SHM queues.
+                            Wraps ATA/ISO9660 device syscalls. Uses dual SHM queues (request + response).
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Request Handlers</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">DISK_OP_READ</span><span class="info">→ SYS_DEV_READ</span></div>
+                                <div class="mono-item"><span class="name">DISK_OP_WRITE</span><span class="info">→ SYS_DEV_WRITE</span></div>
+                                <div class="mono-item"><span class="name">DISK_OP_GET_INFO</span><span class="info">→ SYS_DEV_IOCTL</span></div>
+                                <div class="mono-item"><span class="name">DISK_OP_LIST</span><span class="info">→ SYS_DEV_LIST</span></div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Syscalls Used</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">SYS_DEV_READ/WRITE</span><span class="info">82, 83</span></div>
+                                <div class="mono-item"><span class="name">SYS_DEV_IOCTL</span><span class="info">84</span></div>
+                                <div class="mono-item"><span class="name">SYS_DEV_LIST</span><span class="info">86</span></div>
+                                <div class="mono-item"><span class="name">SYS_SHM_CREATE/ATTACH</span><span class="info">48, 49</span></div>
+                                <div class="mono-item"><span class="name">SYS_YIELD</span><span class="info">1</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 8.7 FS Executive -->
+                <article id="exec-fs">
+                    <h3>
+                        <span class="num">8.7</span> FS Executive
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">📂</span>
+                            <div>
+                                <h4>FS Executive — EXEC_ID 7</h4>
+                                <p class="card-sub">system/executives/fsexecutive/fs_executive.c</p>
+                            </div>
+                        </div>
+                        <p>
+                            Provides ISO9660 filesystem access for user-space callers via SHM queues.
+                            Handles directory listing, file reading, and file counting.
+                            Publishes <code>system.exec.fs.*</code> cell keys and <code>system.fs.type</code>.
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Request Handlers (5)</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">EXEC_OP_PING</span><span class="info">→ health check</span></div>
+                                <div class="mono-item"><span class="name">EXEC_OP_SHUTDOWN</span><span class="info">→ stop</span></div>
+                                <div class="mono-item"><span class="name">FS_OP_LIST_DIR</span><span class="info">→ SYS_FS_LIST_DIR (128)</span></div>
+                                <div class="mono-item"><span class="name">FS_OP_READ_FILE</span><span class="info">→ SYS_FS_READ_FILE (129)</span></div>
+                                <div class="mono-item"><span class="name">FS_OP_FILE_COUNT</span><span class="info">→ SYS_FS_FILE_COUNT (130)</span></div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Syscalls Used</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">SYS_FS_LIST_DIR</span><span class="info">128</span></div>
+                                <div class="mono-item"><span class="name">SYS_FS_READ_FILE</span><span class="info">129</span></div>
+                                <div class="mono-item"><span class="name">SYS_FS_FILE_COUNT</span><span class="info">130</span></div>
+                                <div class="mono-item"><span class="name">SYS_SHM_CREATE/ATTACH/DESTROY</span><span class="info">48-51</span></div>
+                                <div class="mono-item"><span class="name">SYS_YIELD</span><span class="info">1</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 8.8 GUI Executive -->
+                <article id="exec-gui">
+                    <h3>
+                        <span class="num">8.8</span> GUI Executive
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🎨</span>
+                            <div>
+                                <h4>GUI Executive — EXEC_ID 8</h4>
+                                <p class="card-sub">system/executives/guiexecutive/gui_executive.c</p>
+                            </div>
+                        </div>
+                        <p>
+                            Manages display initialization and framebuffer discovery. Opens the BGA display device,
+                            retrieves framebuffer address via ioctl, caches display info (1280×800×32bpp),
+                            and publishes <code>system.gui.*</code> cell keys for <code>libgui</code> consumers.
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Request Handlers (2)</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">EXEC_OP_PING</span><span class="info">→ health check</span></div>
+                                <div class="mono-item"><span class="name">GUI_OP_GET_DISPLAY_INFO</span><span class="info">→ returns gui_display_info_t</span></div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Syscalls Used</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">SYS_DEV_OPEN</span><span class="info">80 (display device)</span></div>
+                                <div class="mono-item"><span class="name">SYS_DEV_IOCTL</span><span class="info">84 (DISPLAY_IOCTL_GET_FB)</span></div>
+                                <div class="mono-item"><span class="name">SYS_SHM_CREATE/ATTACH</span><span class="info">48, 49</span></div>
+                                <div class="mono-item"><span class="name">SYS_YIELD</span><span class="info">1</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 8.9 I/O Executive -->
+                <article id="exec-io">
+                    <h3>
+                        <span class="num">8.9</span> I/O Executive
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">⌨</span>
+                            <div>
+                                <h4>I/O Executive — EXEC_ID 9</h4>
+                                <p class="card-sub">system/executives/ioexecutive/io_executive.c</p>
+                            </div>
+                        </div>
+                        <p>
+                            Manages input device access, primarily keyboard polling. Continuously polls the keyboard
+                            device and writes events into a <strong>lock-free SPSC ring buffer</strong> in shared memory.
+                            <code>libio</code> consumers read directly from this ring buffer — zero syscalls for reads.
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Request Handlers (2)</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">EXEC_OP_PING</span><span class="info">→ health check</span></div>
+                                <div class="mono-item"><span class="name">IO_OP_DEV_READ</span><span class="info">→ on-demand device read</span></div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Keyboard Polling</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">exe_io_poll_keyboard()</span><span class="info">every loop iteration</span></div>
+                                <p>Uses lock-free SPSC ring buffer in SHM for zero-syscall keyboard reads.</p>
+                                <p>Publishes <code>system.io.keyboard.ring_shm</code> cell.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Syscalls Used</h4>
+                        <div class="grid-2 mono-list">
+                            <div class="mono-item"><span class="name">SYS_DEV_OPEN</span><span class="info">80 (keyboard)</span></div>
+                            <div class="mono-item"><span class="name">SYS_DEV_READ</span><span class="info">82 (polling)</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_CREATE/ATTACH</span><span class="info">48, 49</span></div>
+                            <div class="mono-item"><span class="name">SYS_YIELD</span><span class="info">1</span></div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 8.10 WM Executive -->
+                <article id="exec-wm">
+                    <h3>
+                        <span class="num">8.10</span> WM Executive
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🖼️</span>
+                            <div>
+                                <h4>WM Executive — EXEC_ID 14</h4>
+                                <p class="card-sub">system/executives/wmexecutive/wm_executive.c</p>
+                            </div>
+                        </div>
+                        <p>
+                            The Window Manager Executive is a <strong>damage-rect compositor</strong> that manages
+                            up to 6 simultaneous windows with z-order stacking. Each window owns an SHM pixel surface.
+                            Clients communicate via <code>libwm</code> → SHM queue → WM Executive.
+                            Publishes <code>CELL_WM_REGISTRY</code> and <code>CELL_TASKBAR_WINDOWS</code> for Orbit.
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Key Operations</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">WM_OP_CREATE_WINDOW</span><span class="info">→ allocate surface SHM + z-slot</span></div>
+                                <div class="mono-item"><span class="name">WM_OP_DESTROY_WINDOW</span><span class="info">→ free surface + z-slot</span></div>
+                                <div class="mono-item"><span class="name">WM_OP_MOVE</span><span class="info">→ update window position</span></div>
+                                <div class="mono-item"><span class="name">WM_OP_RESIZE</span><span class="info">→ resize surface</span></div>
+                                <div class="mono-item"><span class="name">WM_OP_FOCUS</span><span class="info">→ bring to front (z-order)</span></div>
+                                <div class="mono-item"><span class="name">WM_OP_INVALIDATE</span><span class="info">→ mark damage rect for repaint</span></div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Compositor Design</h4>
+                            <div>
+                                <p>• <strong>Damage-rect</strong> — only repaints changed regions</p>
+                                <p>• <strong>Z-order stacking</strong> — topmost window receives input</p>
+                                <p>• <strong>Max 6 windows</strong> — static window slot array</p>
+                                <p>• <strong>SHM pixel surfaces</strong> — each window has its own framebuffer in SHM</p>
+                                <p>• <strong>Mouse dispatch</strong> — routes clicks/moves to focused window</p>
+                                <p>• <strong>Taskbar integration</strong> — publishes window list to Orbit via cell registry</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Syscalls Used</h4>
+                        <div class="grid-2 mono-list">
+                            <div class="mono-item"><span class="name">SYS_DEV_IOCTL</span><span class="info">84 (display flip)</span></div>
+                            <div class="mono-item"><span class="name">SYS_DEV_READ</span><span class="info">82 (mouse input)</span></div>
+                            <div class="mono-item"><span class="name">SYS_SHM_CREATE/ATTACH</span><span class="info">48, 49</span></div>
+                            <div class="mono-item"><span class="name">SYS_YIELD</span><span class="info">1</span></div>
+                        </div>
+                    </div>
+                </article>
             </section>
-            <section id="libraries">
                 <div class="section-header">
                     <span class="icon">📚</span>
                     <div>
@@ -2974,6 +3345,17 @@ libXXX_write(key, val)
                                     <p><code>system/libraries/libcell/</code> — Cell registry</p>
                                     <p><code>system/libraries/libprocess/</code> — Process management</p>
                                     <p><code>system/libraries/libmemory/</code> — Memory management</p>
+                                    <p><code>system/libraries/libdisk/</code> — Disk I/O</p>
+                                    <p><code>system/libraries/libfs/</code> — Filesystem access</p>
+                                    <p><code>system/libraries/libio/</code> — Input device access</p>
+                                    <p><code>system/libraries/libgui/</code> — GUI framebuffer, drawing, fonts</p>
+                                    <p><code>system/libraries/libwindow/</code> — Windowed GUI + controls</p>
+                                    <p><code>system/libraries/libwm/</code> — WM client (SHM to WM Executive)</p>
+                                    <p><code>system/libraries/libbmp/</code> — BMP image decoder</p>
+                                    <p><code>system/libraries/libconsole/</code> — Console stdout</p>
+                                    <p><code>system/libraries/libmex/</code> — MEX format parser</p>
+                                    <p><code>system/libraries/core/</code> — Low-level syscall helpers</p>
+                                    <p><code>system/libraries/shared/</code> — Kernel-shared headers</p>
                                     <p>Linked into each user process at build time</p>
                                 </div>
                             </div>
@@ -3174,7 +3556,24 @@ libXXX_write(key, val)
                                 <div class="mono-item">
                                     <span class="name">libprocess_get_count()</span>
                                     <span class="info">int</span>
+                                
+                                <div class="mono-item">
+                                    <span class="name">libprocess_exec(base, data, sz, off)</span>
+                                    <span class="info">int</span>
                                 </div>
+                                <div class="mono-item">
+                                    <span class="name">libprocess_list(infos, max)</span>
+                                    <span class="info">int</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libprocess_system_shutdown()</span>
+                                    <span class="info">void</span>
+                                </div>
+                                <div class="mono-item">
+                                    <span class="name">libprocess_system_restart()</span>
+                                    <span class="info">void</span>
+                                </div>
+                            </div>
                             </div>
                         </div>
                         <div class="wiki-card">
@@ -3311,12 +3710,482 @@ libXXX_write(key, val)
                         </div>
                     </div>
                 </article>
+
+                <!-- 9.6 libdisk -->
+                <article id="lib-libdisk">
+                    <h3>
+                        <span class="num">9.6</span> libdisk
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">💾</span>
+                            <div>
+                                <h4>libdisk — Disk I/O Library</h4>
+                                <p class="card-sub">system/libraries/libdisk/libdisk.c • Client for Disk Executive</p>
+                            </div>
+                        </div>
+                        <p>
+                            Provides disk read, write, info, and list operations for user-space callers.
+                            Auto-initializes on first call. Falls back to direct <code>SYS_DEV_*</code> syscalls.
+                        </p>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Public API</h4>
+                        <div>
+                            <div class="mono-item"><span class="name">libdisk_read(disk, lba, count, buf)</span><span class="info">int</span></div>
+                            <div class="mono-item"><span class="name">libdisk_write(disk, lba, count, data)</span><span class="info">int</span></div>
+                            <div class="mono-item"><span class="name">libdisk_get_info(disk, info)</span><span class="info">int</span></div>
+                            <div class="mono-item"><span class="name">libdisk_list(disks, max_count)</span><span class="info">int</span></div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.7 libfs -->
+                <article id="lib-libfs">
+                    <h3>
+                        <span class="num">9.7</span> libfs
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">📂</span>
+                            <div>
+                                <h4>libfs — Filesystem Library</h4>
+                                <p class="card-sub">system/libraries/libfs/libfs.c • Client for FS Executive</p>
+                            </div>
+                        </div>
+                        <p>
+                            Provides ISO9660 filesystem access for user-space callers. Auto-initializes on first call
+                            by discovering the FS Executive’s SHM queues via cell registry. Falls back to direct
+                            <code>SYS_FS_*</code> kernel syscalls.
+                        </p>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Public API</h4>
+                        <div>
+                            <div class="mono-item"><span class="name">libfs_init()</span><span class="info">int (optional)</span></div>
+                            <div class="mono-item"><span class="name">libfs_list_dir(path, entries, max)</span><span class="info">int</span></div>
+                            <div class="mono-item"><span class="name">libfs_read_file(dir, name, buf, max)</span><span class="info">int</span></div>
+                            <div class="mono-item"><span class="name">libfs_file_count(path)</span><span class="info">int</span></div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.8 libio -->
+                <article id="lib-libio">
+                    <h3>
+                        <span class="num">9.8</span> libio
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">⌨</span>
+                            <div>
+                                <h4>libio — Input Device Library</h4>
+                                <p class="card-sub">system/libraries/libio/libio.c • Client for I/O Executive</p>
+                            </div>
+                        </div>
+                        <p>
+                            Provides non-blocking input device reads. For keyboard, reads directly from the I/O Executive’s
+                            lock-free SPSC ring buffer in SHM — zero syscalls for keyboard event retrieval.
+                        </p>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Public API</h4>
+                        <div>
+                            <div class="mono-item"><span class="name">libio_dev_read(device_id, buf, max)</span><span class="info">int: bytes read</span></div>
+                        </div>
+                        <p>Returns >0 bytes read, 0 = no data available, &lt;0 = error.</p>
+                    </div>
+                </article>
+
+                <!-- 9.9 libgui -->
+                <article id="lib-libgui">
+                    <h3>
+                        <span class="num">9.9</span> libgui
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🎨</span>
+                            <div>
+                                <h4>libgui — Graphics Library</h4>
+                                <p class="card-sub">system/libraries/libgui/ • Framebuffer drawing, fonts, keyboard input</p>
+                            </div>
+                        </div>
+                        <p>
+                            Low-level graphics library that provides direct framebuffer access, pixel drawing primitives,
+                            font rendering, and keyboard input. Used by <strong>Orbit</strong> (desktop shell) and apps that
+                            draw directly to the screen without the window manager. Discovers the framebuffer address
+                            via <code>system.gui.*</code> cell keys published by the GUI Executive.
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Drawing API</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">gui_init()</span><span class="info">discover framebuffer</span></div>
+                                <div class="mono-item"><span class="name">gui_fill_rect(x, y, w, h, color)</span><span class="info">void</span></div>
+                                <div class="mono-item"><span class="name">gui_draw_rect(x, y, w, h, color)</span><span class="info">outline</span></div>
+                                <div class="mono-item"><span class="name">gui_fill_circle(cx, cy, r, color)</span><span class="info">void</span></div>
+                                <div class="mono-item"><span class="name">gui_draw_line(x1, y1, x2, y2, color)</span><span class="info">void</span></div>
+                                <div class="mono-item"><span class="name">gui_put_pixel(x, y, color)</span><span class="info">void</span></div>
+                                <div class="mono-item"><span class="name">gui_flip()</span><span class="info">display flip (direct SYS_DEV_IOCTL)</span></div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>Font Subsystem</h4>
+                            <div>
+                                <p>• <strong>libfont</strong> — Anti-aliased Segoe UI at 5 sizes: 12/14/16/18/24px</p>
+                                <p>• <strong>font8x16</strong> — Fixed-width VGA bitmap font (used by Terminal)</p>
+                                <p>• <code>gui_draw_text(x, y, text, color, size)</code></p>
+                                <p>• <code>gui_measure_text(text, size)</code></p>
+                                <p>• <code>gui_blit_icon(x, y, icon, w, h)</code></p>
+                                <p>• <code>font_draw_string() / font_measure_string()</code></p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.10 libwindow -->
+                <article id="lib-libwindow">
+                    <h3>
+                        <span class="num">9.10</span> libwindow
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🖼️</span>
+                            <div>
+                                <h4>libwindow — Windowed GUI Framework</h4>
+                                <p class="card-sub">system/libraries/libwindow/ • Surface, controls, theme, malloc/free</p>
+                            </div>
+                        </div>
+                        <p>
+                            High-level windowed application framework. Provides window creation, surface drawing,
+                            event dispatch (mouse, keyboard, tick), and a rich set of UI controls. Uses <code>libwm</code>
+                            for WM communication and includes a built-in page-based <code>malloc/free</code> allocator.
+                        </p>
+                    </div>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <h4>Window API</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">window_create(title, w, h)</span><span class="info">window_t*</span></div>
+                                <div class="mono-item"><span class="name">window_run(win)</span><span class="info">event loop</span></div>
+                                <div class="mono-item"><span class="name">window_add_control(win, ctl)</span><span class="info">void</span></div>
+                                <div class="mono-item"><span class="name">window_invalidate(win)</span><span class="info">request repaint</span></div>
+                                <div class="mono-item"><span class="name">window_close(win)</span><span class="info">void</span></div>
+                            </div>
+                        </div>
+                        <div class="wiki-card">
+                            <h4>10 Controls</h4>
+                            <div>
+                                <div class="mono-item"><span class="name">label</span><span class="info">static text display</span></div>
+                                <div class="mono-item"><span class="name">button</span><span class="info">clickable button + on_click</span></div>
+                                <div class="mono-item"><span class="name">dialog</span><span class="info">modal message/error dialog</span></div>
+                                <div class="mono-item"><span class="name">table</span><span class="info">scrollable data grid (128 rows)</span></div>
+                                <div class="mono-item"><span class="name">toolbar</span><span class="info">horizontal button bar</span></div>
+                                <div class="mono-item"><span class="name">statusbar</span><span class="info">bottom info strip (3 panes)</span></div>
+                                <div class="mono-item"><span class="name">menubar</span><span class="info">File/Edit/Help menus</span></div>
+                                <div class="mono-item"><span class="name">treeview</span><span class="info">hierarchical node tree</span></div>
+                                <div class="mono-item"><span class="name">textarea</span><span class="info">multi-line editable text</span></div>
+                                <div class="mono-item"><span class="name">radiogroup</span><span class="info">horizontal radio button group</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Surface Drawing</h4>
+                        <div class="grid-2 mono-list">
+                            <div class="mono-item"><span class="name">surface_fill_rect()</span><span class="info">filled rectangle</span></div>
+                            <div class="mono-item"><span class="name">surface_draw_rect()</span><span class="info">outlined rectangle</span></div>
+                            <div class="mono-item"><span class="name">surface_fill_circle()</span><span class="info">filled circle</span></div>
+                            <div class="mono-item"><span class="name">surface_draw_text()</span><span class="info">AA font rendering</span></div>
+                            <div class="mono-item"><span class="name">surface_draw_line()</span><span class="info">line primitive</span></div>
+                            <div class="mono-item"><span class="name">surface_blit()</span><span class="info">pixel buffer copy</span></div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.11 libwm -->
+                <article id="lib-libwm">
+                    <h3>
+                        <span class="num">9.11</span> libwm
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🖥️</span>
+                            <div>
+                                <h4>libwm — WM Client Library</h4>
+                                <p class="card-sub">system/libraries/libwm/libwm.c • SHM queue to WM Executive</p>
+                            </div>
+                        </div>
+                        <p>
+                            Client library for the WM Executive. Handles window lifecycle (create, destroy, move, resize, focus)
+                            and surface management. Discovers WM Executive's SHM queues via cell registry and communicates
+                            via request/response queues. Used internally by <code>libwindow</code>.
+                        </p>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Public API</h4>
+                        <div>
+                            <div class="mono-item"><span class="name">libwm_create_window(title, x, y, w, h)</span><span class="info">window handle</span></div>
+                            <div class="mono-item"><span class="name">libwm_destroy_window(handle)</span><span class="info">void</span></div>
+                            <div class="mono-item"><span class="name">libwm_invalidate(handle, x, y, w, h)</span><span class="info">damage rect</span></div>
+                            <div class="mono-item"><span class="name">libwm_get_event(handle, event)</span><span class="info">poll input</span></div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.12 libbmp -->
+                <article id="lib-libbmp">
+                    <h3>
+                        <span class="num">9.12</span> libbmp
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">🖼️</span>
+                            <div>
+                                <h4>libbmp — BMP Image Decoder</h4>
+                                <p class="card-sub">system/libraries/libbmp/libbmp.c • 24/32-bit BMP, no-malloc</p>
+                            </div>
+                        </div>
+                        <p>
+                            Decodes 24-bit and 32-bit BMP images into raw pixel buffers. Used by Orbit to load
+                            desktop icons. Zero-allocation design — decodes directly into a caller-provided buffer.
+                            Handles bottom-up row order and BMP header parsing.
+                        </p>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Public API</h4>
+                        <div>
+                            <div class="mono-item"><span class="name">libbmp_decode(data, size, out_pixels, out_w, out_h)</span><span class="info">int</span></div>
+                            <div class="mono-item"><span class="name">libbmp_get_dimensions(data, size, w, h)</span><span class="info">int</span></div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.13 libconsole -->
+                <article id="lib-libconsole">
+                    <h3>
+                        <span class="num">9.13</span> libconsole
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">📟</span>
+                            <div>
+                                <h4>libconsole — Console Output Library</h4>
+                                <p class="card-sub">system/libraries/libconsole/libconsole.c • Stdout for console .mex apps</p>
+                            </div>
+                        </div>
+                        <p>
+                            Provides <code>printf</code>-style text output for console applications.
+                            Writes characters to a shared memory buffer that Terminal reads and renders.
+                            Auto-discovers Terminal's SHM via cell registry.
+                        </p>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Public API</h4>
+                        <div>
+                            <div class="mono-item"><span class="name">console_init()</span><span class="info">auto-discover Terminal SHM</span></div>
+                            <div class="mono-item"><span class="name">console_putchar(c)</span><span class="info">void</span></div>
+                            <div class="mono-item"><span class="name">console_print(str)</span><span class="info">void</span></div>
+                            <div class="mono-item"><span class="name">console_print_int(val)</span><span class="info">void</span></div>
+                            <div class="mono-item"><span class="name">console_print_hex(val)</span><span class="info">void</span></div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.14 libmex -->
+                <article id="lib-libmex">
+                    <h3>
+                        <span class="num">9.14</span> libmex
+                    </h3>
+                    <div class="wiki-card">
+                        <div class="card-header">
+                            <span class="card-icon">📦</span>
+                            <div>
+                                <h4>libmex — MEX Format Parser</h4>
+                                <p class="card-sub">system/libraries/libmex/libmex.c • All .mex knowledge lives here</p>
+                            </div>
+                        </div>
+                        <p>
+                            Parses the MaahiOS Executable (MEX) format from raw binary data.
+                            Validates the MEX header, extracts code/data segments, and provides
+                            the entry point address. Used by Orbit and Terminal to load and execute apps.
+                        </p>
+                    </div>
+                    <div class="wiki-card">
+                        <h4>Public API</h4>
+                        <div>
+                            <div class="mono-item"><span class="name">mex_parse(data, size, out_header)</span><span class="info">int</span></div>
+                            <div class="mono-item"><span class="name">mex_validate(header)</span><span class="info">int</span></div>
+                            <div class="mono-item"><span class="name">mex_get_entry_point(header)</span><span class="info">uint32_t</span></div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9.15 core / shared -->
+                <article id="lib-core">
+                    <h3>
+                        <span class="num">9.15</span> core / shared
+                    </h3>
+                    <div class="grid-2" style="margin-bottom:14px">
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">⚙️</span>
+                                <div>
+                                    <h4>core — Syscall Helpers</h4>
+                                    <p class="card-sub">system/libraries/core/syscall_helpers.h</p>
+                                </div>
+                            </div>
+                            <p>
+                                Lowest-level user-space header. Provides inline <code>syscall0()</code> through
+                                <code>syscall5()</code> wrappers that execute <code>INT 0x80</code> with the correct
+                                register ABI. Used by all executives and libraries.
+                            </p>
+                        </div>
+                        <div class="wiki-card">
+                            <div class="card-header">
+                                <span class="card-icon">📁</span>
+                                <div>
+                                    <h4>shared — Kernel-Shared Headers</h4>
+                                    <p class="card-sub">system/libraries/shared/</p>
+                                </div>
+                            </div>
+                            <p>
+                                Headers shared between kernel and user-space. Includes:
+                            </p>
+                            <div>
+                                <div class="mono-item"><span class="name">io.h</span><span class="info">Port I/O (inb/outb) — never inline your own</span></div>
+                                <div class="mono-item"><span class="name">taskbar_types.h</span><span class="info">Taskbar window info structs</span></div>
+                                <div class="mono-item"><span class="name">wm_types.h</span><span class="info">WM event/message type definitions</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- Section 10: Applications & System Programs -->
+            <section id="apps">
+                <div class="section-header">
+                    <span class="icon">🚀</span>
+                    <div>
+                        <h2>10. Applications &amp; System Programs</h2>
+                        <p>User-space programs — 3 system programs + 12 GUI/console apps</p>
+                    </div>
+                </div>
+
+                <!-- 10.1 System Programs -->
+                <article id="apps-system">
+                    <h3>
+                        <span class="num">10.1</span> System Programs
+                    </h3>
+                    <div class="wiki-card">
+                        <p>
+                            System programs are essential processes loaded by <code>sysman</code> during boot.
+                            They run continuously and provide core infrastructure services.
+                        </p>
+                    </div>
+                    <div class="component-grid">
+                        <div class="component-item">
+                            <h5>⚙️ sysman (PID 1)</h5>
+                            <p class="comp-path">system/systemprograms/sysman/sysman.c</p>
+                            <p>First user process. Loads all 9 executives, then Orbit and Terminal via GRUB modules.
+                            Monitors executive health and uses raw syscalls (no executive path available yet).</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>🖥️ orbit (Desktop Shell)</h5>
+                            <p class="comp-path">system/systemprograms/orbit/orbit.c</p>
+                            <p>Desktop shell — renders wallpaper, taskbar with clock, desktop icons, Start Menu.
+                            Launches apps via libprocess. Reads icons via libfs + libbmp. Draws directly to framebuffer via libgui.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>💻 terminal</h5>
+                            <p class="comp-path">system/systemprograms/terminal/terminal.c</p>
+                            <p>Console host — renders text output from console .mex apps using font8x16 VGA bitmap font.
+                            Reads from app's SHM console buffer, provides scrollback, keyboard input forwarding.</p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 10.2 User Apps -->
+                <article id="apps-user">
+                    <h3>
+                        <span class="num">10.2</span> User Applications (12)
+                    </h3>
+                    <div class="wiki-card">
+                        <p>
+                            All apps are compiled as <strong>.mex</strong> (MaahiOS Executable) binaries, loaded from the ISO filesystem
+                            at runtime. Console apps use <code>libconsole</code> for output; GUI apps use <code>libwindow</code>
+                            for windowed rendering via the WM Executive.
+                        </p>
+                    </div>
+                    <div class="component-grid">
+                        <div class="component-item">
+                            <h5>👋 hello</h5>
+                            <p class="comp-path">apps/hello/ • console</p>
+                            <p>Hello World — minimal console app that prints a greeting. Template for new console apps.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>🎨 hellogui</h5>
+                            <p class="comp-path">apps/hellogui/ • gui (windowed)</p>
+                            <p>Hello GUI — minimal windowed app. Template for new GUI apps using libwindow.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>🎮 boxdrop</h5>
+                            <p class="comp-path">apps/boxdrop/ • gui (windowed)</p>
+                            <p>BoxDrop — falling-block puzzle game. Demonstrates keyboard input, tick-based animation, and custom rendering in a window.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>📊 procman</h5>
+                            <p class="comp-path">apps/procman/ • console</p>
+                            <p>Process Manager — lists all running processes with PID, name, and state. Uses libprocess.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>💾 diskman</h5>
+                            <p class="comp-path">apps/diskman/ • console</p>
+                            <p>Disk Manager — lists all disk devices with size, type, and partition info. Uses libdisk.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>📁 fileman</h5>
+                            <p class="comp-path">apps/fileman/ • console</p>
+                            <p>File Manager — browses ISO9660 filesystem, lists directories and files. Uses libfs.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>ℹ️ sysinfo</h5>
+                            <p class="comp-path">apps/sysinfo/ • console</p>
+                            <p>System Info — displays CPU info, memory stats, uptime, and system configuration.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>⏻ shutdown</h5>
+                            <p class="comp-path">apps/shutdown/ • console</p>
+                            <p>Shutdown/Restart — graceful system shutdown or restart via libprocess_system_shutdown/restart.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>📋 procexp</h5>
+                            <p class="comp-path">apps/procexp/ • gui (windowed)</p>
+                            <p>Process Explorer — real-time process table with auto-refresh, kill button, and memory stats. Uses libwindow table control.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>💿 diskexp</h5>
+                            <p class="comp-path">apps/diskexp/ • gui (windowed)</p>
+                            <p>Disk Explorer — graphical disk browser with partition/volume info, treeview navigation. Uses libwindow.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>📝 wordwrite</h5>
+                            <p class="comp-path">apps/wordwrite/ • gui (windowed)</p>
+                            <p>WordWrite — text editor with menubar (File/Edit/Help), treeview sidebar, textarea editing, open/save file dialogs.</p>
+                        </div>
+                        <div class="component-item">
+                            <h5>🔍 logexp</h5>
+                            <p class="comp-path">apps/logexp/ • gui (windowed)</p>
+                            <p>Log Explorer — kernel log viewer with radio group filter (All/Debug/Info/Warn/Error), scrollable table, auto-refresh. Uses SYS_KLOG_READ (246).</p>
+                        </div>
+                    </div>
+                </article>
             </section>
 
             <!-- Footer -->
             <footer>
                 <div>
-                    <p>MaahiOS Wiki • Last updated: February 2026 • Drivers ✅ Managers ✅ Syscalls ✅ Executives ✅ Libraries ✅</p>
+                    <p>MaahiOS Wiki • Last updated: March 2026 • Drivers ✅ Managers ✅ Syscalls ✅ Executives ✅ Libraries ✅ Apps ✅</p>
                     <p>Built with 💙 for MaahiOS</p>
                 </div>
             </footer>

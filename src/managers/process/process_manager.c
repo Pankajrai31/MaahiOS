@@ -9,10 +9,7 @@
 
 #include "process_manager.h"
 #include "../klog/klog.h"
-
-/* External functions */
-extern void* kmalloc(uint32_t size);
-extern void kfree(void* ptr);
+#include "../memory/kheap.h"
 
 /* Process table */
 #define MAX_PROCESSES 64
@@ -86,6 +83,17 @@ int process_create(uint32_t entry_point, uint32_t *page_dir) {
     pcb->pid = next_pid++;
     pcb->entry_point = entry_point;
     pcb->state = PROCESS_STATE_READY;
+    pcb->type = PROC_TYPE_SYSTEM;  /* Default to system; caller overrides for user apps */
+    pcb->memory_alloc = USER_STACK_SIZE + KERNEL_INT_STACK_SIZE; /* Stacks allocated below */
+    
+    /* Default name: "process_<pid>" */
+    pcb->name[0] = 'p'; pcb->name[1] = 'i'; pcb->name[2] = 'd';
+    pcb->name[3] = '_';
+    int pn = pcb->pid;
+    int ni = 4;
+    if (pn >= 10) { pcb->name[ni++] = '0' + (char)(pn / 10); }
+    pcb->name[ni++] = '0' + (char)(pn % 10);
+    pcb->name[ni] = '\0';
     
     /* Set page directory: caller-provided or kernel default */
     extern uint32_t *kernel_page_directory;
@@ -154,17 +162,22 @@ int process_create(uint32_t entry_point, uint32_t *page_dir) {
  * This function is format-agnostic — it knows nothing about .mex.
  * User-space libraries handle format parsing.
  */
-#define BSS_RESERVE_SIZE    0x20000    /* 128KB reserve for BSS beyond binary */
+#define MIN_BSS_RESERVE     0x4000    /* 16KB minimum BSS reserve for small apps */
 
 int process_create_from_memory(uint32_t base_address, const void *binary_data,
-                               uint32_t binary_size, uint32_t entry_offset) {
+                               uint32_t binary_size, uint32_t entry_offset,
+                               uint32_t bss_size) {
     if (!binary_data || binary_size == 0) {
         KLOG_ERROR("PROC", "create_from_memory: invalid binary data");
         return -1;
     }
 
-    /* Step 1: Allocate binary + BSS reserve, page-aligned */
-    uint32_t alloc_size = (binary_size + BSS_RESERVE_SIZE + 0xFFF) & ~0xFFF;
+    /* Step 1: Allocate binary + actual BSS (with minimum safety floor), page-aligned */
+    uint32_t effective_bss = (bss_size > MIN_BSS_RESERVE) ? bss_size : MIN_BSS_RESERVE;
+    uint32_t alloc_size = (binary_size + effective_bss + 0xFFF) & ~0xFFF;
+
+    KLOG_INFO("PROC", "create_from_memory: bin=%d, bss=%d (eff=%d), alloc=%d",
+              binary_size, bss_size, effective_bss, alloc_size);
 
     extern void *pmm_alloc_size(uint32_t size_bytes);
     void *phys_mem = pmm_alloc_size(alloc_size);
@@ -175,15 +188,22 @@ int process_create_from_memory(uint32_t base_address, const void *binary_data,
 
     /* Step 2: Zero ALL allocated memory first (ensures BSS is zeroed) */
     uint8_t *dst = (uint8_t *)phys_mem;
-    for (uint32_t i = 0; i < alloc_size; i++) {
-        dst[i] = 0;
+    uint32_t *dst32 = (uint32_t *)phys_mem;
+    for (uint32_t i = 0; i < alloc_size / 4; i++) {
+        dst32[i] = 0;
     }
 
-    /* Step 3: Copy binary data over the zeroed region
+    /* Step 3: Copy binary data over the zeroed region (word-aligned fast copy)
      * Both source (caller's buffer) and dest (phys_mem) are identity-mapped
      * in the kernel page directory, so a simple memcpy works here. */
     const uint8_t *src = (const uint8_t *)binary_data;
-    for (uint32_t i = 0; i < binary_size; i++) {
+    uint32_t words = binary_size / 4;
+    const uint32_t *src32 = (const uint32_t *)src;
+    dst32 = (uint32_t *)phys_mem;
+    for (uint32_t i = 0; i < words; i++) {
+        dst32[i] = src32[i];
+    }
+    for (uint32_t i = words * 4; i < binary_size; i++) {
         dst[i] = src[i];
     }
 
@@ -217,6 +237,13 @@ int process_create_from_memory(uint32_t base_address, const void *binary_data,
 
     KLOG_INFO("PROC", "Created from memory PID %d, base=0x%x, bin=%d, alloc=%d",
               pid, base_address, binary_size, alloc_size);
+
+    /* Update memory_alloc on PCB to include binary+BSS allocation */
+    process_t *pcb = process_get_by_pid(pid);
+    if (pcb) {
+        pcb->memory_alloc += alloc_size;
+        pcb->type = PROC_TYPE_USER; /* Loaded binaries default to user type */
+    }
 
     return pid;
 }
@@ -260,6 +287,12 @@ int process_terminate(int pid) {
         return -1;
     }
     
+    /* System processes cannot be killed */
+    if (pcb->type == PROC_TYPE_SYSTEM) {
+        KLOG_ERROR("PROC", "Terminate DENIED: PID %d (%s) is a system process", pid, pcb->name);
+        return -2;  /* Protected */
+    }
+    
     /* Remove from scheduler */
     extern void scheduler_remove_process(int pid);
     scheduler_remove_process(pid);
@@ -274,21 +307,57 @@ int process_terminate(int pid) {
 
 /**
  * List all active processes.
- * Each entry is 8 bytes: [pid:uint32_t][state:uint32_t].
+ * Each entry is 48 bytes:
+ *   [pid:i32][state:u32][name:char[32]][type:u8][pad:u8[3]][memory:u32]
  */
 int process_manager_list(void *buffer, int max_entries) {
     if (!buffer || max_entries <= 0) return -1;
     
-    uint32_t *buf = (uint32_t *)buffer;
+    uint8_t *buf = (uint8_t *)buffer;
     int count = 0;
     
     for (int i = 0; i < MAX_PROCESSES && count < max_entries; i++) {
         if (process_table[i] != 0) {
-            buf[count * 2]     = (uint32_t)process_table[i]->pid;
-            buf[count * 2 + 1] = process_table[i]->state;
+            process_t *pcb = process_table[i];
+            uint8_t *entry = buf + (count * 48);
+            
+            /* pid (4 bytes) */
+            *(int32_t *)(entry + 0) = pcb->pid;
+            /* state (4 bytes) */
+            *(uint32_t *)(entry + 4) = pcb->state;
+            /* name (32 bytes) */
+            for (int j = 0; j < PROC_NAME_MAX; j++)
+                entry[8 + j] = (uint8_t)pcb->name[j];
+            /* type (1 byte) */
+            entry[40] = pcb->type;
+            /* padding (3 bytes) */
+            entry[41] = 0; entry[42] = 0; entry[43] = 0;
+            /* memory_alloc (4 bytes) */
+            *(uint32_t *)(entry + 44) = pcb->memory_alloc;
+            
             count++;
         }
     }
     
     return count;
+}
+
+/**
+ * Set process name and type.
+ */
+int process_set_name(int pid, const char *name, uint8_t type) {
+    process_t *pcb = process_get_by_pid(pid);
+    if (!pcb || !name) return -1;
+    
+    /* Safe copy name */
+    int i;
+    for (i = 0; i < PROC_NAME_MAX - 1 && name[i]; i++) {
+        pcb->name[i] = name[i];
+    }
+    pcb->name[i] = '\0';
+    
+    pcb->type = type;
+    
+    KLOG_INFO("PROC", "Set name PID %d: %s (type=%d)", pid, pcb->name, type);
+    return 0;
 }
