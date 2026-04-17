@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Star -->
+  <path d="M16 3 L19.5 12 L29 12 L21.5 18.5 L24 28 L16 22 L8 28 L10.5 18.5 L3 12 L12.5 12 Z" fill="#E8A317" stroke="#1A1A2E" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Star highlight -->
+  <path d="M16 6 L18 12 L16 10 L14 12 Z" fill="#FFFFFF" opacity="0.3"/>
+</svg>

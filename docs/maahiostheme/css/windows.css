@@ -1,0 +1,390 @@
+/* ================================================================
+   MAAHI OS — WINDOWS & LAYOUT
+   Window chrome, dialogs, menus, taskbar, start menu, desktop.
+   ================================================================ */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   WINDOW  (.os-window)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  title, icon, resizable, maximized, active
+   States:      active, inactive (.inactive on titlebar)
+   Actions:     onclose, onminimize, onmaximize, onrestore, ondrag
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-window {
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+    max-width: 520px;
+}
+
+/* Title bar */
+.os-titlebar {
+    background: linear-gradient(90deg, var(--titlebar-start), var(--titlebar-end));
+    padding: 3px 4px;
+    display: flex; align-items: center; gap: 6px;
+}
+.os-titlebar.inactive {
+    background: linear-gradient(90deg, var(--titlebar-inactive-start), var(--titlebar-inactive-end));
+}
+.os-titlebar-icon {
+    width: 16px; height: 16px; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+}
+.os-titlebar-text {
+    flex: 1; font-size: 12px; font-weight: bold; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.os-titlebar.inactive .os-titlebar-text { color: var(--os-text-disabled); }
+.os-titlebar-btns { display: flex; gap: 2px; }
+.os-titlebar-btn {
+    width: 20px; height: 18px;
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    font-size: 9px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--os-text); cursor: pointer;
+}
+.os-titlebar-btn:active {
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+}
+/* Use SVG icons if available */
+.os-titlebar-btn img { width: 10px; height: 10px; }
+
+/* Menu bar */
+.os-menubar {
+    display: flex; gap: 0; padding: 1px 2px;
+    border-bottom: 1px solid var(--bevel-dark);
+    background: var(--os-chrome);
+}
+.os-menu-item {
+    padding: 2px 8px; font-size: 12px; color: var(--os-text); cursor: pointer;
+}
+.os-menu-item:hover { background: var(--os-accent); color: #fff; }
+
+/* Toolbar */
+.os-toolbar {
+    display: flex; gap: 2px; padding: 3px 4px;
+    border-bottom: 1px solid var(--bevel-dark);
+    background: var(--os-chrome);
+}
+.os-toolbar-btn {
+    width: 24px; height: 22px;
+    border: 1px solid transparent;
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--os-text); cursor: pointer; font-size: 12px;
+}
+.os-toolbar-btn:hover {
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+}
+.os-toolbar-btn img { width: 16px; height: 16px; }
+.os-toolbar-sep { width: 1px; background: var(--bevel-dark); margin: 2px 3px; }
+
+/* Address bar */
+.os-addressbar {
+    display: flex; align-items: center; gap: 4px; padding: 3px 6px;
+    border-bottom: 1px solid var(--bevel-dark);
+    background: var(--os-chrome);
+}
+.os-addressbar-label { font-size: 12px; color: var(--os-text-secondary); white-space: nowrap; }
+.os-addressbar-input {
+    flex: 1; padding: 2px 4px;
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    background: var(--os-input-bg);
+    color: var(--os-text); font-size: 12px;
+}
+
+/* Window body (content) */
+.os-window-body {
+    background: var(--os-surface);
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    margin: 2px;
+    padding: 8px;
+    min-height: 80px; max-height: 140px;
+    overflow-y: auto;
+    color: var(--os-text); font-size: 13px;
+}
+
+/* Status bar */
+.os-statusbar {
+    display: flex; gap: 4px; padding: 2px 4px;
+    border-top: 2px solid;
+    border-color: var(--bevel-dark) transparent transparent var(--bevel-dark);
+}
+.os-statusbar-section {
+    border: 1px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    padding: 1px 8px;
+    font-size: 11px; color: var(--os-text-secondary);
+}
+.os-statusbar-section:first-child { flex: 1; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DIALOG  (.os-dialog)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  title, icon, message, buttons[], type
+   Types:       confirm, error, info, warning, about, input
+   Actions:     onclose, onbuttonclick
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-dialog {
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+    min-width: 280px; max-width: 380px;
+}
+.os-dialog-titlebar {
+    background: linear-gradient(90deg, var(--titlebar-start), var(--titlebar-end));
+    padding: 3px 6px;
+    display: flex; align-items: center; gap: 6px;
+}
+.os-dialog-title { flex: 1; font-size: 12px; font-weight: bold; color: #fff; }
+.os-dialog-close {
+    width: 18px; height: 16px;
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    font-size: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--os-text); cursor: pointer;
+}
+.os-dialog-body   { padding: 16px; display: flex; gap: 12px; align-items: flex-start; }
+.os-dialog-icon   { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+.os-dialog-msg    { font-size: 13px; color: var(--os-text); line-height: 1.4; }
+.os-dialog-buttons {
+    display: flex; justify-content: center; gap: 6px;
+    padding: 0 16px 14px;
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MENUS  (.os-menu)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  items[], checkable, submenu
+   States:      :hover, .disabled, .checked
+   Actions:     onitemclick
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-menu {
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    padding: 2px 0;
+    min-width: 180px;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+}
+.os-menu-entry {
+    padding: 3px 24px 3px 28px;
+    font-size: 12px; color: var(--os-text);
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; position: relative;
+}
+.os-menu-entry:hover { background: var(--os-accent); color: #fff; }
+.os-menu-entry.disabled { color: var(--os-text-disabled); cursor: default; }
+.os-menu-entry.disabled:hover { background: transparent; color: var(--os-text-disabled); }
+.os-menu-shortcut { margin-left: auto; font-size: 11px; color: var(--os-text-secondary); }
+.os-menu-entry:hover .os-menu-shortcut { color: rgba(255,255,255,0.7); }
+.os-menu-check { position: absolute; left: 8px; font-size: 10px; }
+.os-menu-sep {
+    height: 1px; background: var(--bevel-dark); margin: 3px 2px;
+    border-bottom: 1px solid var(--bevel-light);
+}
+.os-menu-arrow { margin-left: auto; font-size: 8px; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TASKBAR  (.os-taskbar)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  position (bottom/top), autoHide
+   Contains:    Start button, quick launch, task buttons, systray
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-taskbar {
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    display: flex; align-items: center; gap: 4px;
+    padding: 2px 4px; height: 32px;
+}
+.os-start-btn {
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    padding: 2px 8px;
+    display: flex; align-items: center; gap: 4px;
+    cursor: pointer; font-size: 12px; font-weight: bold; color: var(--os-text);
+    height: 24px;
+}
+.os-start-btn:active {
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+}
+.os-start-logo { font-size: 14px; }
+.os-start-btn img { width: 16px; height: 16px; }
+
+/* Quick launch */
+.os-quicklaunch {
+    display: flex; gap: 2px; padding: 0 4px;
+    border-right: 1px solid var(--bevel-dark);
+    margin-right: 2px;
+    height: 22px; align-items: center;
+}
+.os-quicklaunch-btn {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 12px;
+    border: 1px solid transparent;
+}
+.os-quicklaunch-btn:hover {
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+}
+.os-quicklaunch-btn img { width: 16px; height: 16px; }
+
+/* Task buttons */
+.os-task-btn {
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    padding: 1px 10px;
+    font-size: 11px; color: var(--os-text);
+    cursor: pointer;
+    max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap;
+    height: 22px; display: flex; align-items: center; gap: 4px;
+}
+.os-task-btn.active {
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    background: var(--os-chrome-light);
+    font-weight: bold;
+}
+.os-task-btn img { width: 16px; height: 16px; }
+
+/* System tray */
+.os-systray {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    padding: 1px 8px; height: 22px;
+    font-size: 11px; color: var(--os-text-secondary);
+}
+.os-systray-icon { font-size: 12px; cursor: pointer; }
+.os-systray-icon img { width: 16px; height: 16px; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   START MENU  (.os-startmenu)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  items[], brandText
+   Actions:     onitemclick, onshutdown, onlogoff
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-startmenu {
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    display: flex; width: 320px;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+}
+.os-startmenu-sidebar {
+    width: 28px;
+    background: linear-gradient(to top, var(--titlebar-start), var(--titlebar-end));
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 8px;
+}
+.os-startmenu-sidebar-text {
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    font-size: 14px; font-weight: bold; color: #fff; letter-spacing: 2px;
+}
+.os-startmenu-list { flex: 1; padding: 4px 0; }
+.os-startmenu-item {
+    padding: 6px 12px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--os-text); cursor: pointer;
+}
+.os-startmenu-item:hover { background: var(--os-accent); color: #fff; }
+.os-startmenu-item-icon { font-size: 18px; width: 24px; text-align: center; }
+.os-startmenu-item-icon img { width: 20px; height: 20px; }
+.os-startmenu-item-arrow { margin-left: auto; font-size: 8px; color: var(--os-text-secondary); }
+.os-startmenu-item:hover .os-startmenu-item-arrow { color: rgba(255,255,255,0.7); }
+.os-startmenu-sep {
+    height: 1px; background: var(--bevel-dark); margin: 3px 4px;
+    border-bottom: 1px solid var(--bevel-light);
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DESKTOP ICONS  (.os-desktop-icon)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  icon, label, position (x, y)
+   States:      .selected
+   Actions:     onclick, ondblclick
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-desktop-icon {
+    width: 70px; text-align: center; cursor: pointer; padding: 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.os-desktop-icon:hover .os-desktop-icon-img { opacity: 0.8; }
+.os-desktop-icon-img { font-size: 32px; }
+.os-desktop-icon-img img { width: 32px; height: 32px; }
+.os-desktop-icon-label {
+    font-size: 11px; color: #fff;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
+    word-wrap: break-word; line-height: 1.2;
+}
+.os-desktop-icon.selected .os-desktop-icon-label {
+    background: var(--os-accent); color: #fff; padding: 0 2px;
+}
+.os-desktop-icon.selected .os-desktop-icon-img {
+    filter: brightness(0.7) sepia(1) hue-rotate(200deg) saturate(2);
+}
+
+/* File browser icon grid */
+.os-file-grid {
+    display: flex; flex-wrap: wrap; gap: 8px; padding: 8px;
+}
+.os-file-item {
+    width: 64px; text-align: center; cursor: pointer; padding: 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.os-file-item:hover { background: rgba(43,91,181,0.15); }
+.os-file-item.selected { background: var(--os-accent); }
+.os-file-icon { font-size: 28px; }
+.os-file-icon img { width: 32px; height: 32px; }
+.os-file-name { font-size: 11px; color: var(--os-text); line-height: 1.2; word-break: break-all; }
+.os-file-item.selected .os-file-name { color: #fff; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CONTROL PANEL GRID  (.os-cpanel-grid)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-cpanel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px; padding: 12px;
+}
+.os-cpanel-item {
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; padding: 8px 4px; cursor: pointer; gap: 4px;
+}
+.os-cpanel-item:hover { background: rgba(43,91,181,0.15); }
+.os-cpanel-icon { font-size: 28px; }
+.os-cpanel-icon img { width: 32px; height: 32px; }
+.os-cpanel-label { font-size: 11px; color: var(--os-text); line-height: 1.2; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DESKTOP PREVIEW  (.os-desktop-preview)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-desktop-preview {
+    width: 100%; min-height: 480px;
+    background: var(--os-desktop-bg);
+    position: relative; overflow: hidden;
+    border: 2px solid var(--bevel-dark);
+}
+.os-desktop-icons-area {
+    position: absolute; top: 10px; left: 10px;
+    display: flex; flex-direction: column; gap: 8px;
+}
+.os-desktop-float-win { position: absolute; }

@@ -363,14 +363,21 @@ int iso9660_list_directory(uint32_t dir_lba, uint32_t dir_size, iso_file_entry_t
 int iso9660_find_directory(const char *name, uint32_t *out_lba, uint32_t *out_size) {
     iso_file_entry_t entries[16];
     int count = iso9660_list_root(entries, 16);
+
+    /* Compute effective name length: ignore trailing '/' or '\\' */
+    int name_len = 0;
+    while (name[name_len]) name_len++;
+    while (name_len > 0 && (name[name_len - 1] == '/' || name[name_len - 1] == '\\'))
+        name_len--;
     
     for (int i = 0; i < count; i++) {
         if (entries[i].is_directory) {
-            // Simple case-insensitive compare
+            // Simple case-insensitive compare up to name_len chars
             const char *a = entries[i].name;
             const char *b = name;
             int match = 1;
-            while (*a && *b) {
+            int j = 0;
+            while (*a && j < name_len) {
                 char ca = *a >= 'a' && *a <= 'z' ? *a - 32 : *a;
                 char cb = *b >= 'a' && *b <= 'z' ? *b - 32 : *b;
                 if (ca != cb) {
@@ -379,8 +386,10 @@ int iso9660_find_directory(const char *name, uint32_t *out_lba, uint32_t *out_si
                 }
                 a++;
                 b++;
+                j++;
             }
-            if (match && *a == *b) {
+            /* Both must end: entry name at '\0' and we consumed name_len chars */
+            if (match && *a == '\0' && j == name_len) {
                 *out_lba = entries[i].lba;
                 *out_size = entries[i].size;
                 return 0;

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Folder back -->
+  <path d="M3 8 L3 26 Q3 27 4 27 L28 27 Q29 27 29 26 L29 11 Q29 10 28 10 L15 10 L12 7 Q11.5 6.5 11 6.5 L4 6.5 Q3 6.5 3 7.5 Z" fill="#E8A317" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Folder front face -->
+  <rect x="3" y="12" width="26" height="15" rx="1.5" ry="1.5" fill="#E8A317" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Folder highlight -->
+  <rect x="4" y="12" width="24" height="3" rx="1" fill="#F0B830" opacity="0.6"/>
+</svg>

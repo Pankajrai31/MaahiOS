@@ -1,0 +1,713 @@
+<!-- ================================================================
+     TAB: SAMPLE APPS — Full mockups of core MaahiOS system utilities.
+     Each app demonstrates how controls, windows, and icons combine.
+     Reference: css/apps.css, css/windows.css, css/controls.css
+     ================================================================ -->
+
+<!-- ────────────────────────────────────────────
+     PROCESS EXPLORER
+     ──────────────────────────────────────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Process Explorer</h2>
+    <p class="ds-section-desc">Real-time process list with CPU/memory graphs, toolbar actions, context menu, and action panel. Key CSS prefix: <code>pe-*</code>.</p>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Component</th><th>CSS Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>Header stats bar</td><td><code>.pe-header-bar</code></td><td>Shows CPU %, memory, process &amp; thread count</td></tr>
+            <tr><td>Process table</td><td><code>.pe-table-wrap</code> + <code>.pe-table</code></td><td>Sunken bordered list with sortable column headers</td></tr>
+            <tr><td>CPU bar</td><td><code>.pe-cpu-bar</code></td><td>Inline bar; add <code>.high</code> or <code>.med</code></td></tr>
+            <tr><td>Toolbar</td><td><code>.pe-toolbar</code></td><td>Stop, Restart, End Tree, Priority, Affinity, Properties, Suspend/Resume</td></tr>
+            <tr><td>Context menu</td><td><code>.pe-context-menu</code></td><td>Right-click popup with actions, separators, shortcuts</td></tr>
+            <tr><td>Action panel</td><td><code>.pe-action-panel</code></td><td>Bottom bar with quick-action buttons for selected process</td></tr>
+            <tr><td>Graphs</td><td><code>.pe-graph-area</code> + <code>.pe-graph-box</code></td><td>Dark canvas with SVG polyline for CPU/Memory</td></tr>
+        </tbody>
+    </table>
+
+    <!-- Live Preview -->
+    <div class="ds-preview" style="background: var(--os-surface-sunken); padding: 16px;">
+        <div class="os-window" style="max-width: 620px;">
+            <div class="os-titlebar">
+                <img src="icons/icon-process-explorer.svg" width="16" height="16" class="os-titlebar-icon">
+                <span class="os-titlebar-text">MaahiOS Process Explorer</span>
+                <div class="os-titlebar-btns">
+                    <div class="os-titlebar-btn"><img src="icons/icon-minimize.svg" width="10" height="10"></div>
+                    <div class="os-titlebar-btn"><img src="icons/icon-maximize.svg" width="10" height="10"></div>
+                    <div class="os-titlebar-btn os-titlebar-close"><img src="icons/icon-close.svg" width="10" height="10"></div>
+                </div>
+            </div>
+            <div class="os-menubar">
+                <span class="os-menu-item"><u>F</u>ile</span>
+                <span class="os-menu-item"><u>O</u>ptions</span>
+                <span class="os-menu-item"><u>V</u>iew</span>
+                <span class="os-menu-item"><u>P</u>rocess</span>
+                <span class="os-menu-item"><u>H</u>elp</span>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="pe-toolbar">
+                <span class="pe-toolbar-btn pe-tb-danger" title="Stop Process">
+                    <img src="icons/icon-stop.svg" width="13" height="13" class="pe-tb-icon"> Stop
+                </span>
+                <span class="pe-toolbar-btn" title="Restart Process">
+                    <img src="icons/icon-refresh.svg" width="13" height="13" class="pe-tb-icon"> Restart
+                </span>
+                <span class="pe-toolbar-btn pe-tb-danger" title="End Process Tree">
+                    <img src="icons/icon-error.svg" width="13" height="13" class="pe-tb-icon"> End Tree
+                </span>
+                <div class="pe-toolbar-sep"></div>
+                <span class="pe-toolbar-btn" title="Set Priority">
+                    <img src="icons/icon-sort-asc.svg" width="13" height="13" class="pe-tb-icon"> Priority ▾
+                </span>
+                <span class="pe-toolbar-btn" title="Set Affinity">
+                    <img src="icons/icon-settings.svg" width="13" height="13" class="pe-tb-icon"> Affinity
+                </span>
+                <div class="pe-toolbar-sep"></div>
+                <span class="pe-toolbar-btn" title="Properties">
+                    <img src="icons/icon-info.svg" width="13" height="13" class="pe-tb-icon"> Properties
+                </span>
+                <span class="pe-toolbar-btn" title="Open File Location">
+                    <img src="icons/icon-folder-open.svg" width="13" height="13" class="pe-tb-icon"> Location
+                </span>
+                <div class="pe-toolbar-sep"></div>
+                <span class="pe-toolbar-btn disabled" title="Resume (not suspended)">
+                    <img src="icons/icon-play.svg" width="13" height="13" class="pe-tb-icon"> Resume
+                </span>
+                <span class="pe-toolbar-btn" title="Suspend Process">
+                    <img src="icons/icon-pause.svg" width="13" height="13" class="pe-tb-icon"> Suspend
+                </span>
+            </div>
+
+            <!-- Stats header -->
+            <div class="pe-header-bar">
+                <div class="pe-stat">CPU: <span class="pe-stat-value">23%</span></div>
+                <div class="pe-stat">Memory: <span class="pe-stat-value">1.2 GB / 4 GB</span></div>
+                <div class="pe-stat">Processes: <span class="pe-stat-value">47</span></div>
+                <div class="pe-stat">Threads: <span class="pe-stat-value">312</span></div>
+            </div>
+
+            <!-- Process Table -->
+            <div class="pe-table-wrap">
+                <table class="pe-table">
+                    <thead>
+                        <tr><th>Process Name</th><th>PID</th><th>CPU</th><th>Memory</th><th>Status</th><th>User</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><img src="icons/icon-settings.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">kernel</td>
+                            <td class="pe-pid">0</td>
+                            <td><span class="pe-cpu-bar" style="width:4px;"></span> 0.2%</td>
+                            <td>512 KB</td>
+                            <td><span class="os-badge os-badge-teal" style="padding:0 4px;font-size:9px;">Running</span></td>
+                            <td>SYSTEM</td>
+                        </tr>
+                        <tr>
+                            <td><img src="icons/icon-computer.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">shell.exe</td>
+                            <td class="pe-pid">4</td>
+                            <td><span class="pe-cpu-bar" style="width:20px;"></span> 5.1%</td>
+                            <td>28 MB</td>
+                            <td><span class="os-badge os-badge-teal" style="padding:0 4px;font-size:9px;">Running</span></td>
+                            <td>maahi</td>
+                        </tr>
+                        <tr class="pe-selected">
+                            <td><img src="icons/icon-process-explorer.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">procexp.exe</td>
+                            <td class="pe-pid">156</td>
+                            <td><span class="pe-cpu-bar med" style="width:36px;"></span> 12.3%</td>
+                            <td>18 MB</td>
+                            <td><span class="os-badge os-badge-teal" style="padding:0 4px;font-size:9px;">Running</span></td>
+                            <td>maahi</td>
+                        </tr>
+                        <tr>
+                            <td><img src="icons/icon-network.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">netstack.sys</td>
+                            <td class="pe-pid">8</td>
+                            <td><span class="pe-cpu-bar" style="width:6px;"></span> 0.8%</td>
+                            <td>4 MB</td>
+                            <td><span class="os-badge os-badge-teal" style="padding:0 4px;font-size:9px;">Running</span></td>
+                            <td>SYSTEM</td>
+                        </tr>
+                        <tr>
+                            <td><img src="icons/icon-file-manager.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">filemanager.exe</td>
+                            <td class="pe-pid">204</td>
+                            <td><span class="pe-cpu-bar" style="width:14px;"></span> 3.4%</td>
+                            <td>22 MB</td>
+                            <td><span class="os-badge os-badge-teal" style="padding:0 4px;font-size:9px;">Running</span></td>
+                            <td>maahi</td>
+                        </tr>
+                        <tr>
+                            <td><img src="icons/icon-speaker.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">snddrv.sys</td>
+                            <td class="pe-pid">12</td>
+                            <td><span class="pe-cpu-bar" style="width:2px;"></span> 0.1%</td>
+                            <td>2 MB</td>
+                            <td><span class="os-badge os-badge-default" style="padding:0 4px;font-size:9px;">Idle</span></td>
+                            <td>SYSTEM</td>
+                        </tr>
+                        <tr>
+                            <td><img src="icons/icon-disk-manager.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">diskio.sys</td>
+                            <td class="pe-pid">16</td>
+                            <td><span class="pe-cpu-bar high" style="width:50px;"></span> 18.7%</td>
+                            <td>8 MB</td>
+                            <td><span class="os-badge os-badge-warning" style="padding:0 4px;font-size:9px;">Busy</span></td>
+                            <td>SYSTEM</td>
+                        </tr>
+                        <tr>
+                            <td><img src="icons/icon-keyboard.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">kbddrv.sys</td>
+                            <td class="pe-pid">20</td>
+                            <td><span class="pe-cpu-bar" style="width:2px;"></span> 0.0%</td>
+                            <td>1 MB</td>
+                            <td><span class="os-badge os-badge-default" style="padding:0 4px;font-size:9px;">Idle</span></td>
+                            <td>SYSTEM</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Context Menu (mockup positioned near selected row) -->
+                <div class="pe-context-menu" style="top:72px;right:40px;">
+                    <div class="pe-ctx-item pe-ctx-danger">
+                        <span class="pe-ctx-icon"><img src="icons/icon-stop.svg" width="12" height="12"></span> Stop Process
+                        <span class="pe-ctx-shortcut">Del</span>
+                    </div>
+                    <div class="pe-ctx-item">
+                        <span class="pe-ctx-icon"><img src="icons/icon-refresh.svg" width="12" height="12"></span> Restart Process
+                        <span class="pe-ctx-shortcut">Ctrl+R</span>
+                    </div>
+                    <div class="pe-ctx-item pe-ctx-danger">
+                        <span class="pe-ctx-icon"><img src="icons/icon-error.svg" width="12" height="12"></span> End Process Tree
+                        <span class="pe-ctx-shortcut">Shift+Del</span>
+                    </div>
+                    <div class="pe-ctx-sep"></div>
+                    <div class="pe-ctx-item">
+                        <span class="pe-ctx-icon"><img src="icons/icon-pause.svg" width="12" height="12"></span> Suspend
+                    </div>
+                    <div class="pe-ctx-item disabled">
+                        <span class="pe-ctx-icon"><img src="icons/icon-play.svg" width="12" height="12"></span> Resume
+                    </div>
+                    <div class="pe-ctx-sep"></div>
+                    <div class="pe-ctx-item pe-ctx-submenu">
+                        <span class="pe-ctx-icon"><img src="icons/icon-sort-asc.svg" width="12" height="12"></span> Set Priority
+                    </div>
+                    <div class="pe-ctx-item pe-ctx-submenu">
+                        <span class="pe-ctx-icon"><img src="icons/icon-settings.svg" width="12" height="12"></span> Set Affinity
+                    </div>
+                    <div class="pe-ctx-sep"></div>
+                    <div class="pe-ctx-item">
+                        <span class="pe-ctx-icon"><img src="icons/icon-search.svg" width="12" height="12"></span> Search Online
+                    </div>
+                    <div class="pe-ctx-item">
+                        <span class="pe-ctx-icon"><img src="icons/icon-folder-open.svg" width="12" height="12"></span> Open File Location
+                    </div>
+                    <div class="pe-ctx-item">
+                        <span class="pe-ctx-icon"><img src="icons/icon-info.svg" width="12" height="12"></span> Properties
+                        <span class="pe-ctx-shortcut">Alt+Enter</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Panel (shown when row selected) -->
+            <div class="pe-action-panel">
+                <span class="pe-sel-label"><img src="icons/icon-process-explorer.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">procexp.exe (PID 156)</span>
+                <button class="os-btn os-btn-sm" style="font-size:10px;padding:1px 8px;"><img src="icons/icon-stop.svg" width="10" height="10"> Stop</button>
+                <button class="os-btn os-btn-sm" style="font-size:10px;padding:1px 8px;"><img src="icons/icon-refresh.svg" width="10" height="10"> Restart</button>
+                <button class="os-btn os-btn-sm" style="font-size:10px;padding:1px 8px;"><img src="icons/icon-pause.svg" width="10" height="10"> Suspend</button>
+                <button class="os-btn os-btn-sm" style="font-size:10px;padding:1px 8px;"><img src="icons/icon-info.svg" width="10" height="10"> Properties</button>
+            </div>
+
+            <!-- Graphs -->
+            <div class="pe-graph-area">
+                <div style="flex:1;text-align:center;">
+                    <div style="font-size:10px;color:var(--os-text-secondary);margin-bottom:2px;">CPU Usage</div>
+                    <div class="pe-graph-box">
+                        <span class="pe-graph-label">CPU</span>
+                        <span class="pe-graph-value" style="color:#4DC7A5;">23%</span>
+                        <div class="pe-graph-line">
+                            <svg viewBox="0 0 200 60" preserveAspectRatio="none">
+                                <polyline fill="none" stroke="#1E8A65" stroke-width="1.5" points="0,50 20,48 40,42 60,45 80,38 100,30 120,35 140,28 160,22 180,26 200,24"/>
+                                <polyline fill="rgba(30,138,101,0.2)" stroke="none" points="0,60 0,50 20,48 40,42 60,45 80,38 100,30 120,35 140,28 160,22 180,26 200,24 200,60"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div style="flex:1;text-align:center;">
+                    <div style="font-size:10px;color:var(--os-text-secondary);margin-bottom:2px;">Memory Usage</div>
+                    <div class="pe-graph-box">
+                        <span class="pe-graph-label">MEM</span>
+                        <span class="pe-graph-value" style="color:#4A7BD5;">30%</span>
+                        <div class="pe-graph-line">
+                            <svg viewBox="0 0 200 60" preserveAspectRatio="none">
+                                <polyline fill="none" stroke="#2B5BB5" stroke-width="1.5" points="0,44 20,44 40,42 60,42 80,40 100,38 120,38 140,36 160,36 180,35 200,34"/>
+                                <polyline fill="rgba(43,91,181,0.2)" stroke="none" points="0,60 0,44 20,44 40,42 60,42 80,40 100,38 120,38 140,36 160,36 180,35 200,34 200,60"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="os-statusbar">
+                <span class="os-statusbar-section">Processes: 47 | Threads: 312 | Uptime: 02:14:33</span>
+                <span class="os-statusbar-section">CPU: 23%</span>
+                <span class="os-statusbar-section">Mem: 30%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process Actions Reference -->
+    <h3 style="margin:16px 0 8px;font-size:13px;color:var(--os-text);">Process Actions Reference</h3>
+    <table class="ds-prop-table">
+        <thead><tr><th>Action</th><th>Shortcut</th><th>Description</th><th>Danger</th></tr></thead>
+        <tbody>
+            <tr><td>Stop Process</td><td><code>Del</code></td><td>Terminate the selected process immediately</td><td>Yes</td></tr>
+            <tr><td>Restart Process</td><td><code>Ctrl+R</code></td><td>Stop then re-launch the selected process</td><td>No</td></tr>
+            <tr><td>End Process Tree</td><td><code>Shift+Del</code></td><td>Terminate process and all child processes</td><td>Yes</td></tr>
+            <tr><td>Suspend</td><td>—</td><td>Pause execution (freeze threads)</td><td>No</td></tr>
+            <tr><td>Resume</td><td>—</td><td>Resume a suspended process</td><td>No</td></tr>
+            <tr><td>Set Priority</td><td>—</td><td>Submenu: Realtime, High, Above Normal, Normal, Below Normal, Low</td><td>No</td></tr>
+            <tr><td>Set Affinity</td><td>—</td><td>Assign to specific CPU cores</td><td>No</td></tr>
+            <tr><td>Properties</td><td><code>Alt+Enter</code></td><td>Open details dialog (path, threads, modules)</td><td>No</td></tr>
+            <tr><td>Open File Location</td><td>—</td><td>Open File Manager at the process executable path</td><td>No</td></tr>
+            <tr><td>Search Online</td><td>—</td><td>Search the process name in the browser</td><td>No</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────────────────────────────────────────
+     FILE MANAGER
+     ──────────────────────────────────────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">File Manager</h2>
+    <p class="ds-section-desc">Dual-pane file browser with sidebar tree, breadcrumb navigation, detail table, and status info. Key CSS prefix: <code>fm-*</code>.</p>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Component</th><th>CSS Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>Sidebar</td><td><code>.fm-sidebar</code></td><td>Left pane with favorites, devices, network tree nodes</td></tr>
+            <tr><td>Sidebar item</td><td><code>.fm-sidebar-item</code></td><td>Clickable row; active = <code>.fm-active</code></td></tr>
+            <tr><td>Breadcrumb</td><td><code>.fm-breadcrumb</code></td><td>Path segments with clickable links</td></tr>
+            <tr><td>Detail table</td><td><code>.fm-detail-table</code></td><td>Name, Size, Type, Modified columns</td></tr>
+            <tr><td>Info bar</td><td><code>.fm-info-bar</code></td><td>Bottom pane: item count, selection details</td></tr>
+        </tbody>
+    </table>
+
+    <!-- Live Preview -->
+    <div class="ds-preview" style="background: var(--os-surface-sunken); padding: 16px;">
+        <div class="os-window" style="max-width: 640px;">
+            <div class="os-titlebar">
+                <img src="icons/icon-file-manager.svg" width="16" height="16" class="os-titlebar-icon">
+                <span class="os-titlebar-text">MaahiOS File Manager — C:\Users\maahi\Documents</span>
+                <div class="os-titlebar-btns">
+                    <div class="os-titlebar-btn"><img src="icons/icon-minimize.svg" width="10" height="10"></div>
+                    <div class="os-titlebar-btn"><img src="icons/icon-maximize.svg" width="10" height="10"></div>
+                    <div class="os-titlebar-btn os-titlebar-close"><img src="icons/icon-close.svg" width="10" height="10"></div>
+                </div>
+            </div>
+            <div class="os-menubar">
+                <span class="os-menu-item"><u>F</u>ile</span>
+                <span class="os-menu-item"><u>E</u>dit</span>
+                <span class="os-menu-item"><u>V</u>iew</span>
+                <span class="os-menu-item"><u>G</u>o</span>
+                <span class="os-menu-item"><u>T</u>ools</span>
+                <span class="os-menu-item"><u>H</u>elp</span>
+            </div>
+            <div class="os-toolbar">
+                <div class="os-toolbar-btn"><img src="icons/icon-back.svg" width="14" height="14"></div>
+                <div class="os-toolbar-btn"><img src="icons/icon-forward.svg" width="14" height="14"></div>
+                <div class="os-toolbar-btn"><img src="icons/icon-up.svg" width="14" height="14"></div>
+                <div class="os-toolbar-btn"><img src="icons/icon-home.svg" width="14" height="14"></div>
+                <div class="os-toolbar-sep"></div>
+                <div class="os-toolbar-btn"><img src="icons/icon-cut.svg" width="14" height="14"></div>
+                <div class="os-toolbar-btn"><img src="icons/icon-copy.svg" width="14" height="14"></div>
+                <div class="os-toolbar-btn"><img src="icons/icon-paste.svg" width="14" height="14"></div>
+                <div class="os-toolbar-sep"></div>
+                <div class="os-toolbar-btn"><img src="icons/icon-delete.svg" width="14" height="14"></div>
+                <div class="os-toolbar-sep"></div>
+                <div class="os-toolbar-btn"><img src="icons/icon-grid.svg" width="14" height="14"></div>
+                <div class="os-toolbar-btn"><img src="icons/icon-list.svg" width="14" height="14"></div>
+            </div>
+            <div class="os-addressbar">
+                <span class="os-addressbar-label">Address</span>
+                <input type="text" class="os-addressbar-input" value="C:\Users\maahi\Documents">
+                <button class="os-btn os-btn-sm" style="min-width:auto;padding:2px 8px;">Go</button>
+            </div>
+            <div style="display:flex;margin:2px;">
+                <!-- Sidebar -->
+                <div class="fm-sidebar">
+                    <div class="fm-sidebar-section">Favorites</div>
+                    <div class="fm-sidebar-item"><img src="icons/icon-home.svg" width="14" height="14" class="fm-sidebar-icon"> Home</div>
+                    <div class="fm-sidebar-item"><img src="icons/icon-computer.svg" width="14" height="14" class="fm-sidebar-icon"> Desktop</div>
+                    <div class="fm-sidebar-item fm-active"><img src="icons/icon-file-text.svg" width="14" height="14" class="fm-sidebar-icon"> Documents</div>
+                    <div class="fm-sidebar-item"><img src="icons/icon-download.svg" width="14" height="14" class="fm-sidebar-icon"> Downloads</div>
+                    <div class="fm-sidebar-item"><img src="icons/icon-file-image.svg" width="14" height="14" class="fm-sidebar-icon"> Pictures</div>
+                    <div class="fm-sidebar-section">Devices</div>
+                    <div class="fm-sidebar-item"><img src="icons/icon-drive-hdd.svg" width="14" height="14" class="fm-sidebar-icon"> C: (System)</div>
+                    <div class="fm-sidebar-item"><img src="icons/icon-drive-hdd.svg" width="14" height="14" class="fm-sidebar-icon"> D: (Data)</div>
+                    <div class="fm-sidebar-item"><img src="icons/icon-drive-usb.svg" width="14" height="14" class="fm-sidebar-icon"> E: (USB)</div>
+                    <div class="fm-sidebar-section">Network</div>
+                    <div class="fm-sidebar-item"><img src="icons/icon-network.svg" width="14" height="14" class="fm-sidebar-icon"> Network</div>
+                </div>
+                <!-- File List -->
+                <div class="fm-content">
+                    <div class="fm-breadcrumb">
+                        <span class="fm-breadcrumb-seg">C:</span>
+                        <span class="fm-breadcrumb-sep"> ▸ </span>
+                        <span class="fm-breadcrumb-seg">Users</span>
+                        <span class="fm-breadcrumb-sep"> ▸ </span>
+                        <span class="fm-breadcrumb-seg">maahi</span>
+                        <span class="fm-breadcrumb-sep"> ▸ </span>
+                        <span style="color:var(--os-text);">Documents</span>
+                    </div>
+                    <div style="border:2px solid;border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);background:var(--os-input-bg);flex:1;overflow:auto;max-height:180px;">
+                        <table class="fm-detail-table">
+                            <thead>
+                                <tr>
+                                    <th>Name <span style="font-size:8px;color:var(--os-text-secondary);">▲</span></th>
+                                    <th>Size</th>
+                                    <th>Type</th>
+                                    <th>Modified</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><img src="icons/icon-folder.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">Projects</td><td>—</td><td>Folder</td><td>2025-03-10</td></tr>
+                                <tr><td><img src="icons/icon-folder.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">Sources</td><td>—</td><td>Folder</td><td>2025-03-08</td></tr>
+                                <tr><td><img src="icons/icon-folder.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">Backups</td><td>—</td><td>Folder</td><td>2025-02-28</td></tr>
+                                <tr class="fm-selected"><td><img src="icons/icon-file-text.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">readme.txt</td><td>2.4 KB</td><td>Text File</td><td>2025-03-12</td></tr>
+                                <tr><td><img src="icons/icon-file-code.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">notes.md</td><td>8.1 KB</td><td>Markdown</td><td>2025-03-11</td></tr>
+                                <tr><td><img src="icons/icon-file.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">budget.csv</td><td>14 KB</td><td>CSV File</td><td>2025-03-05</td></tr>
+                                <tr><td><img src="icons/icon-file-image.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">diagram.bmp</td><td>320 KB</td><td>Bitmap Image</td><td>2025-02-20</td></tr>
+                                <tr><td><img src="icons/icon-file-archive.svg" width="14" height="14" style="vertical-align:middle;margin-right:4px;">archive.tar</td><td>4.2 MB</td><td>Archive</td><td>2025-01-15</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="fm-info-bar">
+                        <span>8 items (3 folders, 5 files)</span>
+                        <span>Selected: readme.txt — 2.4 KB</span>
+                    </div>
+                </div>
+            </div>
+            <div class="os-statusbar">
+                <span class="os-statusbar-section">8 object(s) | 4.5 MB total</span>
+                <span class="os-statusbar-section">Free: 12.8 GB</span>
+                <span class="os-statusbar-section">C: (System)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ────────────────────────────────────────────
+     DISK MANAGER
+     ──────────────────────────────────────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Disk Manager</h2>
+    <p class="ds-section-desc">Volume list + graphical partition map. Key CSS prefix: <code>dm-*</code>.</p>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Component</th><th>CSS Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>Volume table</td><td><code>.dm-top-pane</code> + <code>.dm-disk-table</code></td><td>Sortable table: volume, label, filesystem, capacity, free, usage bar, status</td></tr>
+            <tr><td>Usage bar</td><td><code>.dm-usage-bar</code> + <code>.dm-usage-fill</code></td><td>Inline capacity bar; colour conveys health</td></tr>
+            <tr><td>Partition map</td><td><code>.dm-bottom-pane</code></td><td>Graphical horizontal bars per physical disk</td></tr>
+            <tr><td>Partition segment</td><td><code>.dm-part</code></td><td>Variants: <code>.dm-part-primary</code>, <code>.dm-part-logical</code>, <code>.dm-part-swap</code>, <code>.dm-part-free</code></td></tr>
+            <tr><td>Legend</td><td><code>.dm-legend</code></td><td>Colour key for partition types</td></tr>
+        </tbody>
+    </table>
+
+    <!-- Live Preview -->
+    <div class="ds-preview" style="background: var(--os-surface-sunken); padding: 16px;">
+        <div class="os-window" style="max-width: 640px;">
+            <div class="os-titlebar">
+                <img src="icons/icon-disk-manager.svg" width="16" height="16" class="os-titlebar-icon">
+                <span class="os-titlebar-text">MaahiOS Disk Manager</span>
+                <div class="os-titlebar-btns">
+                    <div class="os-titlebar-btn"><img src="icons/icon-minimize.svg" width="10" height="10"></div>
+                    <div class="os-titlebar-btn"><img src="icons/icon-maximize.svg" width="10" height="10"></div>
+                    <div class="os-titlebar-btn os-titlebar-close"><img src="icons/icon-close.svg" width="10" height="10"></div>
+                </div>
+            </div>
+            <div class="os-menubar">
+                <span class="os-menu-item"><u>A</u>ction</span>
+                <span class="os-menu-item"><u>V</u>iew</span>
+                <span class="os-menu-item"><u>H</u>elp</span>
+            </div>
+            <div class="dm-split">
+                <!-- Volume table -->
+                <div class="dm-top-pane">
+                    <table class="dm-disk-table">
+                        <thead>
+                            <tr><th>Volume</th><th>Label</th><th>File System</th><th>Capacity</th><th>Free Space</th><th>Usage</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr class="dm-selected">
+                                <td>C:</td><td>System</td><td>MaahiFS</td><td>32 GB</td><td>12.8 GB</td>
+                                <td><div class="dm-usage-bar"><div class="dm-usage-fill" style="width:60%;background:var(--os-accent);"></div></div> <span style="font-size:10px;">60%</span></td>
+                                <td><span class="os-badge os-badge-teal" style="padding:0 4px;font-size:9px;">Healthy</span></td>
+                            </tr>
+                            <tr>
+                                <td>D:</td><td>Data</td><td>MaahiFS</td><td>128 GB</td><td>84 GB</td>
+                                <td><div class="dm-usage-bar"><div class="dm-usage-fill" style="width:34%;background:var(--os-teal);"></div></div> <span style="font-size:10px;">34%</span></td>
+                                <td><span class="os-badge os-badge-teal" style="padding:0 4px;font-size:9px;">Healthy</span></td>
+                            </tr>
+                            <tr>
+                                <td>E:</td><td>USB Drive</td><td>FAT32</td><td>16 GB</td><td>1.2 GB</td>
+                                <td><div class="dm-usage-bar"><div class="dm-usage-fill" style="width:92%;background:var(--os-danger);"></div></div> <span style="font-size:10px;">92%</span></td>
+                                <td><span class="os-badge os-badge-warning" style="padding:0 4px;font-size:9px;">Low Space</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Partition map -->
+                <div class="dm-bottom-pane">
+                    <div style="font-size:10px;font-weight:600;color:var(--os-text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Disk Layout</div>
+                    <!-- Disk 0 -->
+                    <div class="dm-disk-row">
+                        <div class="dm-disk-label">Disk 0<br><span style="font-weight:normal;font-size:9px;">160 GB</span></div>
+                        <div class="dm-partition-bar">
+                            <div class="dm-part dm-part-primary" style="width:20%;">C: System<br>32 GB</div>
+                            <div class="dm-part dm-part-logical" style="width:75%;">D: Data<br>128 GB</div>
+                        </div>
+                    </div>
+                    <!-- Disk 1 -->
+                    <div class="dm-disk-row">
+                        <div class="dm-disk-label">Disk 1<br><span style="font-weight:normal;font-size:9px;">16 GB</span></div>
+                        <div class="dm-partition-bar">
+                            <div class="dm-part dm-part-primary" style="width:100%;">E: USB Drive<br>16 GB (FAT32)</div>
+                        </div>
+                    </div>
+                    <!-- Disk 2 (unallocated) -->
+                    <div class="dm-disk-row">
+                        <div class="dm-disk-label">Disk 2<br><span style="font-weight:normal;font-size:9px;">64 GB</span></div>
+                        <div class="dm-partition-bar">
+                            <div class="dm-part dm-part-swap" style="width:12%;">Swap<br>8 GB</div>
+                            <div class="dm-part dm-part-free" style="width:88%;">Unallocated<br>56 GB</div>
+                        </div>
+                    </div>
+                    <div class="dm-legend">
+                        <div class="dm-legend-item"><div class="dm-legend-swatch" style="background:var(--os-accent);"></div> Primary</div>
+                        <div class="dm-legend-item"><div class="dm-legend-swatch" style="background:var(--os-teal);"></div> Logical</div>
+                        <div class="dm-legend-item"><div class="dm-legend-swatch" style="background:var(--os-warning);"></div> Swap</div>
+                        <div class="dm-legend-item"><div class="dm-legend-swatch" style="background:var(--os-chrome-dark);"></div> Unallocated</div>
+                    </div>
+                </div>
+            </div>
+            <div class="os-statusbar">
+                <span class="os-statusbar-section">3 volumes | 2 physical disks | 1 removable</span>
+                <span class="os-statusbar-section">Selected: C: (System)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ────────────────────────────────────────────
+     LOG EXPLORER
+     ──────────────────────────────────────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Log Explorer</h2>
+    <p class="ds-section-desc">Real-time log viewer with level filtering, source filtering, search, detail pane, and structured data expansion. Key CSS prefix: <code>le-*</code>.</p>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Component</th><th>CSS Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>Filter bar</td><td><code>.le-filter-bar</code></td><td>Level dropdown, source dropdown, text search, auto-scroll toggle</td></tr>
+            <tr><td>Stats bar</td><td><code>.le-stats-bar</code></td><td>Running counts per log level</td></tr>
+            <tr><td>Log table</td><td><code>.le-table-wrap</code> + <code>.le-table</code></td><td>Scrollable log list with timestamp, level badge, source, message</td></tr>
+            <tr><td>Level badge</td><td><code>.le-level</code></td><td>Variants: <code>.le-level-info</code>, <code>.le-level-warn</code>, <code>.le-level-error</code>, <code>.le-level-debug</code>, <code>.le-level-verbose</code></td></tr>
+            <tr><td>Detail pane</td><td><code>.le-detail-pane</code></td><td>Expanded view of selected log entry with structured JSON/stack trace</td></tr>
+            <tr><td>Auto-scroll</td><td><code>.le-auto-scroll</code></td><td>Pulsing indicator showing live tail mode</td></tr>
+        </tbody>
+    </table>
+
+    <!-- Live Preview -->
+    <div class="ds-preview" style="background: var(--os-surface-sunken); padding: 16px;">
+        <div class="os-window" style="max-width: 700px;">
+            <div class="os-titlebar">
+                <img src="icons/icon-file-text.svg" width="16" height="16" class="os-titlebar-icon">
+                <span class="os-titlebar-text">MaahiOS Log Explorer</span>
+                <div class="os-titlebar-btns">
+                    <div class="os-titlebar-btn"><img src="icons/icon-minimize.svg" width="10" height="10"></div>
+                    <div class="os-titlebar-btn"><img src="icons/icon-maximize.svg" width="10" height="10"></div>
+                    <div class="os-titlebar-btn os-titlebar-close"><img src="icons/icon-close.svg" width="10" height="10"></div>
+                </div>
+            </div>
+            <div class="os-menubar">
+                <span class="os-menu-item"><u>F</u>ile</span>
+                <span class="os-menu-item"><u>V</u>iew</span>
+                <span class="os-menu-item"><u>F</u>ilter</span>
+                <span class="os-menu-item"><u>T</u>ools</span>
+                <span class="os-menu-item"><u>H</u>elp</span>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="os-toolbar">
+                <div class="os-toolbar-btn" title="Open Log File"><img src="icons/icon-open.svg" width="14" height="14"></div>
+                <div class="os-toolbar-btn" title="Save Filtered Logs"><img src="icons/icon-save.svg" width="14" height="14"></div>
+                <div class="os-toolbar-sep"></div>
+                <div class="os-toolbar-btn" title="Clear Log View"><img src="icons/icon-delete.svg" width="14" height="14"></div>
+                <div class="os-toolbar-btn" title="Refresh"><img src="icons/icon-refresh.svg" width="14" height="14"></div>
+                <div class="os-toolbar-sep"></div>
+                <div class="os-toolbar-btn" title="Scroll to Top"><img src="icons/icon-up.svg" width="14" height="14"></div>
+                <div class="os-toolbar-btn" title="Scroll to End"><img src="icons/icon-arrow-down.svg" width="14" height="14"></div>
+                <div class="os-toolbar-sep"></div>
+                <div class="os-toolbar-btn" title="Export"><img src="icons/icon-download.svg" width="14" height="14"></div>
+                <div class="os-toolbar-btn" title="Print"><img src="icons/icon-print.svg" width="14" height="14"></div>
+            </div>
+
+            <!-- Filter bar -->
+            <div class="le-filter-bar">
+                <label>Level:</label>
+                <select>
+                    <option>All Levels</option>
+                    <option>Error</option>
+                    <option>Warning</option>
+                    <option>Info</option>
+                    <option>Debug</option>
+                    <option>Verbose</option>
+                </select>
+                <div class="le-filter-sep"></div>
+                <label>Source:</label>
+                <select>
+                    <option>All Sources</option>
+                    <option>kernel</option>
+                    <option>shell</option>
+                    <option>netstack</option>
+                    <option>diskio</option>
+                    <option>auth</option>
+                    <option>scheduler</option>
+                </select>
+                <div class="le-filter-sep"></div>
+                <label>Search:</label>
+                <input type="text" placeholder="Filter messages…">
+                <button class="os-btn os-btn-sm" style="font-size:10px;padding:1px 8px;"><img src="icons/icon-search.svg" width="10" height="10"> Find</button>
+                <div class="le-filter-sep"></div>
+                <span class="le-auto-scroll">LIVE</span>
+            </div>
+
+            <!-- Stats bar -->
+            <div class="le-stats-bar">
+                <span>Total: <span class="le-stat-val">1,247</span></span>
+                <span>Errors: <span class="le-stat-val" style="color:var(--os-danger);">12</span></span>
+                <span>Warnings: <span class="le-stat-val" style="color:#b07a00;">38</span></span>
+                <span>Info: <span class="le-stat-val" style="color:var(--os-accent);">847</span></span>
+                <span>Debug: <span class="le-stat-val" style="color:var(--os-teal);">294</span></span>
+                <span>Verbose: <span class="le-stat-val">56</span></span>
+            </div>
+
+            <!-- Log table -->
+            <div class="le-table-wrap">
+                <table class="le-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Timestamp</th>
+                            <th>Level</th>
+                            <th>Source</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1241</td>
+                            <td class="le-ts">02:14:28.012</td>
+                            <td><span class="le-level le-level-info">INFO</span></td>
+                            <td class="le-source">kernel</td>
+                            <td class="le-msg">System timer tick 512000 — all watchdogs healthy</td>
+                        </tr>
+                        <tr>
+                            <td>1242</td>
+                            <td class="le-ts">02:14:28.134</td>
+                            <td><span class="le-level le-level-debug">DEBUG</span></td>
+                            <td class="le-source">netstack</td>
+                            <td class="le-msg">TCP keepalive sent to 192.168.1.1:443 (seq=8842)</td>
+                        </tr>
+                        <tr>
+                            <td>1243</td>
+                            <td class="le-ts">02:14:29.001</td>
+                            <td><span class="le-level le-level-warn">WARN</span></td>
+                            <td class="le-source">diskio</td>
+                            <td class="le-msg">Disk queue depth exceeded threshold (24/16) on /dev/sda</td>
+                        </tr>
+                        <tr class="le-selected">
+                            <td>1244</td>
+                            <td class="le-ts">02:14:29.450</td>
+                            <td><span class="le-level le-level-error">ERROR</span></td>
+                            <td class="le-source">auth</td>
+                            <td class="le-msg">Authentication failed for user "admin" — invalid credentials (attempt 3/5)</td>
+                        </tr>
+                        <tr>
+                            <td>1245</td>
+                            <td class="le-ts">02:14:30.002</td>
+                            <td><span class="le-level le-level-info">INFO</span></td>
+                            <td class="le-source">scheduler</td>
+                            <td class="le-msg">Process rebalance: moved PID 204 from CPU0 to CPU1 (load 78%→52%)</td>
+                        </tr>
+                        <tr>
+                            <td>1246</td>
+                            <td class="le-ts">02:14:30.210</td>
+                            <td><span class="le-level le-level-verbose">VERBOSE</span></td>
+                            <td class="le-source">shell</td>
+                            <td class="le-msg">Window z-order updated: [procexp, filemanager, logexplorer]</td>
+                        </tr>
+                        <tr>
+                            <td>1247</td>
+                            <td class="le-ts">02:14:31.003</td>
+                            <td><span class="le-level le-level-error">ERROR</span></td>
+                            <td class="le-source">diskio</td>
+                            <td class="le-msg">I/O timeout on /dev/sdb sector 0x1A4F00 — retry 1/3</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Detail pane (expanded view of selected log #1244) -->
+            <div class="le-detail-pane">
+                <div class="le-detail-label">Log Entry #1244 — Structured Detail</div>
+                <pre>{
+  <span class="le-hl-key">"timestamp"</span>: <span class="le-hl-str">"2026-03-13T02:14:29.450Z"</span>,
+  <span class="le-hl-key">"level"</span>:     <span class="le-hl-err">"ERROR"</span>,
+  <span class="le-hl-key">"source"</span>:    <span class="le-hl-str">"auth"</span>,
+  <span class="le-hl-key">"pid"</span>:       <span class="le-hl-num">312</span>,
+  <span class="le-hl-key">"user"</span>:      <span class="le-hl-str">"admin"</span>,
+  <span class="le-hl-key">"action"</span>:    <span class="le-hl-str">"login"</span>,
+  <span class="le-hl-key">"reason"</span>:    <span class="le-hl-str">"invalid_credentials"</span>,
+  <span class="le-hl-key">"attempt"</span>:   <span class="le-hl-num">3</span>,
+  <span class="le-hl-key">"maxRetries"</span>: <span class="le-hl-num">5</span>,
+  <span class="le-hl-key">"remoteAddr"</span>: <span class="le-hl-str">"192.168.1.42"</span>,
+  <span class="le-hl-key">"stack"</span>: <span class="le-hl-err">"AuthError: invalid credentials\n    at AuthModule.verify (auth.sys:142)\n    at SessionManager.login (session.sys:87)\n    at ShellHandler.onLogin (shell.exe:201)"</span>
+}</pre>
+            </div>
+
+            <div class="os-statusbar">
+                <span class="os-statusbar-section">Showing 1,247 entries | Errors: 12 | Warnings: 38</span>
+                <span class="os-statusbar-section">Source: /var/log/system.log</span>
+                <span class="os-statusbar-section">Live tail: ON</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Levels Reference -->
+    <h3 style="margin:16px 0 8px;font-size:13px;color:var(--os-text);">Log Level Reference</h3>
+    <table class="ds-prop-table">
+        <thead><tr><th>Level</th><th>CSS Class</th><th>Color</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><span class="le-level le-level-error">ERROR</span></td><td><code>.le-level-error</code></td><td>Red (#DC3545)</td><td>Critical failures — unhandled exceptions, I/O timeouts, auth failures</td></tr>
+            <tr><td><span class="le-level le-level-warn">WARN</span></td><td><code>.le-level-warn</code></td><td>Amber (#b07a00)</td><td>Degraded conditions — high queue depth, low memory, retries</td></tr>
+            <tr><td><span class="le-level le-level-info">INFO</span></td><td><code>.le-level-info</code></td><td>Blue (#2B5BB5)</td><td>Normal operations — service start/stop, timer ticks, config changes</td></tr>
+            <tr><td><span class="le-level le-level-debug">DEBUG</span></td><td><code>.le-level-debug</code></td><td>Teal (#1E8A65)</td><td>Diagnostic detail — network keepalives, cache hits, IPC calls</td></tr>
+            <tr><td><span class="le-level le-level-verbose">VERBOSE</span></td><td><code>.le-level-verbose</code></td><td>Gray (#8C90A6)</td><td>Trace-level output — z-order changes, redraw events, GC cycles</td></tr>
+        </tbody>
+    </table>
+
+    <!-- Log Explorer Actions Reference -->
+    <h3 style="margin:16px 0 8px;font-size:13px;color:var(--os-text);">Toolbar Actions</h3>
+    <table class="ds-prop-table">
+        <thead><tr><th>Action</th><th>Icon</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>Open Log File</td><td>icon-open</td><td>Browse and open a .log file from disk</td></tr>
+            <tr><td>Save Filtered</td><td>icon-save</td><td>Export currently filtered view to a new log file</td></tr>
+            <tr><td>Clear View</td><td>icon-delete</td><td>Clear the log table (does not delete the source file)</td></tr>
+            <tr><td>Refresh</td><td>icon-refresh</td><td>Re-read the log source file</td></tr>
+            <tr><td>Scroll to Top</td><td>icon-up</td><td>Jump to the oldest visible entry</td></tr>
+            <tr><td>Scroll to End</td><td>icon-arrow-down</td><td>Jump to the newest entry (tail)</td></tr>
+            <tr><td>Export</td><td>icon-download</td><td>Download log table as CSV / JSON</td></tr>
+            <tr><td>Print</td><td>icon-print</td><td>Print the current filtered view</td></tr>
+        </tbody>
+    </table>
+</div>

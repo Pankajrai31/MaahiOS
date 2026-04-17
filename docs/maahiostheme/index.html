@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaahiOS Design System</title>
+
+    <!-- Theme & Component CSS -->
+    <link rel="stylesheet" href="css/theme-variables.css">
+    <link rel="stylesheet" href="css/controls.css">
+    <link rel="stylesheet" href="css/windows.css">
+    <link rel="stylesheet" href="css/apps.css">
+
+    <!-- Documentation Page CSS -->
+    <link rel="stylesheet" href="css/docs.css">
+</head>
+<body>
+
+<div class="ds-shell">
+    <!-- ════════ HEADER ════════ -->
+    <header class="ds-header">
+        <h1 class="ds-title">MaahiOS Design System</h1>
+        <p class="ds-subtitle">Comprehensive UI reference for building MaahiOS applications. Every control, layout, icon, and colour token documented with live previews and property tables for AI agent consumption.</p>
+    </header>
+
+    <!-- ════════ TAB BAR ════════ -->
+    <nav class="ds-tab-bar" role="tablist">
+        <button class="ds-tab active" data-tab="controls" role="tab" aria-selected="true">Controls</button>
+        <button class="ds-tab" data-tab="layout" role="tab">Layout</button>
+        <button class="ds-tab" data-tab="icons" role="tab">Icons</button>
+        <button class="ds-tab" data-tab="apps" role="tab">Sample Apps</button>
+        <button class="ds-tab" data-tab="theme" role="tab">Theme Reference</button>
+    </nav>
+
+    <!-- ════════ TAB PANELS ════════ -->
+    <div id="panel-controls" class="ds-panel active" role="tabpanel">
+        <div class="ds-loading">Loading controls…</div>
+    </div>
+    <div id="panel-layout" class="ds-panel" role="tabpanel">
+        <div class="ds-loading">Loading layout…</div>
+    </div>
+    <div id="panel-icons" class="ds-panel" role="tabpanel">
+        <div class="ds-loading">Loading icons…</div>
+    </div>
+    <div id="panel-apps" class="ds-panel" role="tabpanel">
+        <div class="ds-loading">Loading sample apps…</div>
+    </div>
+    <div id="panel-theme" class="ds-panel" role="tabpanel">
+        <div class="ds-loading">Loading theme reference…</div>
+    </div>
+</div>
+
+<script>
+/* ───────────────────────────────────────────
+   Tab switching + lazy-load HTML fragments
+   ─────────────────────────────────────────── */
+(function () {
+    const tabs = document.querySelectorAll('.ds-tab');
+    const panels = document.querySelectorAll('.ds-panel');
+    const loaded = {};
+
+    const TAB_MAP = {
+        controls: 'tabs/tab-controls.html',
+        layout:   'tabs/tab-layout.html',
+        icons:    'tabs/tab-icons.html',
+        apps:     'tabs/tab-apps.html',
+        theme:    'tabs/tab-theme.html'
+    };
+
+    function activateTab(name) {
+        tabs.forEach(t => {
+            const isActive = t.dataset.tab === name;
+            t.classList.toggle('active', isActive);
+            t.setAttribute('aria-selected', isActive);
+        });
+        panels.forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+
+        // Lazy-load content on first visit
+        if (!loaded[name] && TAB_MAP[name]) {
+            const panel = document.getElementById('panel-' + name);
+            fetch(TAB_MAP[name])
+                .then(r => {
+                    if (!r.ok) throw new Error(r.status);
+                    return r.text();
+                })
+                .then(html => {
+                    panel.innerHTML = html;
+                    loaded[name] = true;
+                })
+                .catch(() => {
+                    panel.innerHTML = '<p style="padding:24px;color:var(--os-danger);">Failed to load tab content. Make sure you are serving the files via a local HTTP server (e.g. <code>npx serve</code>).</p>';
+                });
+        }
+    }
+
+    tabs.forEach(t => t.addEventListener('click', () => activateTab(t.dataset.tab)));
+
+    // Load the first tab automatically
+    activateTab('controls');
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Folder -->
+  <path d="M2 9 L2 25 Q2 26 3 26 L22 26 Q23 26 23 25 L23 12 Q23 11 22 11 L13 11 L10 8 Q9.5 7.5 9 7.5 L3 7.5 Q2 7.5 2 8.5 Z" fill="#E8A317" stroke="#1A1A2E" stroke-width="1.5"/>
+  <rect x="2" y="13" width="21" height="13" rx="1" fill="#E8A317" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Magnifying glass -->
+  <circle cx="23" cy="12" r="5" fill="#FFFFFF" stroke="#2B5BB5" stroke-width="2"/>
+  <line x1="26.5" y1="15.5" x2="30" y2="19" stroke="#2B5BB5" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Glass highlight -->
+  <path d="M20.5 10 Q22 8.5 24 9.5" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.5"/>
+</svg>

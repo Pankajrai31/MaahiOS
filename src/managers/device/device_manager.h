@@ -27,6 +27,8 @@
 /* Reserved range for disks (4-19) */
 #define DEV_DISK_MAX    19
 
+#define DEV_NETWORK     20  /* E1000 NIC */
+
 /* Third-party devices start here */
 #define DEV_THIRD_PARTY_BASE 100
 
@@ -57,6 +59,11 @@
 #define DISPLAY_IOCTL_GET_FB        3   /* Get framebuffer address */
 #define DISPLAY_IOCTL_FLIP          4   /* Copy back buffer → HW framebuffer */
 #define DISPLAY_IOCTL_FLIP_RECT     5   /* Copy rectangle back buf → HW fb   */
+
+/* Network IOCTL */
+#define NET_IOCTL_GET_MAC           1   /* Get MAC address (6 bytes) */
+#define NET_IOCTL_LINK_STATUS       2   /* Get link status (1=up, 0=down) */
+#define NET_IOCTL_GET_STATS         3   /* Get network stats */
 
 /* ============================================
  * Error Codes

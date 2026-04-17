@@ -29,6 +29,7 @@
 
 #define CELL_TASKBAR_WINDOWS    "system.taskbar.windows"
 #define CELL_TASKBAR_RESTORE    "system.taskbar.restore"
+#define CELL_TASKBAR_MINIMIZE   "system.taskbar.minimize"
 #define CELL_DESKTOP_APPS       "system.desktop.apps"
 
 /*=============================================================================
@@ -66,6 +67,18 @@ typedef struct {
 typedef struct {
     int32_t  pid;                           /* PID to restore, 0 = none     */
 } taskbar_restore_t;                        /* 4 bytes                      */
+
+/*=============================================================================
+ * TASKBAR MINIMIZE SIGNAL  (written by orbit, read by libwindow)
+ *
+ * When orbit wants a visible window to minimize, it writes the PID
+ * here.  The window's event loop polls this cell and minimizes when
+ * it sees its own PID.  After minimizing, the window writes 0 to clear.
+ *===========================================================================*/
+
+typedef struct {
+    int32_t  pid;                           /* PID to minimize, 0 = none    */
+} taskbar_minimize_t;                       /* 4 bytes                      */
 
 /*=============================================================================
  * DESKTOP APP SHORTCUTS  (written by sysman, read by orbit)

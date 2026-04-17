@@ -108,6 +108,23 @@ static int taskbar_check_restore(void) {
     return 0;
 }
 
+/** Check if orbit has requested us to minimize (via minimize cell). */
+static int taskbar_check_minimize(void) {
+    int32_t my_pid = (int32_t)syscall0(SYS_GETPID);
+
+    taskbar_minimize_t minimize;
+    int rd = libcell_read(CELL_TASKBAR_MINIMIZE, &minimize, sizeof(minimize));
+    if (rd < (int)sizeof(int32_t)) return 0;
+
+    if (minimize.pid == my_pid) {
+        /* Clear the minimize signal */
+        minimize.pid = 0;
+        libcell_write(CELL_TASKBAR_MINIMIZE, &minimize, sizeof(minimize));
+        return 1;
+    }
+    return 0;
+}
+
 /*=============================================================================
  * INTERNAL: DRAW 3D RAISED / SUNKEN BEVEL
  *
@@ -215,9 +232,33 @@ static void draw_titlebar(window_t *win) {
     #undef DRAW_CAP_BTN
 
     /* ---- Title text — left-aligned with 8px margin, proportional font ---- */
+    int title_left = tb_x + 8;
+
+    /* Draw 16x16 icon if provided */
+    if (win->icon_pixels) {
+        int icon_sz = 16;
+        int icon_y = tb_y + (tb_h - icon_sz) / 2;
+        int icon_x = tb_x + 6;
+        uint32_t *pixels = win->icon_pixels;
+        for (int row = 0; row < icon_sz; row++) {
+            int sy = icon_y + row;
+            if (sy < 0 || sy >= surf->height) continue;
+            for (int col = 0; col < icon_sz; col++) {
+                int sx = icon_x + col;
+                if (sx < 0 || sx >= surf->width) continue;
+                uint32_t pix = pixels[row * icon_sz + col];
+                /* Color-key: skip black (0x000000) as transparent */
+                if ((pix & 0x00FFFFFF) != 0) {
+                    surf->pixels[sy * surf->width + sx] = pix & 0x00FFFFFF;
+                }
+            }
+        }
+        title_left = icon_x + icon_sz + 6;
+    }
+
     int text_h = surface_text_height(THEME_FONT_BODY);
     int text_y = tb_y + (tb_h - text_h) / 2;
-    surface_draw_text(surf, tb_x + 8, text_y,
+    surface_draw_text(surf, title_left, text_y,
                       win->title, THEME_FONT_BODY, THEME_TITLEBAR_FG);
 }
 
@@ -432,6 +473,9 @@ window_t *window_create(const char *title, int x, int y,
     win->on_close  = (void (*)(void *))0;
     win->close_data = (void *)0;
 
+    /* Icon */
+    win->icon_pixels = (uint32_t *)0;
+
     /* Custom content callbacks */
     win->on_key     = (void (*)(window_t *, int, char, void *))0;
     win->on_key_data = (void *)0;
@@ -439,12 +483,20 @@ window_t *window_create(const char *title, int x, int y,
     win->on_paint_data = (void *)0;
     win->on_tick    = (void (*)(window_t *, void *))0;
     win->on_tick_data = (void *)0;
+    win->on_mouse   = (void (*)(window_t *, int, int, int, void *))0;
+    win->on_mouse_data = (void *)0;
 
     return win;
 }
 
 void window_destroy(window_t *win) {
     if (!win) return;
+
+    /* Free icon pixels */
+    if (win->icon_pixels) {
+        free(win->icon_pixels);
+        win->icon_pixels = (uint32_t *)0;
+    }
 
     /* Destroy all controls */
     for (int i = 0; i < win->control_count; i++) {
@@ -545,6 +597,22 @@ static void window_draw_content_only(window_t *win) {
                  win->content_w, win->content_h);
 }
 
+/**
+ * Lightweight redraw: only repaint the titlebar and signal damage.
+ * Used for titlebar button hover/press state changes.
+ */
+static void window_draw_titlebar_only(window_t *win) {
+    if (!win) return;
+    if (win->flags & WIN_FLAG_NO_TITLEBAR) return;
+
+    draw_titlebar(win);
+
+    /* Signal WM to composite just the titlebar region */
+    int bw = 2;
+    libwm_damage(win->wm_handle, bw, bw,
+                 win->width - bw * 2, THEME_TITLEBAR_HEIGHT);
+}
+
 void window_invalidate(window_t *win) {
     if (win) win->needs_redraw = 1;
 }
@@ -612,7 +680,10 @@ static void xor_drag_outline(int gx, int gy, int w, int h) {
 static void window_toggle_maximize(window_t *win) {
     if (!win) return;
 
-    /* Restore pixels behind the current position */
+    /* Save old content dimensions for control relayout */
+    int old_content_w = win->content_w;
+    int old_content_h = win->content_h;
+
     /* Tell WM to toggle maximize — WM reallocates surface SHM */
     int new_shm_id = -1;
     int result = libwm_maximize(win->wm_handle, &new_shm_id);
@@ -636,11 +707,11 @@ static void window_toggle_maximize(window_t *win) {
         win->restore_w = win->width;
         win->restore_h = win->height;
 
-        /* Maximize: fill screen, leave 32px for taskbar at bottom */
+        /* Maximize: fill screen, leave taskbar height at bottom */
         win->x      = 0;
         win->y      = 0;
         win->width  = (int)gui_get_screen_width();
-        win->height = (int)gui_get_screen_height() - 32;
+        win->height = (int)gui_get_screen_height() - THEME_TASKBAR_HEIGHT;
     }
 
     /* Attach new SHM surface from WM */
@@ -657,6 +728,42 @@ static void window_toggle_maximize(window_t *win) {
     win->content_y = bw + THEME_TITLEBAR_HEIGHT;
     win->content_w = win->width  - bw * 2;
     win->content_h = win->height - bw * 2 - THEME_TITLEBAR_HEIGHT;
+
+    /* ---- Auto-relayout controls ----
+     * Heuristic: for each control that was sized to "fill" the content area,
+     * adjust its dimensions to match the new content area.
+     * Use tolerant matching because apps often size controls as WIN_W or
+     * WIN_H - TITLEBAR_H, which is a few pixels wider/taller than the
+     * actual content_w/h (due to the 2px bevel border).
+     */
+    int dw = win->content_w - old_content_w;
+    int dh = win->content_h - old_content_h;
+
+    for (int i = 0; i < win->control_count; i++) {
+        control_t *c = win->controls[i];
+        if (!c) continue;
+
+        int c_bottom = c->y + c->height;
+
+        /* Full-width: control whose width is approximately the old content
+         * width (within 8px tolerance). Stretch by the delta. */
+        if (c->width >= old_content_w - 8) {
+            c->width += dw;
+        }
+
+        /* Bottom-anchored: control whose bottom edge is near the old content
+         * bottom (within 8px tolerance), e.g. statusbar. Move Y by delta. */
+        if (c_bottom >= old_content_h - 8) {
+            c->y += dh;
+        }
+        /* Middle-fill: top stays fixed, height grows. Catches tables/treeviews
+         * that fill the space between a toolbar and a statusbar. */
+        else if (c_bottom > old_content_h / 3) {
+            c->height += dh;
+        }
+
+        c->dirty = 1;
+    }
 
     win->maximized = !win->maximized;
     win->needs_redraw = 1;
@@ -685,12 +792,11 @@ void window_run(window_t *win) {
 
     while (win->running) {
         int any_dirty = 0;
+        int titlebar_dirty = 0;
 
         /* ---- Heartbeat: tell WM we're still alive ---- */
+        /* Writes directly to SHM (no queue contention) */
         libwm_heartbeat(win->wm_handle);
-
-        /* ---- Focus tracking: ask WM ---- */
-        int have_focus = libwm_is_focused(win->wm_handle);
 
         /* ---- Mouse polling (via IO Executive) ---- */
         int rd = libio_dev_read(DEV_MOUSE, &ms, sizeof(ms));
@@ -711,9 +817,15 @@ void window_run(window_t *win) {
             int cy = wy - win->content_y;
 
             /* ---- Claim focus when user clicks inside this window ---- */
-            if (left_down && inside && !have_focus) {
-                libwm_raise(win->wm_handle);
-                win->needs_redraw = 1;
+            /* Focus check is expensive (IPC roundtrip), so only
+             * query when the user actually clicks. */
+            int have_focus = 1; /* assume focused unless click needs it */
+            if (left_down) {
+                have_focus = libwm_is_focused(win->wm_handle);
+                if (inside && !have_focus) {
+                    libwm_raise(win->wm_handle);
+                    titlebar_dirty = 1; /* Titlebar color changes on focus */
+                }
             }
 
             /* ---- DRAG: outline drag (XOR dashed rectangle) ---- */
@@ -802,23 +914,20 @@ void window_run(window_t *win) {
                 int new_tb_hover = hit_test_titlebar(win, wx, wy);
                 if (new_tb_hover != win->hover_titlebar_btn) {
                     win->hover_titlebar_btn = new_tb_hover;
-                    any_dirty = 1;
-                    win->needs_redraw = 1; /* titlebar must repaint */
+                    titlebar_dirty = 1;
                 }
 
                 /* --- Titlebar button press on left_down --- */
                 if (left_down && new_tb_hover > 0) {
                     win->pressed_titlebar_btn = new_tb_hover;
-                    any_dirty = 1;
-                    win->needs_redraw = 1;
+                    titlebar_dirty = 1;
                 }
 
                 /* --- Titlebar button release: perform action --- */
                 if (left_up && win->pressed_titlebar_btn > 0) {
                     int act = win->pressed_titlebar_btn;
                     win->pressed_titlebar_btn = 0;
-                    any_dirty = 1;
-                    win->needs_redraw = 1;
+                    titlebar_dirty = 1;
 
                     /* Only trigger if released over the same button */
                     if (act == new_tb_hover) {
@@ -880,6 +989,7 @@ void window_run(window_t *win) {
                     if (tb_hit == 0 && wy < (2 + THEME_TITLEBAR_HEIGHT)) {
                         /* Raise to front before starting drag */
                         if (!have_focus) {
+                            /* have_focus was computed above on left_down */
                             libwm_raise(win->wm_handle);
                             win->needs_redraw = 1;
                         }
@@ -904,7 +1014,27 @@ void window_run(window_t *win) {
                 int ctrl_idx = -1;
                 if (cy >= 0 && cy < win->content_h &&
                     cx >= 0 && cx < win->content_w) {
-                    ctrl_idx = find_control_at(win, cx, cy);
+
+                    /* If app provided an on_mouse handler, delegate to it
+                     * instead of dispatching to controls. */
+                    if (win->on_mouse) {
+                        if (ms.x != prev_mx || ms.y != prev_my) {
+                            win->on_mouse(win, cx, cy, WIN_MOUSE_MOVE,
+                                          win->on_mouse_data);
+                        }
+                        if (left_down) {
+                            win->on_mouse(win, cx, cy, WIN_MOUSE_DOWN,
+                                          win->on_mouse_data);
+                            any_dirty = 1;
+                        }
+                        if (left_up) {
+                            win->on_mouse(win, cx, cy, WIN_MOUSE_UP,
+                                          win->on_mouse_data);
+                            any_dirty = 1;
+                        }
+                    } else {
+                        ctrl_idx = find_control_at(win, cx, cy);
+                    }
                 }
 
                 /* Hover enter/leave */
@@ -978,8 +1108,7 @@ void window_run(window_t *win) {
                 /* Also clear titlebar button hover */
                 if (win->hover_titlebar_btn != 0) {
                     win->hover_titlebar_btn = 0;
-                    any_dirty = 1;
-                    win->needs_redraw = 1;
+                    titlebar_dirty = 1;
                 }
             }
 
@@ -1083,14 +1212,44 @@ void window_run(window_t *win) {
          * No need to gate on focus — WM composites based on z-order. */
         if (win->needs_redraw) {
             window_draw(win);
+        } else if (titlebar_dirty) {
+            /* Only titlebar buttons changed (hover/press state) */
+            window_draw_titlebar_only(win);
+            if (any_dirty)
+                window_draw_content_only(win);
         } else if (any_dirty) {
             /* Fast path: only content area changed */
             window_draw_content_only(win);
         }
 
-        /* Per-frame tick callback (cursor blink, child polling, etc.) */
+        /* Per-frame tick callback (cursor blink, child polling, etc.)
+         * Bracket with heartbeat writes since app callbacks may block. */
         if (win->on_tick) {
+            libwm_heartbeat(win->wm_handle);
             win->on_tick(win, win->on_tick_data);
+            libwm_heartbeat(win->wm_handle);
+        }
+
+        /* ---- Check for external minimize signal from Orbit (taskbar toggle) ---- */
+        if (!win->minimized && taskbar_check_minimize()) {
+            libwm_minimize(win->wm_handle);
+            win->minimized = 1;
+
+            /* Poll for restore signal from Orbit */
+            while (win->running && win->minimized) {
+                if (taskbar_check_restore()) {
+                    win->minimized = 0;
+                    libwm_restore(win->wm_handle);
+                    win->needs_redraw = 1;
+                    window_draw(win);
+                    break;
+                }
+                if (win->on_tick) {
+                    win->on_tick(win, win->on_tick_data);
+                }
+                syscall0(SYS_YIELD);
+            }
+            continue;
         }
 
         syscall0(SYS_YIELD);
@@ -1121,6 +1280,67 @@ void window_close(window_t *win) {
 }
 
 /*=============================================================================
+ * PUBLIC API: ICON SETTER (decode BMP → 16×16 pixels for titlebar)
+ *===========================================================================*/
+
+void window_set_icon(window_t *win, const uint8_t *bmp_data, int bmp_size) {
+    if (!win) return;
+
+    /* Free previous icon */
+    if (win->icon_pixels) {
+        free(win->icon_pixels);
+        win->icon_pixels = (uint32_t *)0;
+    }
+
+    if (!bmp_data || bmp_size < 54) return;
+
+    /* Minimal BMP decode: extract pixel data from 32×32 or 16×16 BMP */
+    int data_offset = (int)(bmp_data[10] | (bmp_data[11] << 8) |
+                            (bmp_data[12] << 16) | (bmp_data[13] << 24));
+    int bmp_w = (int)(bmp_data[18] | (bmp_data[19] << 8) |
+                      (bmp_data[20] << 16) | (bmp_data[21] << 24));
+    int bmp_h = (int)(bmp_data[22] | (bmp_data[23] << 8) |
+                      (bmp_data[24] << 16) | (bmp_data[25] << 24));
+    int bpp   = (int)(bmp_data[28] | (bmp_data[29] << 8));
+
+    if (bmp_w <= 0 || bmp_h <= 0 || (bpp != 24 && bpp != 32)) return;
+
+    /* Allocate 16×16 icon buffer */
+    uint32_t *icon = (uint32_t *)malloc(16 * 16 * sizeof(uint32_t));
+    if (!icon) return;
+
+    int bytes_per_pixel = bpp / 8;
+    int row_stride = ((bmp_w * bytes_per_pixel + 3) & ~3); /* BMP row padding */
+
+    /* Nearest-neighbor downscale from bmp_w×bmp_h to 16×16 */
+    for (int dy = 0; dy < 16; dy++) {
+        for (int dx = 0; dx < 16; dx++) {
+            int sx = dx * bmp_w / 16;
+            int sy = dy * bmp_h / 16;
+            if (sx >= bmp_w) sx = bmp_w - 1;
+            if (sy >= bmp_h) sy = bmp_h - 1;
+
+            /* BMP is bottom-up */
+            int bmp_row = bmp_h - 1 - sy;
+            int offset = data_offset + bmp_row * row_stride + sx * bytes_per_pixel;
+
+            if (offset + bytes_per_pixel > bmp_size) {
+                icon[dy * 16 + dx] = 0;
+                continue;
+            }
+
+            uint8_t b = bmp_data[offset];
+            uint8_t g = bmp_data[offset + 1];
+            uint8_t r = bmp_data[offset + 2];
+            icon[dy * 16 + dx] = ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
+        }
+    }
+
+    win->icon_pixels = icon;
+    win->needs_redraw = 1;
+}
+
+/*=============================================================================
  * PUBLIC API: CALLBACK SETTERS
  *===========================================================================*/
 
@@ -1148,4 +1368,14 @@ void window_set_on_tick(window_t *win,
     if (!win) return;
     win->on_tick  = callback;
     win->on_tick_data = userdata;
+}
+
+void window_set_on_mouse(window_t *win,
+                          void (*callback)(window_t *win, int content_x,
+                                           int content_y, int event,
+                                           void *userdata),
+                          void *userdata) {
+    if (!win) return;
+    win->on_mouse      = callback;
+    win->on_mouse_data = userdata;
 }

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Redo arrow -->
+  <path d="M24 12 L28 16 L24 20" fill="none" stroke="#2B5BB5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M28 16 L14 16 Q7 16 7 22 Q7 28 14 28 L18 28" fill="none" stroke="#2B5BB5" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

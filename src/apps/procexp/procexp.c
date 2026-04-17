@@ -26,6 +26,7 @@
 #include "../../system/libraries/libwindow/libwindow.h"
 #include "../../system/libraries/libprocess/libprocess.h"
 #include "../../system/libraries/libgui/libgui.h"
+#include "../../system/libraries/libfs/libfs.h"
 
 /*=============================================================================
  * CONSTANTS
@@ -259,6 +260,13 @@ void mex_main(void) {
     window_t *win = window_create("Process Explorer", win_x, win_y, WIN_W, WIN_H);
     if (!win) return;
     g_win = win;
+
+    /* Load titlebar icon */
+    {
+        static uint8_t icon_buf[4096];
+        int sz = libfs_read_file("C:/icons/", "PROCEXP.BMP", icon_buf, sizeof(icon_buf));
+        if (sz > 0) window_set_icon(win, icon_buf, sz);
+    }
 
     /* Content area dimensions (inside titlebar) */
     int content_w = WIN_W;

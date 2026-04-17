@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Mouse body -->
+  <path d="M10 6 Q10 2 16 2 Q22 2 22 6 L22 24 Q22 30 16 30 Q10 30 10 24 Z" fill="#D8DBE8" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Divider line -->
+  <line x1="16" y1="2" x2="16" y2="14" stroke="#1A1A2E" stroke-width="1"/>
+  <!-- Scroll wheel -->
+  <rect x="14.5" y="8" width="3" height="5" rx="1.5" fill="none" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Left button highlight -->
+  <path d="M11 4 Q11 3 16 3 L16 7 L11 7 Z" fill="#FFFFFF" opacity="0.2"/>
+  <!-- Mouse body division -->
+  <line x1="10" y1="14" x2="22" y2="14" stroke="#1A1A2E" stroke-width="0.75" opacity="0.3"/>
+</svg>

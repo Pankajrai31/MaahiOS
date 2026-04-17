@@ -14,14 +14,17 @@
  * INTERNAL: Configuration & Data Structures
  * =========================================================================== */
 
+/* Maximum attachments per SHM region */
+#define MAX_SHM_ATTACHMENTS 32
+
 typedef struct {
     int used;
     int shm_id;
     unsigned int phys_addr;
     unsigned int size;
     int owner_pid;
-    int attached_pids[16];
-    unsigned int virt_addrs[16];
+    int attached_pids[MAX_SHM_ATTACHMENTS];
+    unsigned int virt_addrs[MAX_SHM_ATTACHMENTS];
     int attached_count;
     volatile int lock;
 } shm_region_t;
@@ -56,7 +59,7 @@ int shm_manager_init(void) {
         shm_table[i].used = 0;
         shm_table[i].lock = 0;
         shm_table[i].attached_count = 0;
-        for (int j = 0; j < 16; j++) {
+        for (int j = 0; j < MAX_SHM_ATTACHMENTS; j++) {
             shm_table[i].attached_pids[j] = -1;
             shm_table[i].virt_addrs[j] = 0;
         }
@@ -114,7 +117,7 @@ int kernel_shm_create(size_t size, int owner_pid) {
     shm_table[slot].attached_count = 0;
     shm_table[slot].lock = 0;
     
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < MAX_SHM_ATTACHMENTS; i++) {
         shm_table[slot].attached_pids[i] = -1;
         shm_table[slot].virt_addrs[i] = 0;
     }
@@ -150,7 +153,7 @@ unsigned int kernel_shm_attach(int shm_id, int pid, unsigned int virt_addr) {
     shm_region_t *region = &shm_table[slot];
     spinlock_acquire(&region->lock);
     
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < MAX_SHM_ATTACHMENTS; i++) {
         if (region->attached_pids[i] == pid) {
             spinlock_release(&region->lock);
             spinlock_release(&shm_global_lock);
@@ -160,7 +163,7 @@ unsigned int kernel_shm_attach(int shm_id, int pid, unsigned int virt_addr) {
     }
     
     int attach_slot = -1;
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < MAX_SHM_ATTACHMENTS; i++) {
         if (region->attached_pids[i] == -1) {
             attach_slot = i;
             break;
@@ -234,7 +237,7 @@ int kernel_shm_detach(int shm_id, int pid) {
     
     /* Find attachment */
     int attach_slot = -1;
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < MAX_SHM_ATTACHMENTS; i++) {
         if (region->attached_pids[i] == pid) {
             attach_slot = i;
             break;
@@ -330,6 +333,42 @@ int kernel_shm_destroy(int shm_id) {
     
     KLOG_INFO_HEX("SHM", "Destroyed region: ", shm_id);
     return SHM_OK;
+}
+
+/* ===========================================================================
+ * KERNEL API: Process Cleanup
+ * =========================================================================== */
+
+/**
+ * Detach a process from ALL shared memory regions.
+ * Called on process exit to prevent SHM attachment slot leaks.
+ * We skip unmapping pages because the process is being terminated
+ * and its page directory will be abandoned.
+ */
+void kernel_shm_cleanup_process(int pid) {
+    spinlock_acquire(&shm_global_lock);
+
+    int cleaned = 0;
+    for (int i = 0; i < MAX_SHM_REGIONS; i++) {
+        if (!shm_table[i].used) continue;
+
+        shm_region_t *region = &shm_table[i];
+        for (int j = 0; j < MAX_SHM_ATTACHMENTS; j++) {
+            if (region->attached_pids[j] == pid) {
+                region->attached_pids[j] = -1;
+                region->virt_addrs[j] = 0;
+                region->attached_count--;
+                cleaned++;
+                break; /* Each PID appears at most once per region */
+            }
+        }
+    }
+
+    spinlock_release(&shm_global_lock);
+
+    if (cleaned > 0) {
+        KLOG_INFO_HEX2("SHM", "Cleaned up PID, regions: ", pid, cleaned);
+    }
 }
 
 /* ===========================================================================

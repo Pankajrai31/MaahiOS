@@ -114,8 +114,28 @@ int exe_response_queue_pop_by_id(exec_response_queue_t *queue, uint32_t msg_id,
 int exe_response_queue_count(exec_response_queue_t *queue);
 
 /*=============================================================================
- * MEMORY COPY HELPER
+ * POLL HEARTBEAT HOOK
  *===========================================================================*/
+
+/**
+ * Global heartbeat hook — called by every _send_and_wait() poll loop.
+ * libwm registers this at init so windowed apps keep their WM heartbeat
+ * alive even while blocking on executive IPC.
+ * NULL when no windowed system is active (console apps).
+ */
+extern void (*exe_poll_heartbeat_hook)(void);
+
+/**
+ * exe_poll_heartbeat - Call the heartbeat hook if registered.
+ * Safe to call from any library's poll loop.
+ */
+static inline void exe_poll_heartbeat(void) {
+    if (exe_poll_heartbeat_hook) exe_poll_heartbeat_hook();
+}
+
+/*=============================================================================
+ * MEMORY COPY HELPER
+ *===========================================================================
 
 /**
  * exe_memcpy - Copy memory

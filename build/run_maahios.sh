@@ -52,6 +52,8 @@ rm -f "$BUILD_DIR/serial.log"
 qemu-system-i386 \
     -cdrom "$BUILD_DIR/boot.iso" \
     -m 512M \
-    -serial file:"$BUILD_DIR/serial.log"
+    -serial file:"$BUILD_DIR/serial.log" \
+    -netdev user,id=net0 \
+    -device e1000,netdev=net0
 
 echo -e "\n${YELLOW}QEMU exited.${NC}"

@@ -16,7 +16,7 @@ import sys
 # CONFIGURATION
 # =============================================================================
 
-FONT_SIZES = [12, 14, 16, 18, 24]
+FONT_SIZES = [14, 16, 18, 20, 28]
 
 CHAR_START = 32   # Space
 CHAR_END = 126    # Tilde ~

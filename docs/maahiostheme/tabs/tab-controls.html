@@ -1,0 +1,744 @@
+<!-- ================================================================
+     TAB: CONTROLS — Every interactive UI control for MaahiOS
+     AI Reference: Each control lists its CSS class, properties,
+     possible states, and events/actions.
+     ================================================================ -->
+
+<!-- ────────── BUTTONS ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Buttons</h2>
+    <p class="ds-section-desc">Embossed raised buttons. Press inverts bevel to inset. Default button has teal glow ring.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div class="ds-row" style="gap:32px;">
+            <div class="ds-col">
+                <div class="ds-label">Standard</div>
+                <button class="os-btn os-btn-sm">Small</button>
+                <button class="os-btn">Button</button>
+                <button class="os-btn os-btn-lg">Large</button>
+            </div>
+            <div class="ds-col">
+                <div class="ds-label">Default (OK)</div>
+                <button class="os-btn os-btn-default">OK</button>
+                <button class="os-btn os-btn-default os-btn-lg">Accept</button>
+            </div>
+            <div class="ds-col">
+                <div class="ds-label">Accent</div>
+                <button class="os-btn os-btn-accent">Apply</button>
+                <button class="os-btn os-btn-accent os-btn-lg">Save</button>
+            </div>
+            <div class="ds-col">
+                <div class="ds-label">Danger</div>
+                <button class="os-btn os-btn-danger">Delete</button>
+            </div>
+            <div class="ds-col">
+                <div class="ds-label">Flat (Toolbar)</div>
+                <div style="display:flex;gap:4px;">
+                    <button class="os-btn os-btn-flat"><img src="icons/icon-save.svg" width="16"></button>
+                    <button class="os-btn os-btn-flat"><img src="icons/icon-copy.svg" width="16"></button>
+                    <button class="os-btn os-btn-flat"><img src="icons/icon-paste.svg" width="16"></button>
+                    <button class="os-btn os-btn-flat"><img src="icons/icon-cut.svg" width="16"></button>
+                </div>
+            </div>
+            <div class="ds-col">
+                <div class="ds-label">Icon Button</div>
+                <button class="os-btn os-btn-icon"><img src="icons/icon-close.svg" width="16"></button>
+            </div>
+            <div class="ds-col">
+                <div class="ds-label">Disabled</div>
+                <button class="os-btn os-btn-disabled" disabled>Disabled</button>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th><th>CSS Properties</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-btn</code></td><td>Base button</td><td>padding: 5px 20px; min-width: 75px; min-height: 25px; font-size: 13px</td></tr>
+            <tr><td><code>.os-btn-default</code></td><td>Primary action (OK, Save)</td><td>box-shadow teal ring, font-weight: 700</td></tr>
+            <tr><td><code>.os-btn-accent</code></td><td>Filled gradient accent</td><td>blue gradient bg, white text</td></tr>
+            <tr><td><code>.os-btn-danger</code></td><td>Destructive action</td><td>red gradient bg, white text</td></tr>
+            <tr><td><code>.os-btn-flat</code></td><td>Toolbar / minimal</td><td>transparent bg, border on hover</td></tr>
+            <tr><td><code>.os-btn-icon</code></td><td>Icon-only square</td><td>24×24, 3px padding</td></tr>
+            <tr><td><code>.os-btn-sm</code></td><td>Small size</td><td>font-size: 11px; min-height: 20px</td></tr>
+            <tr><td><code>.os-btn-lg</code></td><td>Large size</td><td>font-size: 14px; min-height: 30px</td></tr>
+            <tr><td><code>.os-btn-disabled</code></td><td>Disabled state</td><td>color: --os-text-disabled; cursor: not-allowed</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>State</th><th>Visual</th></tr></thead>
+        <tbody>
+            <tr><td>:active (pressed)</td><td>Bevel inverts (sunken), padding shifts 1px</td></tr>
+            <tr><td>:focus</td><td>1px dotted outline, offset -4px</td></tr>
+            <tr><td>:disabled</td><td>Gray text, no cursor</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>Event</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>onclick</td><td>Primary click handler</td></tr>
+            <tr><td>ondblclick</td><td>Double-click handler</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── TEXT INPUT ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Text Input</h2>
+    <p class="ds-section-desc">Sunken inset text fields with focus highlight and error state.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:500px;">
+            <div class="os-form-group">
+                <label class="os-label">Normal</label>
+                <input type="text" class="os-input" placeholder="Enter text...">
+            </div>
+            <div class="os-form-group">
+                <label class="os-label">With Helper</label>
+                <input type="text" class="os-input" value="Hello">
+                <div class="os-helper">Press F1 for help.</div>
+            </div>
+            <div class="os-form-group">
+                <label class="os-label">Error State</label>
+                <input type="text" class="os-input os-input-error" value="Invalid">
+                <div class="os-helper os-helper-error">This field is required.</div>
+            </div>
+            <div class="os-form-group">
+                <label class="os-label">Disabled</label>
+                <input type="text" class="os-input" value="Read only" disabled>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-input</code></td><td>Base text input (sunken border)</td></tr>
+            <tr><td><code>.os-input-error</code></td><td>Red border error state</td></tr>
+            <tr><td><code>.os-input-sm</code></td><td>Small size (11px font)</td></tr>
+            <tr><td><code>.os-input-lg</code></td><td>Large size (14px font)</td></tr>
+            <tr><td><code>.os-label</code></td><td>Field label</td></tr>
+            <tr><td><code>.os-helper</code></td><td>Helper text below input</td></tr>
+            <tr><td><code>.os-helper-error</code></td><td>Error helper (red)</td></tr>
+            <tr><td><code>.os-form-group</code></td><td>Wrapper (12px margin-bottom)</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>State</th><th>Visual</th></tr></thead>
+        <tbody>
+            <tr><td>:focus</td><td>Blue accent border</td></tr>
+            <tr><td>:disabled</td><td>Chrome background, gray text</td></tr>
+            <tr><td>.os-input-error</td><td>Red border</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>Event</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>oninput</td><td>Fires on each keystroke</td></tr>
+            <tr><td>onchange</td><td>Fires when value committed</td></tr>
+            <tr><td>onkeydown</td><td>Key press (for shortcuts)</td></tr>
+            <tr><td>onfocus / onblur</td><td>Focus gained / lost</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── TEXTAREA ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Textarea</h2>
+    <p class="ds-section-desc">Multi-line text area for larger input.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div style="max-width:300px;">
+            <label class="os-label">Description</label>
+            <textarea class="os-input os-textarea" placeholder="Enter message..."></textarea>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-input.os-textarea</code></td><td>Apply both classes. min-height: 70px, resize: vertical</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── SELECT / DROPDOWN ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Select / Dropdown</h2>
+    <p class="ds-section-desc">Native select element with OS styling.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div style="max-width:220px;">
+            <label class="os-label">File System</label>
+            <select class="os-input">
+                <option>MaahiFS</option>
+                <option>FAT32</option>
+                <option>FAT16</option>
+                <option>Custom</option>
+            </select>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Usage</th><th>Events</th></tr></thead>
+        <tbody>
+            <tr><td>Apply <code>.os-input</code> to <code>&lt;select&gt;</code></td><td>onchange</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── COMBOBOX ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Combo Box</h2>
+    <p class="ds-section-desc">Editable dropdown = text input + drop arrow button.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div style="max-width:220px;">
+            <label class="os-label">Font Family</label>
+            <div class="os-combobox">
+                <input type="text" class="os-input os-combobox-input" value="Times New Roman">
+                <div class="os-combobox-btn">▼</div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-combobox</code></td><td>Flex wrapper</td></tr>
+            <tr><td><code>.os-combobox-input</code></td><td>Text input part (no right border)</td></tr>
+            <tr><td><code>.os-combobox-btn</code></td><td>Drop arrow button (18px wide)</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── SPIN CONTROL ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Spin Control (Up-Down)</h2>
+    <p class="ds-section-desc">Numeric input with increment/decrement buttons.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div>
+            <label class="os-label">Count</label>
+            <div class="os-updown">
+                <input type="text" class="os-input os-updown-input" value="42">
+                <div class="os-updown-btns">
+                    <div class="os-updown-btn">▲</div>
+                    <div class="os-updown-btn">▼</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-updown</code></td><td>Flex wrapper</td></tr>
+            <tr><td><code>.os-updown-input</code></td><td>Number input (60px, right-aligned)</td></tr>
+            <tr><td><code>.os-updown-btn</code></td><td>Up/down arrow buttons</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>min</td><td>number</td><td>Minimum value</td></tr>
+            <tr><td>max</td><td>number</td><td>Maximum value</td></tr>
+            <tr><td>step</td><td>number</td><td>Increment step size</td></tr>
+            <tr><td>value</td><td>number</td><td>Current value</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── CHECKBOX ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Checkbox</h2>
+    <p class="ds-section-desc">Sunken checkbox well with teal checkmark.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+            <label class="os-checkbox-item"><input type="checkbox" checked><span class="os-custom-checkbox"></span>Show hidden files</label>
+            <label class="os-checkbox-item"><input type="checkbox" checked><span class="os-custom-checkbox"></span>Show file extensions</label>
+            <label class="os-checkbox-item"><input type="checkbox"><span class="os-custom-checkbox"></span>Show system files</label>
+            <label class="os-checkbox-item"><input type="checkbox" disabled><span class="os-custom-checkbox"></span>Disabled option</label>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-checkbox-item</code></td><td>Wrapper label (flex row)</td></tr>
+            <tr><td><code>.os-custom-checkbox</code></td><td>Visual checkbox (13×13 sunken box)</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>State</th><th>Visual</th></tr></thead>
+        <tbody>
+            <tr><td>checked</td><td>Teal ✓ inside box</td></tr>
+            <tr><td>unchecked</td><td>Empty white box</td></tr>
+            <tr><td>disabled</td><td>Chrome bg, 60% opacity</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── RADIO BUTTONS ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Radio Buttons</h2>
+    <p class="ds-section-desc">Circular radio with teal dot. Group by name attribute.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+            <label class="os-radio-item"><input type="radio" name="demo-radio" checked><span class="os-custom-radio"></span>Large Icons</label>
+            <label class="os-radio-item"><input type="radio" name="demo-radio"><span class="os-custom-radio"></span>Details</label>
+            <label class="os-radio-item"><input type="radio" name="demo-radio"><span class="os-custom-radio"></span>List</label>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-radio-item</code></td><td>Wrapper label</td></tr>
+            <tr><td><code>.os-custom-radio</code></td><td>Visual radio circle (13×13)</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── GROUP BOX ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Group Box</h2>
+    <p class="ds-section-desc">Groove-bordered container for organizing form sections.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <fieldset class="os-groupbox" style="max-width:280px;">
+            <legend class="os-groupbox-title">Display Settings</legend>
+            <div class="os-form-group" style="margin-bottom:8px;">
+                <label class="os-label">Resolution</label>
+                <select class="os-input"><option>1024 × 768</option><option>800 × 600</option></select>
+            </div>
+            <div class="os-form-group" style="margin-bottom:0;">
+                <label class="os-label">Color Depth</label>
+                <select class="os-input"><option>32 bit</option><option>16 bit</option></select>
+            </div>
+        </fieldset>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-groupbox</code></td><td>Use on <code>&lt;fieldset&gt;</code>. Groove border, chrome bg</td></tr>
+            <tr><td><code>.os-groupbox-title</code></td><td>Use on <code>&lt;legend&gt;</code>. Floats above groove</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── SLIDER ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Slider / Trackbar</h2>
+    <p class="ds-section-desc">Volume and parameter sliders with embossed thumb and tick marks.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div style="max-width:360px;">
+            <div class="ds-label">Volume</div>
+            <div class="os-slider-row">
+                <span class="os-slider-label"><img src="icons/icon-volume-mute.svg" width="16"></span>
+                <div class="os-slider-wrap">
+                    <div class="os-slider-track">
+                        <div class="os-slider-fill" style="width:60%;"></div>
+                        <div class="os-slider-thumb" style="left:60%;"></div>
+                    </div>
+                    <div class="os-ticks">
+                        <span class="os-tick"></span><span class="os-tick"></span><span class="os-tick"></span>
+                        <span class="os-tick"></span><span class="os-tick"></span><span class="os-tick"></span>
+                        <span class="os-tick"></span><span class="os-tick"></span><span class="os-tick"></span>
+                    </div>
+                </div>
+                <span class="os-slider-label"><img src="icons/icon-volume.svg" width="16"></span>
+            </div>
+            <div class="ds-label">Brightness (Teal)</div>
+            <div class="os-slider-row">
+                <span class="os-slider-label">0</span>
+                <div class="os-slider-wrap">
+                    <div class="os-slider-track">
+                        <div class="os-slider-fill teal" style="width:75%;"></div>
+                        <div class="os-slider-thumb" style="left:75%;"></div>
+                    </div>
+                </div>
+                <span class="os-slider-label">100</span>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-slider-track</code></td><td>Sunken track bar</td></tr>
+            <tr><td><code>.os-slider-fill</code></td><td>Filled portion (set width via style)</td></tr>
+            <tr><td><code>.os-slider-fill.teal</code></td><td>Teal variant fill</td></tr>
+            <tr><td><code>.os-slider-thumb</code></td><td>Draggable embossed thumb (set left via style)</td></tr>
+            <tr><td><code>.os-slider-row</code></td><td>Row wrapper with labels</td></tr>
+            <tr><td><code>.os-ticks</code></td><td>Tick marks below track</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>min</td><td>number</td><td>Minimum value</td></tr>
+            <tr><td>max</td><td>number</td><td>Maximum value</td></tr>
+            <tr><td>step</td><td>number</td><td>Step increment</td></tr>
+            <tr><td>value</td><td>number</td><td>Current value (controls fill width & thumb left)</td></tr>
+            <tr><td>orientation</td><td>"horizontal" | "vertical"</td><td>Slider direction</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── LISTBOX ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">List Box</h2>
+    <p class="ds-section-desc">Scrollable sunken list with selection highlighting.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div class="os-listbox" style="width:200px;">
+            <div class="os-listbox-item">Arial</div>
+            <div class="os-listbox-item">Courier New</div>
+            <div class="os-listbox-item selected">Segoe UI</div>
+            <div class="os-listbox-item">Tahoma</div>
+            <div class="os-listbox-item">Times New Roman</div>
+            <div class="os-listbox-item">Verdana</div>
+            <div class="os-listbox-item">Consolas</div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-listbox</code></td><td>Container (sunken border, white bg, scrollable)</td></tr>
+            <tr><td><code>.os-listbox-item</code></td><td>Each item row</td></tr>
+            <tr><td><code>.os-listbox-item.selected</code></td><td>Selected state (blue bg, white text)</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>Event</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>onselect</td><td>Item selected</td></tr>
+            <tr><td>ondblclick</td><td>Item double-clicked (open/activate)</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── TREE VIEW ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Tree View</h2>
+    <p class="ds-section-desc">Hierarchical collapsible tree for file system or settings navigation.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div class="os-treeview" style="width:260px;">
+            <div class="os-tree-label"><span class="os-tree-toggle">▼</span><span class="os-tree-icon"><img src="icons/icon-computer.svg" width="14"></span> My Computer</div>
+            <div class="os-tree-node">
+                <div class="os-tree-label"><span class="os-tree-toggle">▼</span><span class="os-tree-icon"><img src="icons/icon-drive-hdd.svg" width="14"></span> C:</div>
+                <div class="os-tree-node">
+                    <div class="os-tree-label"><span class="os-tree-toggle">▶</span><span class="os-tree-icon"><img src="icons/icon-folder.svg" width="14"></span> MaahiOS</div>
+                    <div class="os-tree-label selected"><span class="os-tree-toggle">▼</span><span class="os-tree-icon"><img src="icons/icon-folder-open.svg" width="14"></span> Users</div>
+                    <div class="os-tree-node">
+                        <div class="os-tree-label"><span class="os-tree-toggle">▶</span><span class="os-tree-icon"><img src="icons/icon-folder.svg" width="14"></span> Documents</div>
+                        <div class="os-tree-label"><span class="os-tree-toggle">▶</span><span class="os-tree-icon"><img src="icons/icon-folder.svg" width="14"></span> Desktop</div>
+                    </div>
+                </div>
+                <div class="os-tree-label"><span class="os-tree-toggle">▶</span><span class="os-tree-icon"><img src="icons/icon-drive-hdd.svg" width="14"></span> D:</div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-treeview</code></td><td>Container (sunken border)</td></tr>
+            <tr><td><code>.os-tree-node</code></td><td>Child container (indented 16px)</td></tr>
+            <tr><td><code>.os-tree-label</code></td><td>Row: toggle + icon + text</td></tr>
+            <tr><td><code>.os-tree-toggle</code></td><td>▶ collapsed / ▼ expanded</td></tr>
+            <tr><td><code>.os-tree-icon</code></td><td>Node icon (16px)</td></tr>
+            <tr><td><code>.os-tree-label.selected</code></td><td>Selected node</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>Event</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>onselect</td><td>Node selected</td></tr>
+            <tr><td>onexpand</td><td>Node expanded (▶ → ▼)</td></tr>
+            <tr><td>oncollapse</td><td>Node collapsed (▼ → ▶)</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── TABS ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Tabs (Property Sheet)</h2>
+    <p class="ds-section-desc">Tabbed panels for settings and properties. Active tab raises above the content panel.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div class="os-tabs-container" style="max-width:380px;">
+            <div class="os-tab-bar">
+                <div class="os-tab active">General</div>
+                <div class="os-tab">Display</div>
+                <div class="os-tab">Sound</div>
+                <div class="os-tab">Network</div>
+            </div>
+            <div class="os-tab-content" style="min-height:80px;">
+                <fieldset class="os-groupbox" style="margin-bottom:8px;">
+                    <legend class="os-groupbox-title">Computer Name</legend>
+                    <input type="text" class="os-input" value="MAAHI-PC">
+                </fieldset>
+                <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:12px;">
+                    <button class="os-btn os-btn-default">OK</button>
+                    <button class="os-btn">Cancel</button>
+                    <button class="os-btn">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-tabs-container</code></td><td>Wrapper</td></tr>
+            <tr><td><code>.os-tab-bar</code></td><td>Tab button row</td></tr>
+            <tr><td><code>.os-tab</code></td><td>Individual tab</td></tr>
+            <tr><td><code>.os-tab.active</code></td><td>Active tab (raised, connected to panel)</td></tr>
+            <tr><td><code>.os-tab-content</code></td><td>Panel content area</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── PROGRESS BARS ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Progress Bars</h2>
+    <p class="ds-section-desc">Solid, segmented, and indeterminate progress indicators.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div style="max-width:380px;display:flex;flex-direction:column;gap:14px;">
+            <div>
+                <div class="ds-label">Solid — 65%</div>
+                <div class="os-progress"><div class="os-progress-fill solid" style="width:65%;"></div><span class="os-progress-label">65%</span></div>
+            </div>
+            <div>
+                <div class="ds-label">Segmented — 40%</div>
+                <div class="os-progress os-progress-segmented"><div class="os-progress-fill" style="width:40%;"></div></div>
+            </div>
+            <div>
+                <div class="ds-label">Teal — 90%</div>
+                <div class="os-progress"><div class="os-progress-fill teal" style="width:90%;"></div><span class="os-progress-label">90%</span></div>
+            </div>
+            <div>
+                <div class="ds-label">Danger — 80%</div>
+                <div class="os-progress"><div class="os-progress-fill danger" style="width:80%;"></div><span class="os-progress-label">80%</span></div>
+            </div>
+            <div>
+                <div class="ds-label">Indeterminate (Marquee)</div>
+                <div class="os-progress os-progress-marquee"><div class="os-progress-fill"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-progress</code></td><td>Container (sunken, 18px height)</td></tr>
+            <tr><td><code>.os-progress-fill.solid</code></td><td>Blue fill</td></tr>
+            <tr><td><code>.os-progress-fill.teal</code></td><td>Teal fill</td></tr>
+            <tr><td><code>.os-progress-fill.danger</code></td><td>Red fill</td></tr>
+            <tr><td><code>.os-progress-segmented</code></td><td>Segmented blocks variant</td></tr>
+            <tr><td><code>.os-progress-marquee</code></td><td>Animated indeterminate</td></tr>
+            <tr><td><code>.os-progress-label</code></td><td>Percentage text overlay</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>value</td><td>0–100</td><td>Set via <code>width: N%</code> on fill element</td></tr>
+            <tr><td>variant</td><td>solid | segmented | marquee</td><td>Visual style of the bar</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── TABLE / DATA GRID ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Table / Data Grid</h2>
+    <p class="ds-section-desc">Sortable data grid with embossed headers, hover highlight, and row selection.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div class="os-table-wrap" style="max-width:480px;">
+            <table class="os-table">
+                <thead><tr>
+                    <th>Name <span class="sort-arrow">▲</span></th>
+                    <th>Size</th>
+                    <th>Type</th>
+                    <th>Modified</th>
+                </tr></thead>
+                <tbody>
+                    <tr><td><img src="icons/icon-folder.svg" width="14" style="vertical-align:middle;margin-right:4px;">Documents</td><td></td><td>Folder</td><td>2025-01-15</td></tr>
+                    <tr class="selected"><td><img src="icons/icon-file-text.svg" width="14" style="vertical-align:middle;margin-right:4px;">readme.txt</td><td>2 KB</td><td>Text File</td><td>2025-01-14</td></tr>
+                    <tr><td><img src="icons/icon-file-code.svg" width="14" style="vertical-align:middle;margin-right:4px;">kernel.bin</td><td>64 KB</td><td>Binary</td><td>2025-01-10</td></tr>
+                    <tr><td><img src="icons/icon-settings.svg" width="14" style="vertical-align:middle;margin-right:4px;">config.sys</td><td>1 KB</td><td>System</td><td>2025-01-08</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-table-wrap</code></td><td>Sunken border container</td></tr>
+            <tr><td><code>.os-table</code></td><td>Table element</td></tr>
+            <tr><td><code>.os-table th</code></td><td>Embossed column header (clickable for sort)</td></tr>
+            <tr><td><code>.os-table tr.selected</code></td><td>Selected row (accent bg, white text)</td></tr>
+            <tr><td><code>.sort-arrow</code></td><td>Sort direction indicator</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── BADGES ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Badges &amp; Status LEDs</h2>
+    <p class="ds-section-desc">Small labels for status and LED indicators for system health.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+            <div>
+                <div class="ds-label">Badges</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <span class="os-badge os-badge-default">Default</span>
+                    <span class="os-badge os-badge-accent">3 New</span>
+                    <span class="os-badge os-badge-teal">Active</span>
+                    <span class="os-badge os-badge-warning">Warning</span>
+                    <span class="os-badge os-badge-danger">Critical</span>
+                </div>
+            </div>
+            <div>
+                <div class="ds-label">Status LEDs</div>
+                <div style="display:flex;flex-direction:column;gap:5px;">
+                    <div class="os-led-row"><span class="os-led os-led-green"></span> CPU — Normal</div>
+                    <div class="os-led-row"><span class="os-led os-led-yellow"></span> Memory — 78% Used</div>
+                    <div class="os-led-row"><span class="os-led os-led-red"></span> Disk — Critical</div>
+                    <div class="os-led-row"><span class="os-led os-led-off"></span> Network — Disconnected</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-badge</code></td><td>Base badge</td></tr>
+            <tr><td><code>.os-badge-default</code></td><td>Gray</td></tr>
+            <tr><td><code>.os-badge-accent</code></td><td>Blue</td></tr>
+            <tr><td><code>.os-badge-teal</code></td><td>Teal/green</td></tr>
+            <tr><td><code>.os-badge-warning</code></td><td>Gold</td></tr>
+            <tr><td><code>.os-badge-danger</code></td><td>Red</td></tr>
+            <tr><td><code>.os-led</code></td><td>Base LED dot (10px circle)</td></tr>
+            <tr><td><code>.os-led-green/yellow/red/off</code></td><td>LED color variants</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── ALERTS ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Alerts &amp; Message Bars</h2>
+    <p class="ds-section-desc">In-page notification bars for info, success, warning, error.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div style="display:flex;flex-direction:column;gap:8px;max-width:460px;">
+            <div class="os-alert os-alert-info"><span class="os-alert-icon"><img src="icons/icon-info.svg" width="16"></span><div class="os-alert-text"><div class="os-alert-title">Information</div>System update available.</div><span class="os-alert-close">✕</span></div>
+            <div class="os-alert os-alert-success"><span class="os-alert-icon"><img src="icons/icon-success.svg" width="16"></span><div class="os-alert-text"><div class="os-alert-title">Success</div>File saved.</div><span class="os-alert-close">✕</span></div>
+            <div class="os-alert os-alert-warning"><span class="os-alert-icon"><img src="icons/icon-warning.svg" width="16"></span><div class="os-alert-text"><div class="os-alert-title">Warning</div>Disk space low.</div><span class="os-alert-close">✕</span></div>
+            <div class="os-alert os-alert-error"><span class="os-alert-icon"><img src="icons/icon-error.svg" width="16"></span><div class="os-alert-text"><div class="os-alert-title">Error</div>Cannot connect to drive.</div><span class="os-alert-close">✕</span></div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-alert</code></td><td>Base alert bar</td></tr>
+            <tr><td><code>.os-alert-info/success/warning/error</code></td><td>Variant colors</td></tr>
+            <tr><td><code>.os-alert-close</code></td><td>Close button (✕)</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── TOOLTIPS ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Tooltips</h2>
+    <p class="ds-section-desc">Classic yellow and themed tooltip boxes.</p>
+
+    <div class="ds-preview ds-preview-chrome">
+        <div style="display:flex;gap:32px;">
+            <div>
+                <div class="ds-label">Classic Yellow</div>
+                <button class="os-btn">Hover Me</button>
+                <div class="os-tooltip-box" style="margin-top:4px;">Saves your file</div>
+            </div>
+            <div>
+                <div class="ds-label">Themed</div>
+                <button class="os-btn">Hover Me</button>
+                <div class="os-tooltip-box os-tooltip-dark" style="margin-top:4px;">Open file (Ctrl+O)</div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-tooltip-box</code></td><td>Yellow tooltip (#ffffe1)</td></tr>
+            <tr><td><code>.os-tooltip-dark</code></td><td>Chrome-colored variant</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── NOTIFICATIONS ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Notifications</h2>
+    <p class="ds-section-desc">System tray popup notifications with optional action buttons.</p>
+
+    <div class="ds-preview ds-preview-sunken">
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;">
+            <div class="os-notification">
+                <span class="os-notification-icon"><img src="icons/icon-notification.svg" width="20"></span>
+                <div class="os-notification-body">
+                    <div class="os-notification-title">System Update</div>
+                    <div class="os-notification-msg">MaahiOS v1.0.1 is available.</div>
+                    <div class="os-notification-actions">
+                        <button class="os-btn os-btn-sm">Restart Now</button>
+                        <button class="os-btn os-btn-sm os-btn-flat">Later</button>
+                    </div>
+                </div>
+                <span class="os-notification-close">✕</span>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-notification</code></td><td>Popup container (embossed, shadowed)</td></tr>
+            <tr><td><code>.os-notification-title</code></td><td>Bold title text</td></tr>
+            <tr><td><code>.os-notification-msg</code></td><td>Message body</td></tr>
+            <tr><td><code>.os-notification-actions</code></td><td>Button row</td></tr>
+            <tr><td><code>.os-notification-close</code></td><td>Close button</td></tr>
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,594 @@
+/* ================================================================
+   MAAHI OS — CONTROLS
+   All interactive UI controls: buttons, inputs, checkboxes,
+   radios, sliders, combobox, spinners, listbox, treeview,
+   progress bars, badges, LEDs, alerts, tooltips, scrollbars.
+   ================================================================ */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BUTTONS  (.os-btn)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  padding, min-width, min-height, font-size
+   States:      :active (pressed), :focus, :disabled
+   Variants:    .os-btn-default, .os-btn-accent, .os-btn-flat,
+                .os-btn-danger, .os-btn-sm, .os-btn-lg
+   Actions:     onclick
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-btn {
+    padding: 5px 20px;
+    min-width: 75px;
+    min-height: 25px;
+    background: var(--os-chrome);
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    color: var(--os-text);
+    font-size: 13px;
+    font-family: var(--os-font);
+    cursor: pointer;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+.os-btn:active {
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    padding: 6px 19px 4px 21px;
+}
+.os-btn:focus {
+    outline: 1px dotted var(--os-text);
+    outline-offset: -4px;
+}
+.os-btn:disabled, .os-btn-disabled {
+    color: var(--os-text-disabled);
+    cursor: not-allowed;
+}
+
+/* Default button = primary action (OK, Save) */
+.os-btn-default {
+    box-shadow: 0 0 0 1px var(--os-teal);
+    font-weight: 700;
+}
+
+/* Accent button = filled gradient */
+.os-btn-accent {
+    background: linear-gradient(180deg, var(--os-accent-light) 0%, var(--os-accent-dark) 100%);
+    border-color: var(--os-accent-light) var(--os-accent-dark) var(--os-accent-dark) var(--os-accent-light);
+    color: var(--os-text-inverse);
+    font-weight: 600;
+}
+.os-btn-accent:active {
+    border-color: var(--os-accent-dark) var(--os-accent-light) var(--os-accent-light) var(--os-accent-dark);
+}
+
+/* Danger button */
+.os-btn-danger {
+    background: linear-gradient(180deg, #E56070 0%, #C22535 100%);
+    border-color: #E56070 #A01020 #A01020 #E56070;
+    color: var(--os-text-inverse);
+    font-weight: 600;
+}
+
+/* Flat button = toolbar style */
+.os-btn-flat {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--os-text);
+    padding: 3px 8px;
+    min-width: auto;
+    min-height: auto;
+}
+.os-btn-flat:hover {
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome-light);
+}
+
+/* Sizes */
+.os-btn-sm  { padding: 2px 10px; font-size: 11px; min-width: 50px; min-height: 20px; }
+.os-btn-lg  { padding: 7px 28px; font-size: 14px; min-width: 100px; min-height: 30px; }
+.os-btn-icon { padding: 3px 6px; min-width: 24px; min-height: 24px; font-size: 14px; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TEXT INPUT  (.os-input)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  width, placeholder, value, maxlength
+   States:      :focus, :disabled, .os-input-error
+   Actions:     oninput, onchange, onkeydown
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-input {
+    padding: 3px 6px;
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    background: var(--os-input-bg);
+    color: var(--os-text);
+    font-size: 13px;
+    font-family: var(--os-font);
+    width: 100%;
+}
+.os-input:focus {
+    outline: none;
+    border-color: var(--os-accent) var(--os-accent-light) var(--os-accent-light) var(--os-accent);
+}
+.os-input:disabled {
+    background: var(--os-chrome);
+    color: var(--os-text-disabled);
+    cursor: not-allowed;
+}
+.os-input-error { border-color: var(--os-danger) !important; }
+.os-input-sm { font-size: 11px; padding: 2px 4px; }
+.os-input-lg { font-size: 14px; padding: 5px 8px; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TEXTAREA  (.os-textarea)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  rows, cols, resize, maxlength
+   States:      :focus, :disabled
+   Actions:     oninput, onchange
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-textarea {
+    min-height: 70px;
+    resize: vertical;
+    font-family: var(--os-font);
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LABEL & HELPERS
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-label        { display: block; font-size: 13px; color: var(--os-text); margin-bottom: 3px; }
+.os-helper       { font-size: 11px; color: var(--os-text-secondary); margin-top: 2px; }
+.os-helper-error { color: var(--os-danger); }
+.os-form-group   { margin-bottom: 12px; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SELECT / DROPDOWN  (.os-input on <select>)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Use .os-input on <select> elements directly.
+   Properties:  multiple, size
+   Actions:     onchange
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   COMBOBOX  (.os-combobox)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Editable dropdown = text input + drop arrow button.
+   Properties:  value (input), items (list)
+   Actions:     oninput, ondropdown
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-combobox { display: flex; align-items: stretch; }
+.os-combobox-input { flex: 1; border-right: none; }
+.os-combobox-btn {
+    width: 18px;
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    color: var(--os-text);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 8px;
+}
+.os-combobox-btn:active {
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SPIN CONTROL / UP-DOWN  (.os-updown)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Numeric input with increment/decrement buttons.
+   Properties:  min, max, step, value
+   Actions:     onchange, onincrement, ondecrement
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-updown { display: flex; align-items: stretch; }
+.os-updown-input { width: 60px; text-align: right; border-right: none; }
+.os-updown-btns  { display: flex; flex-direction: column; }
+.os-updown-btn {
+    width: 16px; height: 12px;
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    color: var(--os-text);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 6px;
+}
+.os-updown-btn:active {
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CHECKBOX  (.os-checkbox-item)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  checked, indeterminate, disabled
+   States:      checked (✓), unchecked, disabled
+   Actions:     onchange
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-checkbox-item {
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; font-size: 13px; color: var(--os-text);
+}
+.os-checkbox-item input { display: none; }
+.os-custom-checkbox {
+    width: 13px; height: 13px;
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    background: var(--os-input-bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.os-checkbox-item input:checked + .os-custom-checkbox::after {
+    content: "✓"; color: var(--os-teal); font-size: 10px; font-weight: bold;
+}
+.os-checkbox-item input:disabled + .os-custom-checkbox {
+    background: var(--os-chrome); opacity: 0.6;
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RADIO BUTTON  (.os-radio-item)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  checked, name (group), disabled
+   States:      selected (●), unselected, disabled
+   Actions:     onchange
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-radio-item {
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; font-size: 13px; color: var(--os-text);
+}
+.os-radio-item input { display: none; }
+.os-custom-radio {
+    width: 13px; height: 13px;
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    border-radius: 50%;
+    background: var(--os-input-bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.os-radio-item input:checked + .os-custom-radio::after {
+    content: ""; width: 5px; height: 5px; background: var(--os-teal); border-radius: 50%;
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   GROUP BOX  (.os-groupbox)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Groove-bordered container for grouping form fields.
+   Properties:  title (legend text)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-groupbox {
+    border: 2px groove var(--os-chrome-light);
+    padding: 12px;
+    margin-bottom: 12px;
+    background: var(--os-chrome);
+}
+.os-groupbox-title {
+    font-size: 13px; color: var(--os-text);
+    background: var(--os-chrome); padding: 0 6px;
+    margin-left: 8px; margin-top: -22px;
+    display: inline-block; position: relative;
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SLIDER / TRACKBAR  (.os-slider-track)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  min, max, step, value, orientation
+   States:      default, dragging
+   Actions:     onchange, oninput
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-slider-track {
+    height: 4px;
+    background: var(--os-surface-sunken);
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    flex: 1;
+    position: relative;
+}
+.os-slider-fill {
+    position: absolute; top: 0; left: 0; bottom: 0;
+    background: var(--os-accent);
+}
+.os-slider-fill.teal { background: var(--os-teal); }
+.os-slider-thumb {
+    width: 12px; height: 20px;
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome-light);
+    position: absolute; top: -10px;
+    transform: translateX(-50%);
+    cursor: ew-resize;
+}
+.os-slider-label { font-size: 12px; color: var(--os-text-secondary); min-width: 24px; text-align: center; }
+.os-slider-row   { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.os-slider-wrap   { flex: 1; }
+.os-ticks {
+    display: flex; justify-content: space-between; margin-top: 6px; padding: 0 2px;
+}
+.os-tick { width: 1px; height: 6px; background: var(--os-text-secondary); }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LISTBOX  (.os-listbox)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Scrollable list of selectable items.
+   Properties:  items[], selectedIndex, multiSelect
+   States:      .selected, :hover
+   Actions:     onselect, ondblclick
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-listbox {
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    background: var(--os-input-bg);
+    min-height: 100px; max-height: 180px; overflow-y: auto;
+    font-size: 12px;
+}
+.os-listbox-item {
+    padding: 2px 6px; color: var(--os-text); cursor: pointer;
+}
+.os-listbox-item:hover { background: rgba(43,91,181,0.15); }
+.os-listbox-item.selected { background: var(--os-accent); color: #fff; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TREE VIEW  (.os-treeview)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Hierarchical collapsible tree.
+   Properties:  nodes[], expanded, icon
+   States:      .selected, expanded (▼), collapsed (▶)
+   Actions:     onselect, onexpand, oncollapse, ondblclick
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-treeview {
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    background: var(--os-input-bg);
+    padding: 4px; font-size: 12px; color: var(--os-text);
+    min-height: 100px; max-height: 200px; overflow-y: auto;
+}
+.os-tree-node   { padding-left: 16px; }
+.os-tree-label  { display: flex; align-items: center; gap: 4px; padding: 1px 4px; cursor: pointer; }
+.os-tree-label:hover   { background: rgba(43,91,181,0.12); }
+.os-tree-label.selected { background: var(--os-accent); color: #fff; }
+.os-tree-toggle { font-size: 8px; width: 12px; cursor: pointer; color: var(--os-text-secondary); }
+.os-tree-icon   { font-size: 12px; width: 16px; text-align: center; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PROGRESS BAR  (.os-progress)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  value (0-100), variant (solid/segmented/marquee)
+   States:      determinate, indeterminate
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-progress {
+    height: 18px;
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    background: var(--os-surface-sunken);
+    position: relative;
+}
+.os-progress-fill {
+    height: 100%;
+    transition: width 0.3s;
+}
+.os-progress-fill.solid  { background: var(--os-accent); }
+.os-progress-fill.teal   { background: var(--os-teal); }
+.os-progress-fill.danger { background: var(--os-danger); }
+.os-progress-segmented .os-progress-fill {
+    background: repeating-linear-gradient(90deg,
+        var(--os-accent) 0px, var(--os-accent) 10px,
+        var(--os-surface-sunken) 10px, var(--os-surface-sunken) 12px);
+}
+.os-progress-label {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    font-size: 11px; color: var(--os-text); z-index: 1;
+}
+.os-progress-marquee .os-progress-fill {
+    width: 30% !important;
+    animation: os-marquee 2s linear infinite;
+    background: var(--os-teal);
+}
+@keyframes os-marquee { 0% { margin-left: 0%; } 100% { margin-left: 70%; } }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TABLE / DATA GRID  (.os-table)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  columns[], rows[], sortColumn, sortDirection
+   States:      :hover row, .selected row
+   Actions:     onrowselect, onheaderclick (sort), ondblclick
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-table-wrap {
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    background: var(--os-input-bg);
+    overflow: auto;
+}
+.os-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.os-table th {
+    background: var(--os-chrome);
+    border: 1px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    padding: 3px 8px;
+    text-align: left;
+    color: var(--os-text);
+    font-weight: normal;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.os-table th:hover { background: var(--os-chrome-light); }
+.os-table td {
+    padding: 2px 8px;
+    border-bottom: 1px solid rgba(90,93,118,0.15);
+    color: var(--os-text);
+}
+.os-table tr:hover td { background: rgba(43,91,181,0.12); }
+.os-table tr.selected td { background: var(--os-accent); color: #fff; }
+.os-table .sort-arrow { font-size: 8px; margin-left: 4px; color: var(--os-text-secondary); }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BADGES  (.os-badge)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Small labels for counts and status.
+   Properties:  text, variant
+   Variants:    -default, -accent, -teal, -warning, -danger
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-badge {
+    display: inline-block; padding: 1px 8px;
+    font-size: 11px; font-weight: bold;
+    border: 1px solid;
+}
+.os-badge-default { background: var(--os-chrome-dark);  color: var(--os-text);       border-color: var(--bevel-dark); }
+.os-badge-accent  { background: var(--os-accent);       color: #fff;                 border-color: #1a3a7a; }
+.os-badge-teal    { background: var(--os-teal);          color: #111;                 border-color: #2a8a6a; }
+.os-badge-warning { background: var(--os-warning);       color: #111;                 border-color: #b8860b; }
+.os-badge-danger  { background: var(--os-danger);        color: #fff;                 border-color: #8b0000; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   STATUS LEDs  (.os-led)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Indicator dots. Variants: -green, -yellow, -red, -off
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-led {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.3);
+    display: inline-block;
+}
+.os-led-green  { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+.os-led-yellow { background: #eab308; box-shadow: 0 0 4px #eab308; }
+.os-led-red    { background: #ef4444; box-shadow: 0 0 4px #ef4444; }
+.os-led-off    { background: #ccc;    box-shadow: none; }
+.os-led-row    { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--os-text); }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ALERTS  (.os-alert)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   In-page notification bars.
+   Properties:  title, message, icon, variant, closable
+   Variants:    -info, -success, -warning, -error
+   Actions:     onclose
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-alert {
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    padding: 8px 12px;
+    font-size: 12px;
+    display: flex; align-items: flex-start; gap: 8px;
+}
+.os-alert-icon  { font-size: 16px; flex-shrink: 0; }
+.os-alert-text  { flex: 1; }
+.os-alert-title { font-weight: bold; margin-bottom: 2px; }
+.os-alert-close { cursor: pointer; font-size: 14px; margin-left: auto; opacity: 0.7; }
+.os-alert-close:hover { opacity: 1; }
+.os-alert-info    { background: #dbe8ff; color: #1a3a6a; border-color: #2B5BB5 #a0b8e0 #a0b8e0 #2B5BB5; }
+.os-alert-success { background: #d4f0e4; color: #1a4a2a; border-color: #28A745 #a0d8c0 #a0d8c0 #28A745; }
+.os-alert-warning { background: #fff3cd; color: #5a4010; border-color: #E8A317 #e0c880 #e0c880 #E8A317; }
+.os-alert-error   { background: #fde4e4; color: #6a1a1a; border-color: #DC3545 #e0a0a0 #e0a0a0 #DC3545; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TOOLTIPS  (.os-tooltip-box)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  text, position (top/bottom/left/right)
+   Variants:    default (yellow), .os-tooltip-dark
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-tooltip-box {
+    background: #ffffe1;
+    color: #000;
+    border: 1px solid #000;
+    padding: 3px 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+.os-tooltip-dark {
+    background: var(--os-chrome);
+    color: var(--os-text);
+    border: 1px solid var(--bevel-dark);
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SCROLLBARS  (WebKit)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Apply .os-scrollable to any scrollable container.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-scrollable::-webkit-scrollbar        { width: 16px; }
+.os-scrollable::-webkit-scrollbar-track  { background: var(--os-chrome-dark); }
+.os-scrollable::-webkit-scrollbar-thumb  {
+    background: var(--os-chrome);
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+}
+.os-scrollable::-webkit-scrollbar-thumb:hover { background: var(--os-chrome-light); }
+.os-scrollable::-webkit-scrollbar-button {
+    background: var(--os-chrome);
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    height: 16px;
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   NOTIFICATION POPUP  (.os-notification)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  title, message, icon, actions[], closable
+   Actions:     onclose, onaction
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-notification {
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+    padding: 12px;
+    display: flex; gap: 10px;
+    max-width: 300px;
+}
+.os-notification-icon  { font-size: 24px; flex-shrink: 0; }
+.os-notification-body  { flex: 1; }
+.os-notification-title { font-size: 12px; font-weight: bold; color: var(--os-text); margin-bottom: 2px; }
+.os-notification-msg   { font-size: 11px; color: var(--os-text-secondary); line-height: 1.3; }
+.os-notification-close { font-size: 10px; color: var(--os-text-secondary); cursor: pointer; }
+.os-notification-close:hover { color: var(--os-text); }
+.os-notification-actions { margin-top: 6px; display: flex; gap: 6px; }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TABS (PROPERTY SHEET)  (.os-tabs-container)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Properties:  tabs[], activeTab
+   Actions:     ontabchange
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.os-tabs-container { background: var(--os-chrome); }
+.os-tab-bar { display: flex; gap: 0; padding: 0 6px; }
+.os-tab {
+    padding: 4px 14px; font-size: 12px; color: var(--os-text-secondary);
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) transparent var(--bevel-light);
+    border-bottom: none;
+    background: var(--os-chrome-light);
+    cursor: pointer;
+    margin-top: 2px;
+    position: relative;
+}
+.os-tab.active {
+    color: var(--os-text);
+    background: var(--os-chrome);
+    margin-top: 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--os-chrome);
+    z-index: 1;
+}
+.os-tab-content {
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    background: var(--os-chrome);
+    padding: 16px;
+    margin-top: -2px;
+    font-size: 13px; color: var(--os-text);
+}

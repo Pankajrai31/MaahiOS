@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Bold B -->
+  <path d="M8 4 L18 4 Q24 4 24 9 Q24 13 20 14 Q25 15 25 20 Q25 28 18 28 L8 28 Z" fill="#1A1A2E" stroke="#1A1A2E" stroke-width="1"/>
+  <!-- B holes -->
+  <path d="M13 8 L17 8 Q20 8 20 10.5 Q20 13 17 13 L13 13 Z" fill="#FFFFFF"/>
+  <path d="M13 17 L18 17 Q21 17 21 20.5 Q21 24 18 24 L13 24 Z" fill="#FFFFFF"/>
+</svg>

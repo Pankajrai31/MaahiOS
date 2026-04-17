@@ -170,11 +170,11 @@ static void button_draw(control_t *ctrl, surface_t *surf) {
         surface_draw_vline(surf, x + w - 2, y + 1, h - 2, border_c);
 
         /* Centered text in disabled color */
-        int text_w = surface_measure_string(btn->label);
+        int text_w = surface_measure_text(btn->label, FONT_SMALL);
         int text_x = x + (w - text_w) / 2;
-        int text_y = y + (h - THEME_FONT_HEIGHT) / 2;
-        surface_draw_string_transparent(surf, text_x, text_y,
-                                        btn->label, THEME_TEXT_DISABLED);
+        int text_y = y + (h - surface_text_height(FONT_SMALL)) / 2;
+        surface_draw_text(surf, text_x, text_y,
+                          btn->label, FONT_SMALL, THEME_TEXT_DISABLED);
         return;
     }
 
@@ -182,11 +182,11 @@ static void button_draw(control_t *ctrl, surface_t *surf) {
     if (theme->transparent && !is_hover && !is_pressed) {
         /* Don't fill background — leave parent bg visible.
          * Just draw the text, no bevel. */
-        int text_w = surface_measure_string(btn->label);
+        int text_w = surface_measure_text(btn->label, FONT_SMALL);
         int text_x = x + (w - text_w) / 2;
-        int text_y = y + (h - THEME_FONT_HEIGHT) / 2;
-        surface_draw_string_transparent(surf, text_x, text_y,
-                                        btn->label, theme->fg);
+        int text_y = y + (h - surface_text_height(FONT_SMALL)) / 2;
+        surface_draw_text(surf, text_x, text_y,
+                          btn->label, FONT_SMALL, theme->fg);
         return;
     }
 
@@ -236,9 +236,9 @@ static void button_draw(control_t *ctrl, surface_t *surf) {
     }
 
     /* ---- Draw label text, centered ---- */
-    int text_w = surface_measure_string(btn->label);
+    int text_w = surface_measure_text(btn->label, FONT_SMALL);
     int text_x = x + (w - text_w) / 2;
-    int text_y = y + (h - THEME_FONT_HEIGHT) / 2;
+    int text_y = y + (h - surface_text_height(FONT_SMALL)) / 2;
 
     /* Shift text +1,+1 when pressed (classic 3D tactile feedback) */
     if (is_pressed) {
@@ -246,7 +246,7 @@ static void button_draw(control_t *ctrl, surface_t *surf) {
         text_y += 1;
     }
 
-    surface_draw_string_transparent(surf, text_x, text_y, btn->label, theme->fg);
+    surface_draw_text(surf, text_x, text_y, btn->label, FONT_SMALL, theme->fg);
 
     /* ---- Focus rectangle (dashed look: dotted line around text) ---- */
     if (ctrl->focused) {
@@ -376,7 +376,7 @@ button_t *button_create(int x, int y, int w, int h,
     if (w <= 0) {
         int pad_x, pad_y, min_w, min_h;
         get_size_params(btn->size, &pad_x, &pad_y, &min_w, &min_h);
-        w = surface_measure_string(btn->label) + pad_x * 2;
+        w = surface_measure_text(btn->label, FONT_SMALL) + pad_x * 2;
         if (w < min_w) w = min_w;
     }
     if (h <= 0) {
@@ -414,7 +414,7 @@ void button_set_size(button_t *btn, button_size_t size) {
     int pad_x, pad_y, min_w, min_h;
     get_size_params(size, &pad_x, &pad_y, &min_w, &min_h);
 
-    int w = surface_measure_string(btn->label) + pad_x * 2;
+    int w = surface_measure_text(btn->label, FONT_SMALL) + pad_x * 2;
     if (w < min_w) w = min_w;
     int h = min_h;
 

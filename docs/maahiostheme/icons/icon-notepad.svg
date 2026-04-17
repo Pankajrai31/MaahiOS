@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Notepad body -->
+  <rect x="6" y="3" width="20" height="26" rx="1.5" ry="1.5" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Top binding -->
+  <rect x="6" y="3" width="20" height="4" rx="1.5" ry="1.5" fill="#2B5BB5"/>
+  <rect x="6" y="5" width="20" height="2" fill="#2B5BB5"/>
+  <!-- Spiral holes -->
+  <circle cx="9" cy="5" r="1" fill="#FFFFFF"/>
+  <circle cx="13" cy="5" r="1" fill="#FFFFFF"/>
+  <circle cx="17" cy="5" r="1" fill="#FFFFFF"/>
+  <circle cx="21" cy="5" r="1" fill="#FFFFFF"/>
+  <!-- Text lines -->
+  <line x1="9" y1="11" x2="23" y2="11" stroke="#D8DBE8" stroke-width="1"/>
+  <line x1="9" y1="15" x2="23" y2="15" stroke="#D8DBE8" stroke-width="1"/>
+  <line x1="9" y1="19" x2="23" y2="19" stroke="#D8DBE8" stroke-width="1"/>
+  <line x1="9" y1="23" x2="23" y2="23" stroke="#D8DBE8" stroke-width="1"/>
+  <!-- Written text hints -->
+  <line x1="9" y1="11" x2="20" y2="11" stroke="#1A1A2E" stroke-width="1" opacity="0.5"/>
+  <line x1="9" y1="15" x2="22" y2="15" stroke="#1A1A2E" stroke-width="1" opacity="0.5"/>
+  <line x1="9" y1="19" x2="18" y2="19" stroke="#1A1A2E" stroke-width="1" opacity="0.5"/>
+</svg>

@@ -50,6 +50,7 @@
 #define GRUB_MOD_WMEXEC         9
 #define GRUB_MOD_ORBIT          10
 #define GRUB_MOD_TERMINAL       11
+#define GRUB_MOD_NETEXEC        12
 
 /*=============================================================================
  * Convenience wrappers (thin layer over syscall_helpers)
@@ -253,6 +254,24 @@ void sysman_main_c(void) {
     sleep_ticks(5);
     
     /*=========================================================================
+     * STEP 8b: Start Network Executive
+     *   - Depends on: Cell Executive (cell discovery), kernel Network Manager
+     *   - Provides ping/config/stats to user-space via SHM queues
+     *   - Non-fatal if networking hardware not available
+     *=======================================================================*/
+    liblog(LOG_INFO, "SYSMAN", "Starting Network Executive...");
+    
+    int net_pid = create_process_from_module(GRUB_MOD_NETEXEC, "NetExec", MOD_BSS_NETEXEC);
+    if (net_pid < 0) {
+        liblog(LOG_WARN, "SYSMAN", "Network Executive failed to start (non-fatal)");
+    } else {
+        liblog_hex(LOG_INFO, "SYSMAN", "Network Executive PID:", (uint32_t)net_pid);
+    }
+    
+    /* Give Network Executive a moment to initialize */
+    sleep_ticks(5);
+    
+    /*=========================================================================
      * STEP 9: Prepare & Launch Orbit Desktop Shell
      *       - Publish terminal module index so Orbit can discover it
      *       - Launch Orbit with per-process page directory
@@ -340,6 +359,10 @@ void sysman_main_c(void) {
         taskbar_restore_t restore;
         restore.pid = 0;
         libcell_write(CELL_TASKBAR_RESTORE, &restore, sizeof(restore));
+
+        taskbar_minimize_t minimize;
+        minimize.pid = 0;
+        libcell_write(CELL_TASKBAR_MINIMIZE, &minimize, sizeof(minimize));
     }
     
     /* Launch Orbit with per-process page directory */

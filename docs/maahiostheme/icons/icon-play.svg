@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Play triangle -->
+  <path d="M8 4 L27 16 L8 28 Z" fill="#1E8A65" stroke="#1A1A2E" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Highlight -->
+  <path d="M10 7 L10 14 L18 10 Z" fill="#FFFFFF" opacity="0.2"/>
+</svg>

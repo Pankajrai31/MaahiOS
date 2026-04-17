@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Disk circle -->
+  <circle cx="16" cy="16" r="13" fill="#D8DBE8" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Partition 1 -->
+  <path d="M16 3 A13 13 0 0 1 29 16 L16 16 Z" fill="#2B5BB5"/>
+  <!-- Partition 2 -->
+  <path d="M29 16 A13 13 0 0 1 16 29 L16 16 Z" fill="#1E8A65"/>
+  <!-- Partition 3 -->
+  <path d="M16 29 A13 13 0 0 1 3 16 L16 16 Z" fill="#E8A317"/>
+  <!-- Partition 4 (remaining) -->
+  <path d="M3 16 A13 13 0 0 1 16 3 L16 16 Z" fill="#D8DBE8"/>
+  <!-- Center -->
+  <circle cx="16" cy="16" r="3" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="1"/>
+  <!-- Outline -->
+  <circle cx="16" cy="16" r="13" fill="none" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Partition lines -->
+  <line x1="16" y1="3" x2="16" y2="13" stroke="#1A1A2E" stroke-width="1"/>
+  <line x1="29" y1="16" x2="19" y2="16" stroke="#1A1A2E" stroke-width="1"/>
+  <line x1="16" y1="29" x2="16" y2="19" stroke="#1A1A2E" stroke-width="1"/>
+  <line x1="3" y1="16" x2="13" y2="16" stroke="#1A1A2E" stroke-width="1"/>
+</svg>

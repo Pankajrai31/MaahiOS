@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Bin body -->
+  <path d="M8 10 L10 28 Q10 29 11 29 L21 29 Q22 29 22 28 L24 10 Z" fill="#D8DBE8" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Bin lid (slightly ajar) -->
+  <rect x="5" y="6" width="20" height="3" rx="1.5" ry="1.5" fill="#D8DBE8" stroke="#1A1A2E" stroke-width="1.5" transform="rotate(-8 15 7.5)"/>
+  <!-- Lid handle -->
+  <rect x="12" y="3.5" width="6" height="3" rx="1" ry="1" fill="none" stroke="#1A1A2E" stroke-width="1.5" transform="rotate(-8 15 5)"/>
+  <!-- Trash items sticking out -->
+  <path d="M12 8 L10 4" stroke="#E8A317" stroke-width="2" stroke-linecap="round"/>
+  <path d="M18 7 L20 3" stroke="#2B5BB5" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="15" cy="5" r="1.5" fill="#DC3545"/>
+  <!-- Bin ridges -->
+  <line x1="12" y1="13" x2="12.5" y2="26" stroke="#1A1A2E" stroke-width="1" opacity="0.4"/>
+  <line x1="16" y1="13" x2="16" y2="26" stroke="#1A1A2E" stroke-width="1" opacity="0.4"/>
+  <line x1="20" y1="13" x2="19.5" y2="26" stroke="#1A1A2E" stroke-width="1" opacity="0.4"/>
+</svg>

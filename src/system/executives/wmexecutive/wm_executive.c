@@ -78,6 +78,7 @@ typedef struct {
     int      restore_x, restore_y, restore_w, restore_h;
     /* "Not Responding" detection */
     uint32_t last_heartbeat_tick; /* Last tick when we received any command  */
+    uint32_t creation_tick;       /* Tick when window was created (for grace)*/
     uint8_t  not_responding;      /* 1 = window is not responding            */
 } wm_slot_t;
 
@@ -111,8 +112,15 @@ static int           g_focus_handle = -1;
 /* Mouse SHM fast path (reads IO Executive's shared mouse state) */
 static io_mouse_state_t *g_mouse_shm = (void *)0;
 
-/* Staleness check counter */
-static uint32_t g_nr_check_counter = 0;
+/* Keyboard ring SHM — WM writes focused_pid here for focus-gated input */
+static io_kbd_ring_t *g_kbd_ring_shm = (void *)0;
+
+/* Staleness check — last tick when we ran the check */
+static uint32_t g_nr_last_check_tick = 0;
+
+/* SHM heartbeat table (clients write ticks, WM reads for NR detection) */
+static wm_heartbeat_table_t *g_hb_table = (void *)0;
+static int g_hb_shm_id = -1;
 
 /*=============================================================================
  * NOT-RESPONDING DIALOG STATE
@@ -184,11 +192,17 @@ static void yield(void) { syscall0(SYS_YIELD); }
 static void sleep_ticks(int t) { syscall1(SYS_SLEEP, t); }
 static uint32_t get_ticks(void) { return (uint32_t)syscall0(SYS_TIME_GET_TICKS); }
 
-/* Not-responding timeout: ~4 seconds at 50 Hz PIT = 200 ticks */
-#define WM_NR_TIMEOUT_TICKS     200
+/* Not-responding timeout: ~10 seconds at 50 Hz PIT = 500 ticks.
+ * With 14+ processes sharing round-robin, apps may go several seconds
+ * between scheduler slices.  A generous timeout avoids false positives. */
+#define WM_NR_TIMEOUT_TICKS     500
 
-/* How often to check for staleness (every 25 = 0.5 sec at 50 Hz) */
-#define WM_NR_CHECK_INTERVAL    25
+/* Grace period after window creation before NR detection activates.
+ * Allows time for the client's first heartbeat to arrive.  */
+#define WM_NR_GRACE_TICKS       250
+
+/* How often (in real ticks) to check for staleness (~2 sec at 50 Hz). */
+#define WM_NR_CHECK_TICKS       100
 
 static void str_copy(char *dst, const char *src, int max) {
     int i;
@@ -799,6 +813,9 @@ static void flush_damage(void) {
  * PUBLISH WINDOW REGISTRY TO CELL (for Orbit taskbar)
  *===========================================================================*/
 
+/* Forward declaration — defined in MOUSE SHM FAST PATH section below */
+static void wm_update_kbd_focus(void);
+
 static void publish_registry(void) {
     wm_window_registry_t reg;
     exe_memset(&reg, 0, sizeof(reg));
@@ -841,6 +858,9 @@ static void publish_registry(void) {
     uint32_t tsz = (uint32_t)(sizeof(int32_t) +
                    tbar.count * sizeof(taskbar_entry_t));
     libcell_write(CELL_TASKBAR_WINDOWS, &tbar, tsz);
+
+    /* Update keyboard focus routing whenever registry changes */
+    wm_update_kbd_focus();
 }
 
 /*=============================================================================
@@ -892,6 +912,7 @@ static void handle_create(const exec_request_t *req, exec_response_t *resp) {
     slot->surface_ptr    = ptr;
     str_copy(slot->title, p->title, WM_TITLE_MAX);
     slot->last_heartbeat_tick = get_ticks();
+    slot->creation_tick = slot->last_heartbeat_tick;
     slot->not_responding = 0;
 
     /* New window goes on top */
@@ -907,9 +928,15 @@ static void handle_create(const exec_request_t *req, exec_response_t *resp) {
     wm_create_response_t *rp = (wm_create_response_t *)resp->payload;
     rp->handle         = handle;
     rp->surface_shm_id = shm_id;
+    rp->heartbeat_slot = (int32_t)(slot - g_windows);
     resp->status        = EXEC_OK;
     resp->result        = (uint32_t)handle;
     resp->payload_size  = sizeof(wm_create_response_t);
+
+    /* Seed the heartbeat SHM table for this slot */
+    if (g_hb_table) {
+        g_hb_table->ticks[(int)(slot - g_windows)] = get_ticks();
+    }
 
     publish_registry();
     liblog_hex(LOG_INFO, "WM", "Window created, handle:", (uint32_t)handle);
@@ -1133,7 +1160,11 @@ static void handle_heartbeat(const exec_request_t *req, exec_response_t *resp) {
     wm_slot_t *slot = find_slot_by_handle(p->handle);
     if (!slot) { resp->status = EXEC_ERR_NOT_FOUND; return; }
 
-    slot->last_heartbeat_tick = get_ticks();
+    uint32_t now = get_ticks();
+    slot->last_heartbeat_tick = now;
+    if (g_hb_table) {
+        g_hb_table->ticks[(int)(slot - g_windows)] = now;
+    }
     /* If the window was previously not-responding, it's back alive */
     if (slot->not_responding) {
         slot->not_responding = 0;
@@ -1184,7 +1215,11 @@ static void dispatch(const exec_request_t *req, exec_response_t *resp) {
         const wm_handle_payload_t *p = (const wm_handle_payload_t *)req->payload;
         wm_slot_t *slot = find_slot_by_handle(p->handle);
         if (slot) {
-            slot->last_heartbeat_tick = get_ticks();
+            uint32_t now = get_ticks();
+            slot->last_heartbeat_tick = now;
+            if (g_hb_table) {
+                g_hb_table->ticks[(int)(slot - g_windows)] = now;
+            }
             if (slot->not_responding) {
                 slot->not_responding = 0;
                 /* Dismiss NR dialog if targeting this window */
@@ -1233,6 +1268,42 @@ static void wm_init_mouse_shm(void) {
 }
 
 /**
+ * Try to discover and attach to the IO Executive's keyboard ring SHM.
+ * WM writes focused_pid here so only the focused app consumes keys.
+ */
+static void wm_init_kbd_ring_shm(void) {
+    if (g_kbd_ring_shm) return;
+
+    int shm_id = -1;
+    libcell_read("system.io.keyboard.ring_shm", &shm_id, sizeof(int));
+    if (shm_id < 0) return;
+
+    io_kbd_ring_t *ring = (io_kbd_ring_t *)syscall2(SYS_SHM_ATTACH,
+                                                      shm_id, 0);
+    if (!ring || (uint32_t)ring == 0xFFFFFFFF) return;
+    g_kbd_ring_shm = ring;
+    liblog(LOG_INFO, "WM", "Keyboard ring SHM attached for focus routing");
+}
+
+/**
+ * Write the focused window's PID to the keyboard ring SHM.
+ * Must be called whenever g_focus_handle changes.
+ */
+static void wm_update_kbd_focus(void) {
+    if (!g_kbd_ring_shm) {
+        wm_init_kbd_ring_shm();
+        if (!g_kbd_ring_shm) return;
+    }
+
+    int32_t pid = 0;
+    if (g_focus_handle > 0) {
+        wm_slot_t *slot = find_slot_by_handle(g_focus_handle);
+        if (slot) pid = slot->pid;
+    }
+    g_kbd_ring_shm->focused_pid = pid;
+}
+
+/**
  * Poll mouse state from the IO Executive's SHM slot.
  * Updates g_mouse and g_prev_buttons.
  */
@@ -1278,21 +1349,40 @@ static void wm_check_staleness(void) {
         if (!slot->active) continue;
         if (slot->state == WM_STATE_MINIMIZED) continue;
 
-        /* Skip if already flagged or if first_heartbeat hasn't been set */
-        if (slot->last_heartbeat_tick == 0) {
+        /* Use the MOST RECENT heartbeat from either source:
+         *  - slot->last_heartbeat_tick  (updated by WM on every received command)
+         *  - g_hb_table->ticks[i]       (written directly by client via SHM)
+         * Taking the MAX avoids false NR if one path is delayed. */
+        uint32_t last_hb = slot->last_heartbeat_tick;
+        if (g_hb_table) {
+            uint32_t shm_hb = g_hb_table->ticks[i];
+            /* Use whichever is more recent (handles tick wrap via unsigned diff) */
+            if (shm_hb != 0 && (int32_t)(shm_hb - last_hb) > 0) {
+                last_hb = shm_hb;
+            }
+        }
+
+        if (last_hb == 0) {
             /* Window just created — seed with current time */
             slot->last_heartbeat_tick = now;
+            if (g_hb_table) g_hb_table->ticks[i] = now;
             continue;
         }
 
-        uint32_t age = now - slot->last_heartbeat_tick;
+        uint32_t age = now - last_hb;
+
+        /* Grace period: don't flag NR for recently created windows */
+        uint32_t since_create = now - slot->creation_tick;
+        if (since_create < WM_NR_GRACE_TICKS && !slot->not_responding)
+            continue;
+
         if (age > WM_NR_TIMEOUT_TICKS && !slot->not_responding) {
             slot->not_responding = 1;
             add_damage(slot->x, slot->y, slot->w, slot->h);
             changed = 1;
             liblog(LOG_WARN, "WM", "Window not responding!");
             liblog_hex(LOG_WARN, "WM", "  handle:", (uint32_t)slot->handle);
-            liblog_hex(LOG_WARN, "WM", "  pid:", (uint32_t)slot->pid);
+            liblog_hex(LOG_WARN, "WM", "  age:", age);
 
             /* Show the NR dialog if none is already active */
             if (!g_wm_dialog.active) {
@@ -1559,6 +1649,19 @@ void wm_executive_main(void) {
     }
     liblog(LOG_INFO, "WM", "SHM queues ready");
 
+    /* Create SHM heartbeat table (clients write ticks, WM reads for NR) */
+    g_hb_shm_id = syscall1(SYS_SHM_CREATE, (int)sizeof(wm_heartbeat_table_t));
+    if (g_hb_shm_id >= 0) {
+        g_hb_table = (wm_heartbeat_table_t *)syscall2(SYS_SHM_ATTACH,
+                                                        g_hb_shm_id, 0);
+        if (g_hb_table) {
+            for (int i = 0; i < WM_MAX_WINDOWS; i++)
+                g_hb_table->ticks[i] = 0;
+            libcell_write(CELL_WM_HEARTBEAT_SHM, &g_hb_shm_id, sizeof(int));
+            liblog(LOG_INFO, "WM", "Heartbeat SHM table created");
+        }
+    }
+
     /* Clear window slots */
     exe_memset(g_windows, 0, sizeof(g_windows));
 
@@ -1568,6 +1671,7 @@ void wm_executive_main(void) {
     /* Signal that WM is ready */
     int32_t ready = 1;
     libcell_write(CELL_WM_READY, &ready, sizeof(ready));
+    g_nr_last_check_tick = get_ticks();
     liblog(LOG_INFO, "WM", "WM Executive running");
 
     /* ---- Main event loop ---- */
@@ -1597,11 +1701,13 @@ void wm_executive_main(void) {
             wm_handle_dialog_click(g_mouse.x, g_mouse.y);
         }
 
-        /* ---- Periodic staleness check (~every 0.5 sec) ---- */
-        g_nr_check_counter++;
-        if (g_nr_check_counter >= WM_NR_CHECK_INTERVAL) {
-            g_nr_check_counter = 0;
-            wm_check_staleness();
+        /* ---- Periodic staleness check (tick-based, ~every 2 sec) ---- */
+        {
+            uint32_t now_t = get_ticks();
+            if (now_t - g_nr_last_check_tick >= WM_NR_CHECK_TICKS) {
+                g_nr_last_check_tick = now_t;
+                wm_check_staleness();
+            }
         }
 
         /* Flush all accumulated damage */

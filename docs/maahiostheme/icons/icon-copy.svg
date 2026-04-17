@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Back document -->
+  <path d="M10 4 L22 4 L27 9 L27 26 Q27 27 26 27 L11 27 Q10 27 10 26 Z" fill="#D8DBE8" stroke="#1A1A2E" stroke-width="1.5"/>
+  <path d="M22 4 L22 9 L27 9 Z" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="1"/>
+  <!-- Front document -->
+  <path d="M5 7 L17 7 L22 12 L22 29 Q22 30 21 30 L6 30 Q5 30 5 29 Z" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="1.5"/>
+  <path d="M17 7 L17 12 L22 12 Z" fill="#D8DBE8" stroke="#1A1A2E" stroke-width="1"/>
+  <!-- Lines on front doc -->
+  <line x1="8" y1="17" x2="19" y2="17" stroke="#2B5BB5" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+  <line x1="8" y1="20" x2="19" y2="20" stroke="#2B5BB5" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+  <line x1="8" y1="23" x2="15" y2="23" stroke="#2B5BB5" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+</svg>

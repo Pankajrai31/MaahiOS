@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Person 1 (front) -->
+  <circle cx="12" cy="10" r="5" fill="#2B5BB5" stroke="#1A1A2E" stroke-width="1.5"/>
+  <path d="M3 28 Q3 20 12 20 Q21 20 21 28 Z" fill="#2B5BB5" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Person 2 (behind) -->
+  <circle cx="22" cy="9" r="4.5" fill="#1E8A65" stroke="#1A1A2E" stroke-width="1.5"/>
+  <path d="M15 27 Q15 20 22 20 Q29 20 29 27 Z" fill="#1E8A65" stroke="#1A1A2E" stroke-width="1.5"/>
+</svg>

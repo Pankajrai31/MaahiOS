@@ -47,8 +47,8 @@
 #define COLOR_CHROME_DARKER 0x00B0B4C6
 
 /* 3D bevel edges */
-#define COLOR_BEVEL_LIGHT   0x00F4F5FA
-#define COLOR_BEVEL_DARK    0x009498AC
+#define COLOR_BEVEL_LIGHT   0x00FAFBFF
+#define COLOR_BEVEL_DARK    0x00808498
 
 /* Accent */
 #define COLOR_ACCENT        0x002B5BB5
@@ -80,7 +80,7 @@
 static int SCREEN_W;
 static int SCREEN_H;
 
-#define TASKBAR_H   32
+#define TASKBAR_H   36
 
 /* Computed at startup */
 static int TASKBAR_Y;
@@ -102,7 +102,13 @@ static int TASK_BTN_Y;
 #define TRAY_W      100
 static int TRAY_X;
 static int TRAY_Y;
-#define TRAY_H      24
+#define TRAY_H      28
+
+/* Power (shutdown) button — between tray and task buttons */
+#define POWER_BTN_W   28
+#define POWER_BTN_H   28
+static int POWER_BTN_X;
+static int POWER_BTN_Y;
 
 /* Desktop shortcut layout — icon-based grid */
 #define SHORTCUT_X_START    32          /* Left margin */
@@ -152,6 +158,20 @@ static int      g_icon_loaded[MAX_ICONS];  /* 1 = loaded successfully */
 static uint32_t g_default_icon[ICON_SIZE * ICON_SIZE];
 static int      g_default_loaded = 0;
 
+/* Menu icon pixels — loaded once at init for start menu + submenu */
+#define MENU_ICON_COUNT  9  /* terminal, procexp, diskexp, wordwrt, logexp, netexp, browser, shutdown, default */
+#define MICON_TERMINAL   0
+#define MICON_PROCEXP    1
+#define MICON_DISKEXP    2
+#define MICON_WORDWRT    3
+#define MICON_LOGEXP     4
+#define MICON_NETEXP     5
+#define MICON_BROWSER    6
+#define MICON_SHUTDOWN   7
+#define MICON_DEFAULT    8
+static uint32_t g_menu_icons[MENU_ICON_COUNT][ICON_SIZE * ICON_SIZE];
+static int      g_menu_icon_ok[MENU_ICON_COUNT];
+
 /*=============================================================================
  * GLOBAL STATE
  *===========================================================================*/
@@ -168,17 +188,18 @@ static int g_taskbar_count_prev = -1;  /* -1 = force initial draw */
  *===========================================================================*/
 
 /* Menu layout constants */
-#define MENU_W          180
-#define MENU_ITEM_H     28
+#define MENU_W          200
+#define MENU_ITEM_H     32
 #define MENU_PAD        3
-#define MENU_ICON_PAD   28     /* Space reserved for icon/bullet */
+#define MENU_ICON_PAD   36     /* Space reserved for 20x20 icon + gap */
 #define MENU_ARROW_PAD  20     /* Space for submenu arrow */
-#define MENU_ITEM_COUNT 2      /* 0=Programs, 1=Shut Down */
-#define MENU_H          (MENU_PAD * 2 + MENU_ITEM_COUNT * MENU_ITEM_H + 1)
+#define MENU_ITEM_COUNT 3      /* 0=Terminal, 1=Programs, 2=Shut Down */
+#define MENU_SEPARATOR_H 6     /* Height of separator line between Programs & Shut Down */
+#define MENU_H          (MENU_PAD * 2 + MENU_ITEM_COUNT * MENU_ITEM_H + MENU_SEPARATOR_H + 1)
 
 /* Submenu */
-#define SUBMENU_W       180
-#define SUBMENU_ITEM_COUNT 4   /* 0=Process Explorer, 1=Disk Explorer, 2=WordWrite, 3=Log Explorer */
+#define SUBMENU_W       200
+#define SUBMENU_ITEM_COUNT 6   /* 0=Process Explorer, 1=Disk Explorer, 2=WordWrite, 3=Log Explorer, 4=Net Explorer, 5=Browser */
 #define SUBMENU_H       (MENU_PAD * 2 + SUBMENU_ITEM_COUNT * MENU_ITEM_H + 1)
 
 /* Shutdown confirmation dialog */
@@ -309,10 +330,10 @@ static void draw_centered_text(int x, int y, int w, int h,
  * ICON LOADING
  *===========================================================================*/
 
-/** Load a single BMP icon from the ISO filesystem root. */
+/** Load a single BMP icon from the ISO filesystem icons/ folder. */
 static int load_icon_bmp(const char *filename, uint32_t *out_pixels) {
     static uint8_t file_buf[8192];  /* BMP is 32*32*4 + 54 = ~4150 bytes */
-    int bytes = libfs_read_file("C:/", filename, file_buf, sizeof(file_buf));
+    int bytes = libfs_read_file("C:/icons/", filename, file_buf, sizeof(file_buf));
     if (bytes <= 0) return -1;
 
     int w = 0, h = 0;
@@ -394,6 +415,24 @@ static void draw_system_tray(const char *clock_text) {
                             clock_text, COLOR_TEXT_SEC, FONT_SMALL);
 }
 
+/** Draw the power (shutdown) button on the taskbar. */
+static void draw_power_button(int hovered) {
+    uint32_t bg = hovered ? 0x00C02020 : COLOR_CHROME;
+    draw_raised_rect(POWER_BTN_X, POWER_BTN_Y, POWER_BTN_W, POWER_BTN_H, bg);
+    /* Draw a simple power icon (circle with line) */
+    int cx = POWER_BTN_X + POWER_BTN_W / 2;
+    int cy = POWER_BTN_Y + POWER_BTN_H / 2;
+    uint32_t fg = hovered ? COLOR_TEXT_INV : 0x00DC3545;
+    /* Vertical line (top of power icon) */
+    gui_fill_rect(cx, cy - 7, 2, 8, fg);
+    /* Simplified circle as 4 arcs (8x8 area) */
+    gui_fill_rect(cx - 5, cy - 2, 2, 8, fg);
+    gui_fill_rect(cx + 4, cy - 2, 2, 8, fg);
+    gui_fill_rect(cx - 3, cy + 5, 8, 2, fg);
+    gui_fill_rect(cx - 4, cy - 3, 2, 2, fg);
+    gui_fill_rect(cx + 3, cy - 3, 2, 2, fg);
+}
+
 /*=============================================================================
  * START MENU — popup overlay above taskbar
  *
@@ -419,6 +458,22 @@ static void draw_menu_bullet(int x, int y, uint32_t color) {
     vline(x + 7, y, 8, COLOR_BEVEL_DARK);
 }
 
+/** Draw a 20x20 downscaled version of a 32x32 icon at (x,y). */
+static void draw_icon_20(int dx, int dy, const uint32_t *pixels32, uint32_t bg) {
+    /* Simple nearest-neighbor downsample 32→20 */
+    int iy, ix;
+    for (iy = 0; iy < 20; iy++) {
+        int sy = iy * 32 / 20;
+        for (ix = 0; ix < 20; ix++) {
+            int sx = ix * 32 / 20;
+            uint32_t px = pixels32[sy * 32 + sx];
+            /* Treat black (0x000000) as transparent */
+            if ((px & 0x00FFFFFF) == 0) px = bg;
+            gui_fill_rect(dx + ix, dy + iy, 1, 1, px);
+        }
+    }
+}
+
 /** Draw the right-pointing submenu arrow (▶). */
 static void draw_submenu_arrow(int x, int y, uint32_t color) {
     /* 5-pixel tall right-pointing triangle */
@@ -428,22 +483,27 @@ static void draw_submenu_arrow(int x, int y, uint32_t color) {
     }
 }
 
-/** Draw a single menu item. */
+/** Draw a single menu item with optional icon and arrow. */
 static void draw_menu_item(int mx, int my, int mw, int idx, int hovered,
-                            const char *text, int has_arrow) {
+                            const char *text, int has_arrow, int icon_idx) {
     int iy = my + MENU_PAD + idx * MENU_ITEM_H;
-    /* If separator before shutdown item */
-    if (idx == 1) iy += 1;  /* account for separator pixel */
 
     uint32_t bg = hovered ? MENU_HOVER_BG : MENU_BG;
     uint32_t fg = hovered ? MENU_HOVER_TEXT : MENU_TEXT;
 
     gui_fill_rect(mx + MENU_PAD, iy, mw - MENU_PAD * 2, MENU_ITEM_H, bg);
 
-    /* Bullet icon */
-    uint32_t bullet_color = hovered ? 0x0080B0FF : COLOR_ACCENT;
-    draw_menu_bullet(mx + MENU_PAD + 6, iy + (MENU_ITEM_H - 8) / 2,
-                     bullet_color);
+    /* Icon (20x20 downscaled from 32x32) or bullet fallback */
+    int icon_x = mx + MENU_PAD + 6;
+    int icon_y = iy + (MENU_ITEM_H - 20) / 2;
+    if (icon_idx >= 0 && icon_idx < MENU_ICON_COUNT && g_menu_icon_ok[icon_idx]) {
+        draw_icon_20(icon_x, icon_y, g_menu_icons[icon_idx], bg);
+    } else {
+        /* Fallback bullet */
+        uint32_t bullet_color = hovered ? 0x0080B0FF : COLOR_ACCENT;
+        draw_menu_bullet(mx + MENU_PAD + 8, iy + (MENU_ITEM_H - 8) / 2,
+                         bullet_color);
+    }
 
     /* Text */
     int text_x = mx + MENU_PAD + MENU_ICON_PAD;
@@ -459,7 +519,10 @@ static void draw_menu_item(int mx, int my, int mw, int idx, int hovered,
     }
 }
 
-/** Draw the Start Menu popup. */
+/** Draw the Start Menu popup.
+ *  Item 0: Terminal
+ *  Item 1: Programs (submenu arrow)
+ */
 static void draw_start_menu(void) {
     int mx = MENU_X;
     int my = MENU_Y;
@@ -472,15 +535,36 @@ static void draw_start_menu(void) {
     hline(mx + 1, my + 1, mw - 2, COLOR_BEVEL_LIGHT);
     vline(mx + 1, my + 1, mh - 2, COLOR_BEVEL_LIGHT);
 
-    /* Item 0: Programs (with arrow) */
-    draw_menu_item(mx, my, mw, 0, (g_menu_hover == 0), "Programs", 1);
+    /* Item 0: Terminal */
+    draw_menu_item(mx, my, mw, 0, (g_menu_hover == 0), "Terminal", 0, MICON_TERMINAL);
+
+    /* Item 1: Programs (with arrow) */
+    draw_menu_item(mx, my, mw, 1, (g_menu_hover == 1), "Programs", 1, -1);
 
     /* Separator line */
-    int sep_y = my + MENU_PAD + MENU_ITEM_H;
+    int sep_y = my + MENU_PAD + 2 * MENU_ITEM_H + MENU_SEPARATOR_H / 2;
     hline(mx + MENU_PAD + 4, sep_y, mw - MENU_PAD * 2 - 8, MENU_SEPARATOR);
 
-    /* Item 1: Shut Down */
-    draw_menu_item(mx, my, mw, 1, (g_menu_hover == 1), "Shut Down", 0);
+    /* Item 2: Shut Down (positioned after separator) */
+    {
+        int iy2 = my + MENU_PAD + 2 * MENU_ITEM_H + MENU_SEPARATOR_H;
+        uint32_t bg2 = (g_menu_hover == 2) ? MENU_HOVER_BG : MENU_BG;
+        uint32_t fg2 = (g_menu_hover == 2) ? MENU_HOVER_TEXT : MENU_TEXT;
+        gui_fill_rect(mx + MENU_PAD, iy2, mw - MENU_PAD * 2, MENU_ITEM_H, bg2);
+        /* Power icon or bullet */
+        int icon_x = mx + MENU_PAD + 6;
+        int icon_y = iy2 + (MENU_ITEM_H - 20) / 2;
+        if (g_menu_icon_ok[MICON_SHUTDOWN]) {
+            draw_icon_20(icon_x, icon_y, g_menu_icons[MICON_SHUTDOWN], bg2);
+        } else {
+            uint32_t bc = (g_menu_hover == 2) ? 0x00FF6060 : 0x00DC3545;
+            draw_menu_bullet(mx + MENU_PAD + 8, iy2 + (MENU_ITEM_H - 8) / 2, bc);
+        }
+        int text_x = mx + MENU_PAD + MENU_ICON_PAD;
+        int th2 = gui_text_height(FONT_BODY);
+        int text_y = iy2 + (MENU_ITEM_H - th2) / 2;
+        gui_draw_text(text_x, text_y, "Shut Down", fg2, FONT_BODY);
+    }
 }
 
 /** Draw the Programs submenu popup. */
@@ -495,61 +579,13 @@ static void draw_submenu(void) {
     hline(sx + 1, sy + 1, sw - 2, COLOR_BEVEL_LIGHT);
     vline(sx + 1, sy + 1, sh - 2, COLOR_BEVEL_LIGHT);
 
-    /* Draw submenu items using helper */
-    int iy;
-    int th = gui_text_height(FONT_BODY);
-
-    /* Item 0: Process Explorer */
-    iy = sy + MENU_PAD + 0 * MENU_ITEM_H;
-    {
-        uint32_t bg = (g_submenu_hover == 0) ? MENU_HOVER_BG : MENU_BG;
-        uint32_t fg = (g_submenu_hover == 0) ? MENU_HOVER_TEXT : MENU_TEXT;
-        gui_fill_rect(sx + MENU_PAD, iy, sw - MENU_PAD * 2, MENU_ITEM_H, bg);
-        uint32_t bc = (g_submenu_hover == 0) ? 0x0080B0FF : COLOR_TEAL;
-        draw_menu_bullet(sx + MENU_PAD + 6, iy + (MENU_ITEM_H - 8) / 2, bc);
-        int text_x = sx + MENU_PAD + MENU_ICON_PAD;
-        int text_y = iy + (MENU_ITEM_H - th) / 2;
-        gui_draw_text(text_x, text_y, "Process Explorer", fg, FONT_BODY);
-    }
-
-    /* Item 1: Disk Explorer */
-    iy = sy + MENU_PAD + 1 * MENU_ITEM_H;
-    {
-        uint32_t bg = (g_submenu_hover == 1) ? MENU_HOVER_BG : MENU_BG;
-        uint32_t fg = (g_submenu_hover == 1) ? MENU_HOVER_TEXT : MENU_TEXT;
-        gui_fill_rect(sx + MENU_PAD, iy, sw - MENU_PAD * 2, MENU_ITEM_H, bg);
-        uint32_t bc = (g_submenu_hover == 1) ? 0x0080B0FF : COLOR_ACCENT;
-        draw_menu_bullet(sx + MENU_PAD + 6, iy + (MENU_ITEM_H - 8) / 2, bc);
-        int text_x = sx + MENU_PAD + MENU_ICON_PAD;
-        int text_y = iy + (MENU_ITEM_H - th) / 2;
-        gui_draw_text(text_x, text_y, "Disk Explorer", fg, FONT_BODY);
-    }
-
-    /* Item 2: WordWrite */
-    iy = sy + MENU_PAD + 2 * MENU_ITEM_H;
-    {
-        uint32_t bg = (g_submenu_hover == 2) ? MENU_HOVER_BG : MENU_BG;
-        uint32_t fg = (g_submenu_hover == 2) ? MENU_HOVER_TEXT : MENU_TEXT;
-        gui_fill_rect(sx + MENU_PAD, iy, sw - MENU_PAD * 2, MENU_ITEM_H, bg);
-        uint32_t bc = (g_submenu_hover == 2) ? 0x0080B0FF : COLOR_TEAL;
-        draw_menu_bullet(sx + MENU_PAD + 6, iy + (MENU_ITEM_H - 8) / 2, bc);
-        int text_x = sx + MENU_PAD + MENU_ICON_PAD;
-        int text_y = iy + (MENU_ITEM_H - th) / 2;
-        gui_draw_text(text_x, text_y, "WordWrite", fg, FONT_BODY);
-    }
-
-    /* Item 3: Log Explorer */
-    iy = sy + MENU_PAD + 3 * MENU_ITEM_H;
-    {
-        uint32_t bg = (g_submenu_hover == 3) ? MENU_HOVER_BG : MENU_BG;
-        uint32_t fg = (g_submenu_hover == 3) ? MENU_HOVER_TEXT : MENU_TEXT;
-        gui_fill_rect(sx + MENU_PAD, iy, sw - MENU_PAD * 2, MENU_ITEM_H, bg);
-        uint32_t bc = (g_submenu_hover == 3) ? 0x0080B0FF : COLOR_ACCENT;
-        draw_menu_bullet(sx + MENU_PAD + 6, iy + (MENU_ITEM_H - 8) / 2, bc);
-        int text_x = sx + MENU_PAD + MENU_ICON_PAD;
-        int text_y = iy + (MENU_ITEM_H - th) / 2;
-        gui_draw_text(text_x, text_y, "Log Explorer", fg, FONT_BODY);
-    }
+    /* Submenu items with icons */
+    draw_menu_item(sx, sy, sw, 0, (g_submenu_hover == 0), "Process Explorer", 0, MICON_PROCEXP);
+    draw_menu_item(sx, sy, sw, 1, (g_submenu_hover == 1), "Disk Explorer",    0, MICON_DISKEXP);
+    draw_menu_item(sx, sy, sw, 2, (g_submenu_hover == 2), "WordWrite",        0, MICON_WORDWRT);
+    draw_menu_item(sx, sy, sw, 3, (g_submenu_hover == 3), "Log Explorer",     0, MICON_LOGEXP);
+    draw_menu_item(sx, sy, sw, 4, (g_submenu_hover == 4), "Net Explorer",     0, MICON_NETEXP);
+    draw_menu_item(sx, sy, sw, 5, (g_submenu_hover == 5), "Browser",          0, MICON_BROWSER);
 }
 
 /** Erase the Start Menu area by redrawing the desktop/taskbar behind it. */
@@ -578,8 +614,7 @@ static void erase_menu_area(void) {
         gui_fill_rect(0, row, right_x + 10, 1, c);
     }
 
-    /* Redraw any desktop shortcuts that overlap */
-    draw_desktop_shortcuts();
+    /* Desktop icons disabled — nothing to redraw */
 
     /* Redraw taskbar portion */
     draw_taskbar();
@@ -703,8 +738,7 @@ static void erase_shutdown_dialog(void) {
         gui_fill_rect(dx, row, SDLG_W + 4, 1, c);
     }
 
-    /* Redraw any desktop shortcuts that overlap */
-    draw_desktop_shortcuts();
+    /* Desktop icons disabled — nothing to redraw */
 }
 
 /** Hit-test a menu item. Returns item index (0..count-1) or -1. */
@@ -717,6 +751,25 @@ static int hit_test_menu(int mx, int my, int menu_x, int menu_y,
 
     int idx = (my - menu_y - MENU_PAD) / MENU_ITEM_H;
     if (idx >= 0 && idx < item_count) return idx;
+    return -1;
+}
+
+/** Hit-test the start menu (special: has separator between items 1 and 2). */
+static int hit_test_start_menu(int mx, int my) {
+    if (mx < MENU_X + MENU_PAD || mx >= MENU_X + MENU_W - MENU_PAD)
+        return -1;
+    int rel_y = my - MENU_Y - MENU_PAD;
+    if (rel_y < 0) return -1;
+    /* Items 0-1: before separator */
+    if (rel_y < 2 * MENU_ITEM_H) {
+        return rel_y / MENU_ITEM_H;
+    }
+    /* Separator zone */
+    if (rel_y < 2 * MENU_ITEM_H + MENU_SEPARATOR_H)
+        return -1;
+    /* Item 2: after separator */
+    if (rel_y < 2 * MENU_ITEM_H + MENU_SEPARATOR_H + MENU_ITEM_H)
+        return 2;
     return -1;
 }
 
@@ -736,96 +789,56 @@ static void close_start_menu(void) {
     }
 }
 
-/** Launch Process Explorer .mex file. */
-static void launch_process_explorer(void) {
-    static uint8_t pe_buf[131072];  /* 128 KB max */
-    int bytes = libfs_read_file("C:/", "procexp.mex", pe_buf, sizeof(pe_buf));
+/** Shared MEX loading buffer — 192 KB to handle growing .mex files.
+ *  Only one app is launched at a time, so sharing is safe. */
+static uint8_t g_mex_buf[262144];  /* 256 KB */
+
+/** Generic MEX launcher from ISO filesystem. */
+static int launch_mex(const char *filename, const char *display_name) {
+    int bytes = libfs_read_file("C:/", filename, g_mex_buf, sizeof(g_mex_buf));
     if (bytes < 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to read procexp.mex");
-        return;
+        liblog(LOG_ERROR, "ORBIT", "Failed to read MEX file");
+        return -1;
     }
     mex_info_t info;
-    int result = libmex_parse(pe_buf, (uint32_t)bytes, &info);
+    int result = libmex_parse(g_mex_buf, (uint32_t)bytes, &info);
     if (result != 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to parse procexp.mex");
-        return;
+        liblog(LOG_ERROR, "ORBIT", "Failed to parse MEX file");
+        return -1;
     }
     int pid = libmex_exec(&info);
     if (pid < 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to exec procexp.mex");
-        return;
+        liblog(LOG_ERROR, "ORBIT", "Failed to exec MEX file");
+        return -1;
     }
-    libprocess_set_name(pid, "ProcExplorer", 1);  /* PROC_TYPE_USER */
-    liblog_hex(LOG_INFO, "ORBIT", "Process Explorer launched, PID:", (uint32_t)pid);
+    libprocess_set_name(pid, display_name, 1);
+    liblog_hex(LOG_INFO, "ORBIT", "App launched, PID:", (uint32_t)pid);
+    return pid;
 }
 
-/** Launch Disk Explorer .mex file. */
-static void launch_disk_explorer(void) {
-    static uint8_t de_buf[131072];  /* 128 KB max */
-    int bytes = libfs_read_file("C:/", "diskexp.mex", de_buf, sizeof(de_buf));
-    if (bytes < 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to read diskexp.mex");
-        return;
-    }
-    mex_info_t info;
-    int result = libmex_parse(de_buf, (uint32_t)bytes, &info);
-    if (result != 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to parse diskexp.mex");
-        return;
-    }
-    int pid = libmex_exec(&info);
-    if (pid < 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to exec diskexp.mex");
-        return;
-    }
-    libprocess_set_name(pid, "DiskExplorer", 1);  /* PROC_TYPE_USER */
-    liblog_hex(LOG_INFO, "ORBIT", "Disk Explorer launched, PID:", (uint32_t)pid);
-}
+static void launch_process_explorer(void) { launch_mex("procexp.mex", "ProcExplorer"); }
+static void launch_disk_explorer(void)    { launch_mex("diskexp.mex", "DiskExplorer"); }
+static void launch_wordwrite(void)        { launch_mex("wordwrit.mex", "WordWrite"); }
+static void launch_log_explorer(void)     { launch_mex("logexp.mex", "LogExplorer"); }
+static void launch_netexp(void)           { launch_mex("netexp.mex", "NetExplorer"); }
+static void launch_browser(void)          { launch_mex("browser.mex", "MaahiOS Browser"); }
 
-/** Launch WordWrite .mex file. */
-static void launch_wordwrite(void) {
-    static uint8_t ww_buf[131072];  /* 128 KB max */
-    int bytes = libfs_read_file("C:/", "wordwrit.mex", ww_buf, sizeof(ww_buf));
-    if (bytes < 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to read wordwrit.mex");
-        return;
-    }
-    mex_info_t info;
-    int result = libmex_parse(ww_buf, (uint32_t)bytes, &info);
-    if (result != 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to parse wordwrit.mex");
-        return;
-    }
-    int pid = libmex_exec(&info);
-    if (pid < 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to exec wordwrit.mex");
-        return;
-    }
-    libprocess_set_name(pid, "WordWrite", 1);  /* PROC_TYPE_USER */
-    liblog_hex(LOG_INFO, "ORBIT", "WordWrite launched, PID:", (uint32_t)pid);
-}
+/** Launch Terminal (GRUB module 11). */
+static void launch_terminal(void) {
+    /* Read terminal module index from cell (published by sysman) */
+    uint32_t mod_idx = 11;  /* Fallback: GRUB module index 11 */
+    libcell_read("system.app.terminal.module", &mod_idx, sizeof(mod_idx));
 
-/** Launch Log Explorer .mex file. */
-static void launch_log_explorer(void) {
-    static uint8_t le_buf[131072];  /* 128 KB max */
-    int bytes = libfs_read_file("C:/", "logexp.mex", le_buf, sizeof(le_buf));
-    if (bytes < 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to read logexp.mex");
-        return;
-    }
-    mex_info_t info;
-    int result = libmex_parse(le_buf, (uint32_t)bytes, &info);
-    if (result != 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to parse logexp.mex");
-        return;
-    }
-    int pid = libmex_exec(&info);
+    /* BSS size for terminal */
+    uint32_t bss = 120000;  /* Safe default, sysman publishes actual value */
+
+    int pid = libprocess_create(mod_idx, 0, bss);
     if (pid < 0) {
-        liblog(LOG_ERROR, "ORBIT", "Failed to exec logexp.mex");
+        liblog(LOG_ERROR, "ORBIT", "Failed to launch Terminal");
         return;
     }
-    libprocess_set_name(pid, "LogExplorer", 1);  /* PROC_TYPE_USER */
-    liblog_hex(LOG_INFO, "ORBIT", "Log Explorer launched, PID:", (uint32_t)pid);
+    libprocess_set_name(pid, "Terminal", 1);
+    liblog_hex(LOG_INFO, "ORBIT", "Terminal launched, PID:", (uint32_t)pid);
 }
 
 /*=============================================================================
@@ -893,6 +906,35 @@ static int hit_test_desktop_shortcut(int mx, int my) {
  * DYNAMIC TASKBAR BUTTONS — Proportional text
  *===========================================================================*/
 
+/** Map a window title to a menu icon index for taskbar display.
+ * Returns -1 if no known icon matches. */
+static int title_to_icon_idx(const char *title) {
+    if (!title || !title[0]) return -1;
+    /* Check prefix matches (titles may be truncated in registry) */
+    if (title[0] == 'P' && title[1] == 'r' && title[2] == 'o') return MICON_PROCEXP;
+    if (title[0] == 'D' && title[1] == 'i' && title[2] == 's') return MICON_DISKEXP;
+    if (title[0] == 'W' && title[1] == 'o' && title[2] == 'r') return MICON_WORDWRT;
+    if (title[0] == 'L' && title[1] == 'o' && title[2] == 'g') return MICON_LOGEXP;
+    if (title[0] == 'N' && title[1] == 'e' && title[2] == 't') return MICON_NETEXP;
+    if (title[0] == 'M' && title[1] == 'a' && title[2] == 'a') return MICON_BROWSER;
+    if (title[0] == 'H' && title[1] == 'e' && title[2] == 'l') return MICON_DEFAULT;
+    if (title[0] == 'T' && title[1] == 'e' && title[2] == 'r') return MICON_TERMINAL;
+    return MICON_DEFAULT;
+}
+
+/** Draw a 16x16 downscaled icon from 32x32 source pixels. */
+static void draw_icon_16(int dx, int dy, const uint32_t *pixels32, uint32_t bg) {
+    for (int iy = 0; iy < 16; iy++) {
+        int sy = iy * 32 / 16;
+        for (int ix = 0; ix < 16; ix++) {
+            int sx = ix * 32 / 16;
+            uint32_t px = pixels32[sy * 32 + sx];
+            if ((px & 0x00FFFFFF) == 0) px = bg;
+            gui_fill_rect(dx + ix, dy + iy, 1, 1, px);
+        }
+    }
+}
+
 /** Draw the taskbar buttons area based on current g_taskbar state. */
 static void draw_taskbar_buttons(void) {
     /* Clear the task button area first (fill with chrome) */
@@ -905,21 +947,47 @@ static void draw_taskbar_buttons(void) {
         /* Stop if we'd overflow into tray */
         if (bx + TASK_BTN_W > TRAY_X - 8) break;
 
+        /* Determine icon for this window */
+        int icon_idx = title_to_icon_idx(g_taskbar.entries[i].title);
+        int has_icon = (icon_idx >= 0 && icon_idx < MENU_ICON_COUNT &&
+                        g_menu_icon_ok[icon_idx]);
+        int icon_sz = 16;
+        int text_offset = has_icon ? icon_sz + 4 : 0;
+
         if (g_taskbar.entries[i].minimized) {
             /* Minimized: raised (looks "up") */
             draw_raised_rect(bx, TASK_BTN_Y, TASK_BTN_W, TASK_BTN_H,
                              COLOR_CHROME);
-            draw_centered_text_prop(bx, TASK_BTN_Y, TASK_BTN_W, TASK_BTN_H,
-                                    g_taskbar.entries[i].title,
-                                    COLOR_TEXT_SEC, FONT_SMALL);
+            if (has_icon) {
+                int iy = TASK_BTN_Y + (TASK_BTN_H - icon_sz) / 2;
+                draw_icon_16(bx + 4, iy, g_menu_icons[icon_idx], COLOR_CHROME);
+            }
+            /* Draw text shifted right for icon */
+            {
+                int tw = gui_measure_text(g_taskbar.entries[i].title, FONT_SMALL);
+                int th = gui_text_height(FONT_SMALL);
+                int tx = bx + text_offset + (TASK_BTN_W - text_offset - tw) / 2;
+                int ty = TASK_BTN_Y + (TASK_BTN_H - th) / 2;
+                gui_draw_text(tx, ty, g_taskbar.entries[i].title,
+                              COLOR_TEXT_SEC, FONT_SMALL);
+            }
         } else {
             /* Active: sunken (looks "pressed in") */
             draw_sunken_rect(bx, TASK_BTN_Y, TASK_BTN_W, TASK_BTN_H,
                              COLOR_CHROME_LIGHT);
-            draw_centered_text_prop(bx + 1, TASK_BTN_Y + 1,
-                                    TASK_BTN_W, TASK_BTN_H,
-                                    g_taskbar.entries[i].title,
-                                    COLOR_TEXT, FONT_SMALL);
+            if (has_icon) {
+                int iy = TASK_BTN_Y + (TASK_BTN_H - icon_sz) / 2 + 1;
+                draw_icon_16(bx + 5, iy, g_menu_icons[icon_idx], COLOR_CHROME_LIGHT);
+            }
+            /* Draw text shifted right for icon, +1 for sunken offset */
+            {
+                int tw = gui_measure_text(g_taskbar.entries[i].title, FONT_SMALL);
+                int th = gui_text_height(FONT_SMALL);
+                int tx = bx + 1 + text_offset + (TASK_BTN_W - text_offset - tw) / 2;
+                int ty = TASK_BTN_Y + 1 + (TASK_BTN_H - th) / 2;
+                gui_draw_text(tx, ty, g_taskbar.entries[i].title,
+                              COLOR_TEXT, FONT_SMALL);
+            }
         }
     }
 }
@@ -988,16 +1056,15 @@ static int launch_app(const desktop_app_entry_t *app) {
 
     if (app->app_type == DESKTOP_APP_TYPE_MEX) {
         /* MEX file on filesystem — read, parse, exec */
-        static uint8_t file_buf[131072];  /* 128 KB — must fit largest .mex */
-        int bytes = libfs_read_file("C:/", app->command, file_buf,
-                                    sizeof(file_buf));
+        int bytes = libfs_read_file("C:/", app->command, g_mex_buf,
+                                    sizeof(g_mex_buf));
         if (bytes < 0) {
             liblog(LOG_ERROR, "ORBIT", "Failed to read MEX file");
             return -1;
         }
 
         mex_info_t info;
-        int result = libmex_parse(file_buf, (uint32_t)bytes, &info);
+        int result = libmex_parse(g_mex_buf, (uint32_t)bytes, &info);
         if (result != 0) {
             liblog(LOG_ERROR, "ORBIT", "Failed to parse MEX file");
             return -1;
@@ -1055,6 +1122,13 @@ static void signal_restore(int32_t pid) {
     libcell_write(CELL_TASKBAR_RESTORE, &restore, sizeof(restore));
 }
 
+/** Signal a visible window to minimize via the minimize cell. */
+static void signal_minimize(int32_t pid) {
+    taskbar_minimize_t minimize;
+    minimize.pid = pid;
+    libcell_write(CELL_TASKBAR_MINIMIZE, &minimize, sizeof(minimize));
+}
+
 /*=============================================================================
  * MAIN ENTRY POINT
  *===========================================================================*/
@@ -1074,10 +1148,12 @@ void orbit_main_c(void) {
     SCREEN_W  = (int)gui_get_screen_width();
     SCREEN_H  = (int)gui_get_screen_height();
     TASKBAR_Y = SCREEN_H - TASKBAR_H;
-    START_Y   = TASKBAR_Y + 4;
-    TASK_BTN_Y = TASKBAR_Y + 4;
+    START_Y   = TASKBAR_Y + (TASKBAR_H - START_H) / 2;
+    TASK_BTN_Y = TASKBAR_Y + (TASKBAR_H - TASK_BTN_H) / 2;
     TRAY_X    = SCREEN_W - TRAY_W - 6;
-    TRAY_Y    = TASKBAR_Y + 4;
+    TRAY_Y    = TASKBAR_Y + (TASKBAR_H - TRAY_H) / 2;
+    POWER_BTN_X = TRAY_X - POWER_BTN_W - 4;
+    POWER_BTN_Y = TASKBAR_Y + (TASKBAR_H - POWER_BTN_H) / 2;
     liblog(LOG_INFO, "ORBIT", "Screen dims queried from GUI executive");
 
     /* ---- Draw full desktop environment ---- */
@@ -1088,7 +1164,7 @@ void orbit_main_c(void) {
     draw_start_button(0);
     liblog(LOG_INFO, "ORBIT", "Taskbar drawn");
 
-    /* Read desktop app shortcuts from cell */
+    /* Read desktop app shortcuts from cell (for future use) */
     {
         int i;
         for (i = 0; i < (int)sizeof(g_desktop_apps); i++)
@@ -1102,18 +1178,28 @@ void orbit_main_c(void) {
                    (uint32_t)g_desktop_apps.count);
     }
 
-    /* Initialize icon storage */
+    /* Initialize icon storage and load menu icons */
     {
         int i;
         for (i = 0; i < MAX_ICONS; i++) g_icon_loaded[i] = 0;
         for (i = 0; i < ICON_SIZE * ICON_SIZE; i++) g_default_icon[i] = 0;
+        for (i = 0; i < MENU_ICON_COUNT; i++) g_menu_icon_ok[i] = 0;
     }
+    /* Load menu icons from ISO */
+    g_menu_icon_ok[MICON_TERMINAL] = (load_icon_bmp("TERMINAL.BMP", g_menu_icons[MICON_TERMINAL]) == 0);
+    g_menu_icon_ok[MICON_PROCEXP]  = (load_icon_bmp("PROCEXP.BMP",  g_menu_icons[MICON_PROCEXP])  == 0);
+    g_menu_icon_ok[MICON_DISKEXP]  = (load_icon_bmp("DISKEXP.BMP",  g_menu_icons[MICON_DISKEXP])  == 0);
+    g_menu_icon_ok[MICON_WORDWRT]  = (load_icon_bmp("WORDWRT.BMP",  g_menu_icons[MICON_WORDWRT])  == 0);
+    g_menu_icon_ok[MICON_LOGEXP]   = (load_icon_bmp("LOGEXP.BMP",   g_menu_icons[MICON_LOGEXP])   == 0);
+    g_menu_icon_ok[MICON_NETEXP]   = (load_icon_bmp("DEFAULT.BMP",  g_menu_icons[MICON_NETEXP])   == 0);  /* No NETEXP.BMP yet */
+    g_menu_icon_ok[MICON_BROWSER]  = (load_icon_bmp("DEFAULT.BMP",  g_menu_icons[MICON_BROWSER])  == 0);  /* No BROWSER.BMP yet */
+    g_menu_icon_ok[MICON_SHUTDOWN] = (load_icon_bmp("DEFAULT.BMP",  g_menu_icons[MICON_SHUTDOWN]) == 0);  /* No SHUTDOWN.BMP yet */
+    g_menu_icon_ok[MICON_DEFAULT]  = (load_icon_bmp("DEFAULT.BMP",  g_menu_icons[MICON_DEFAULT])  == 0);
+    liblog(LOG_INFO, "ORBIT", "Menu icons loaded");
 
-    /* Load desktop app icons from filesystem */
-    load_desktop_icons();
-
-    /* Draw desktop shortcuts (with icons + proportional text) */
-    draw_desktop_shortcuts();
+    /* Desktop icons disabled — will be re-enabled later */
+    /* load_desktop_icons(); */
+    /* draw_desktop_shortcuts(); */
 
     /* Initialize empty taskbar state */
     {
@@ -1136,11 +1222,11 @@ void orbit_main_c(void) {
 
     liblog(LOG_INFO, "ORBIT", "Orbit running. Cursor handled by kernel IRQ.");
 
-    /* Compute Start Menu positions */
+    /* Compute Start Menu positions — menus grow UPWARD from taskbar */
     MENU_X = START_X;
     MENU_Y = TASKBAR_Y - MENU_H;
     SUBMENU_X = MENU_X + MENU_W - 2;
-    SUBMENU_Y = MENU_Y;
+    SUBMENU_Y = TASKBAR_Y - SUBMENU_H;   /* Bottom-aligned to taskbar top */
 
     /* ---- Main event loop ---- */
     mouse_state_t ms;
@@ -1231,9 +1317,7 @@ void orbit_main_c(void) {
             int old_sub_hover = g_submenu_hover;
             int old_sub_open = g_submenu_open;
 
-            g_menu_hover = hit_test_menu(ms.x, ms.y,
-                                         MENU_X, MENU_Y, MENU_W,
-                                         MENU_ITEM_COUNT);
+            g_menu_hover = hit_test_start_menu(ms.x, ms.y);
             if (g_submenu_open) {
                 g_submenu_hover = hit_test_menu(ms.x, ms.y,
                                                 SUBMENU_X, SUBMENU_Y,
@@ -1241,14 +1325,14 @@ void orbit_main_c(void) {
                                                 SUBMENU_ITEM_COUNT);
             }
 
-            /* Open/close submenu when hovering "Programs" */
-            if (g_menu_hover == 0 && !g_submenu_open) {
+            /* Open/close submenu when hovering "Programs" (item 1) */
+            if (g_menu_hover == 1 && !g_submenu_open) {
                 g_submenu_open = 1;
                 draw_submenu();
                 gui_flip_rect(SUBMENU_X, SUBMENU_Y, SUBMENU_W, SUBMENU_H);
             }
-            if (g_menu_hover == 1 && g_submenu_open) {
-                /* Hovering Shut Down — close submenu only if mouse
+            if ((g_menu_hover == 0 || g_menu_hover == 2) && g_submenu_open) {
+                /* Hovering Terminal or Shut Down — close submenu only if mouse
                    isn't in the submenu area */
                 if (g_submenu_hover < 0) {
                     g_submenu_open = 0;
@@ -1281,14 +1365,19 @@ void orbit_main_c(void) {
 
                 /* Click on menu item */
                 if (g_menu_hover == 0) {
-                    /* Programs — submenu is already showing, do nothing */
+                    /* Terminal — launch terminal */
+                    close_start_menu();
+                    launch_terminal();
                     handled = 1;
                 }
                 if (g_menu_hover == 1) {
-                    /* Shut Down — open confirmation dialog */
+                    /* Programs — submenu is already showing, do nothing */
+                    handled = 1;
+                }
+                if (g_menu_hover == 2) {
+                    /* Shut Down — open shutdown dialog */
                     close_start_menu();
                     g_shutdown_dlg = 1;
-                    g_sdlg_hover_btn = -1;
                     draw_shutdown_dialog();
                     gui_flip();
                     handled = 1;
@@ -1317,6 +1406,18 @@ void orbit_main_c(void) {
                     /* Log Explorer */
                     close_start_menu();
                     launch_log_explorer();
+                    handled = 1;
+                }
+                if (g_submenu_open && g_submenu_hover == 4) {
+                    /* Net Explorer */
+                    close_start_menu();
+                    launch_netexp();
+                    handled = 1;
+                }
+                if (g_submenu_open && g_submenu_hover == 5) {
+                    /* Browser */
+                    close_start_menu();
+                    launch_browser();
                     handled = 1;
                 }
 
@@ -1364,32 +1465,27 @@ void orbit_main_c(void) {
             gui_flip_rect(MENU_X, MENU_Y, MENU_W, MENU_H);
         }
 
-        /* Desktop shortcut click */
-        if (left_down && ms.y < TASKBAR_Y) {
-            int idx = hit_test_desktop_shortcut(ms.x, ms.y);
-            if (idx >= 0) {
-                liblog_hex(LOG_INFO, "ORBIT", "Desktop shortcut clicked:",
-                           (uint32_t)idx);
-                launch_app(&g_desktop_apps.entries[idx]);
-            }
-        }
+        /* Desktop shortcut click — disabled (no desktop icons currently) */
+        /* if (left_down && ms.y < TASKBAR_Y) { ... } */
 
-        /* Taskbar button click */
+        /* Taskbar button click — toggle minimize/restore */
         if (left_down && ms.y >= TASKBAR_Y) {
             int idx = hit_test_taskbar_button(ms.x, ms.y);
             if (idx >= 0 && idx < g_taskbar.count) {
                 if (g_taskbar.entries[idx].minimized) {
-                    /* Signal the window to restore */
+                    /* Window is minimized → restore it */
                     signal_restore(g_taskbar.entries[idx].pid);
+                } else {
+                    /* Window is visible → minimize it */
+                    signal_minimize(g_taskbar.entries[idx].pid);
                 }
-                /* If already visible, do nothing (future: bring to front) */
             }
         }
 
         prev_buttons = ms.buttons;
 
-        /* Desktop shortcut hover effect */
-        {
+        /* Desktop shortcut hover effect — disabled (no desktop icons) */
+#if 0
             int new_hover = hit_test_desktop_shortcut(ms.x, ms.y);
             if (new_hover != hover_shortcut) {
                 /* Un-hover previous */
@@ -1416,6 +1512,7 @@ void orbit_main_c(void) {
                               DESKTOP_MAX_APPS * (SHORTCUT_H + SHORTCUT_GAP));
             }
         }
+#endif
 
         /*=============================================================
          * PERIODIC TASKS (taskbar poll, clock update)

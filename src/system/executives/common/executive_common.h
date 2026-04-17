@@ -30,7 +30,7 @@
  *===========================================================================*/
 
 /* Maximum payload size in request/response messages */
-#define EXEC_MSG_MAX_PAYLOAD    256
+#define EXEC_MSG_MAX_PAYLOAD    4096
 
 /* Maximum number of pending requests in queue */
 #define EXEC_QUEUE_SIZE         32

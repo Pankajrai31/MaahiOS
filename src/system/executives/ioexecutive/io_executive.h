@@ -78,12 +78,17 @@ typedef struct {
  * Single-producer single-consumer ring buffer for keyboard events.
  * Produced by I/O Executive, consumed by libio in user apps.
  * Lives in shared memory; discovered via cell "system.io.keyboard.ring_shm".
+ *
+ * focused_pid: WM Executive writes the PID of the focused window here.
+ * Apps check this before consuming — only the focused app reads events.
+ * This prevents keyboard event theft between competing apps.
  */
 typedef struct {
     volatile uint32_t head;         /* Write index (I/O Executive only) */
     volatile uint32_t tail;         /* Read index (consumer only) */
     uint32_t capacity;              /* IO_KBD_RING_CAPACITY */
     uint32_t entry_size;            /* IO_KBD_RING_ENTRY_SIZE */
+    volatile int32_t focused_pid;   /* PID that may consume (WM writes) */
     uint8_t data[IO_KBD_RING_CAPACITY * IO_KBD_RING_ENTRY_SIZE];
 } io_kbd_ring_t;
 

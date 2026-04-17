@@ -51,6 +51,7 @@ i686-elf-gcc -c "$SRC_DIR/drivers/drive/volume/voldrive.c"     -o "$BINARIES_DIR
 i686-elf-gcc -c "$SRC_DIR/drivers/drive/iso9660/iso9660.c"     -o "$BINARIES_DIR/iso9660.o" $KFLAGS
 i686-elf-gcc -c "$SRC_DIR/drivers/rtc/rtc.c"                   -o "$BINARIES_DIR/rtc.o" $KFLAGS
 i686-elf-gcc -c "$SRC_DIR/drivers/keyboard/keyboard.c"         -o "$BINARIES_DIR/keyboard.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/drivers/network/e1000.c"              -o "$BINARIES_DIR/e1000.o" $KFLAGS
 echo -e "${GREEN}Ã¢Å“â€œ All drivers compiled${NC}"
 
 # Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
@@ -87,6 +88,8 @@ i686-elf-gcc -c "$SRC_DIR/managers/shm/shm_manager.c"                   -o "$BIN
 i686-elf-gcc -c "$SRC_DIR/managers/cell/cell_manager.c"                  -o "$BINARIES_DIR/cell_manager.o" $KFLAGS
 i686-elf-gcc -c "$SRC_DIR/managers/grub_module/grub_module_manager.c"    -o "$BINARIES_DIR/grub_module_manager.o" $KFLAGS
 i686-elf-gcc -c "$SRC_DIR/managers/time/time_manager.c"                  -o "$BINARIES_DIR/time_manager.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/network/network_manager.c"             -o "$BINARIES_DIR/network_manager.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/network/tcp.c"                         -o "$BINARIES_DIR/tcp.o" $KFLAGS
 i686-elf-gcc -c "$SRC_DIR/managers/ring3/ring3.c"                       -o "$BINARIES_DIR/ring3.o" $KFLAGS
 
 # Syscall manager + 9 handler files
@@ -101,6 +104,7 @@ i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/module_handlers.c"   -o "$BI
 i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/time_handlers.c"     -o "$BINARIES_DIR/syscall_time_handlers.o" $KFLAGS
 i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/debug_handlers.c"    -o "$BINARIES_DIR/syscall_debug_handlers.o" $KFLAGS
 i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/fs_handlers.c"       -o "$BINARIES_DIR/syscall_fs_handlers.o" $KFLAGS
+i686-elf-gcc -c "$SRC_DIR/managers/syscall/handlers/network_handlers.c"  -o "$BINARIES_DIR/syscall_network_handlers.o" $KFLAGS
 echo -e "${GREEN}âœ“ All managers compiled${NC}"
 
 # Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
@@ -113,21 +117,22 @@ i686-elf-ld -T "$SRC_DIR/loader/linker/linker.ld" -o "$BUILD_DIR/kernel.bin" \
     "$BINARIES_DIR/vga.o" "$BINARIES_DIR/bga.o" "$BINARIES_DIR/vbe.o" "$BINARIES_DIR/display.o" \
     "$BINARIES_DIR/mouse.o" "$BINARIES_DIR/pci.o" "$BINARIES_DIR/ata.o" "$BINARIES_DIR/iso9660.o" \
     "$BINARIES_DIR/disk.o" "$BINARIES_DIR/partdrive.o" "$BINARIES_DIR/mfs.o" "$BINARIES_DIR/voldrive.o" \
-    "$BINARIES_DIR/rtc.o" "$BINARIES_DIR/keyboard.o" \
+    "$BINARIES_DIR/rtc.o" "$BINARIES_DIR/keyboard.o" "$BINARIES_DIR/e1000.o" \
     "$BINARIES_DIR/gdt.o" "$BINARIES_DIR/idt.o" "$BINARIES_DIR/interrupt_stubs.o" \
     "$BINARIES_DIR/exception_handler.o" "$BINARIES_DIR/irq_manager.o" \
     "$BINARIES_DIR/pmm.o" "$BINARIES_DIR/paging.o" "$BINARIES_DIR/kheap.o" \
     "$BINARIES_DIR/process_manager.o" "$BINARIES_DIR/scheduler.o" "$BINARIES_DIR/switch.o" "$BINARIES_DIR/pit.o" \
     "$BINARIES_DIR/device_manager.o" "$BINARIES_DIR/klog.o" \
     "$BINARIES_DIR/shm_manager.o" "$BINARIES_DIR/cell_manager.o" \
-    "$BINARIES_DIR/grub_module_manager.o" "$BINARIES_DIR/time_manager.o" "$BINARIES_DIR/ring3.o" \
+    "$BINARIES_DIR/grub_module_manager.o" "$BINARIES_DIR/time_manager.o" "$BINARIES_DIR/network_manager.o" "$BINARIES_DIR/tcp.o" "$BINARIES_DIR/ring3.o" \
     "$BINARIES_DIR/syscall_manager.o" \
     "$BINARIES_DIR/syscall_core_handlers.o" "$BINARIES_DIR/syscall_process_handlers.o" \
     "$BINARIES_DIR/syscall_memory_handlers.o" "$BINARIES_DIR/syscall_shm_handlers.o" \
     "$BINARIES_DIR/syscall_cell_handlers.o" "$BINARIES_DIR/syscall_device_handlers.o" \
     "$BINARIES_DIR/syscall_module_handlers.o" "$BINARIES_DIR/syscall_time_handlers.o" \
     "$BINARIES_DIR/syscall_debug_handlers.o" \
-    "$BINARIES_DIR/syscall_fs_handlers.o"
+    "$BINARIES_DIR/syscall_fs_handlers.o" \
+    "$BINARIES_DIR/syscall_network_handlers.o"
 echo -e "${GREEN}Ã¢Å“â€œ kernel.bin linked${NC}"
 
 # Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
@@ -317,6 +322,7 @@ i686-elf-gcc -c "$SRC_DIR/system/libraries/libwindow/controls/menubar.c"   -o "$
 i686-elf-gcc -c "$SRC_DIR/system/libraries/libwindow/controls/treeview.c"  -o "$BINARIES_DIR/libwindow_treeview.o" $UFLAGS
 i686-elf-gcc -c "$SRC_DIR/system/libraries/libwindow/controls/textarea.c"  -o "$BINARIES_DIR/libwindow_textarea.o" $UFLAGS
 i686-elf-gcc -c "$SRC_DIR/system/libraries/libwindow/controls/radiogroup.c" -o "$BINARIES_DIR/libwindow_radiogroup.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libwindow/controls/tabs.c"       -o "$BINARIES_DIR/libwindow_tabs.o" $UFLAGS
 i686-elf-gcc -c "$SRC_DIR/system/libraries/libwindow/libwindow.c"          -o "$BINARIES_DIR/libwindow.o" $UFLAGS
 i686-elf-gcc -c "$SRC_DIR/system/libraries/libwm/libwm.c"                    -o "$BINARIES_DIR/libwm.o" $UFLAGS
 echo -e "${GREEN}âœ“ libwindow + libwm compiled${NC}"
@@ -364,6 +370,27 @@ i686-elf-ld -T "$SRC_DIR/system/systemprograms/terminal/terminal_linker.ld" -o "
 i686-elf-objcopy -O binary "$BUILD_DIR/terminal.elf" "$BUILD_DIR/terminal.bin"
 echo -e "${GREEN} terminal.bin built${NC}"
 
+# BUILD NETWORK EXECUTIVE (Ring 3 - Started by sysman after FS Executive)
+echo -e "\n${YELLOW}[15a/18] Building Network Executive...${NC}"
+
+i686-elf-as "$SRC_DIR/system/executives/networkexecutive/network_executive_entry.s" -o "$BINARIES_DIR/network_executive_entry.o"
+i686-elf-gcc -c "$SRC_DIR/system/executives/networkexecutive/network_executive.c" -o "$BINARIES_DIR/networkexecutive.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libnet/libnet.c" -o "$BINARIES_DIR/libnet.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libtls/tls_crypto.c" -o "$BINARIES_DIR/tls_crypto.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libtls/tls_certs.c" -o "$BINARIES_DIR/tls_certs.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libtls/libtls.c" -o "$BINARIES_DIR/libtls.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libhttp/libhttp.c" -o "$BINARIES_DIR/libhttp.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libhtml/libhtml.c" -o "$BINARIES_DIR/libhtml.o" $UFLAGS
+i686-elf-gcc -c "$SRC_DIR/system/libraries/libjs/libjs.c" -o "$BINARIES_DIR/libjs.o" $UFLAGS
+# executive_queue.o, liblog.o, libcell.o already compiled above
+
+i686-elf-ld -T "$SRC_DIR/system/executives/networkexecutive/network_executive_linker.ld" -o "$BUILD_DIR/netexec.elf" \
+    "$BINARIES_DIR/network_executive_entry.o" "$BINARIES_DIR/networkexecutive.o" \
+    "$BINARIES_DIR/executive_queue.o" "$BINARIES_DIR/liblog.o" "$BINARIES_DIR/libcell.o"
+
+i686-elf-objcopy -O binary "$BUILD_DIR/netexec.elf" "$BUILD_DIR/netexec.bin"
+echo -e "${GREEN} netexec.bin built${NC}"
+
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # GENERATE MODULE BSS SIZES + BUILD SYSMAN (deferred from step 4)
 # Sysman needs BSS sizes from all module ELFs, which are now all built.
@@ -387,7 +414,8 @@ for entry in \
     "ioexec:IOEXEC" \
     "wmexec:WMEXEC" \
     "orbit:ORBIT" \
-    "terminal:TERMINAL"; do
+    "terminal:TERMINAL" \
+    "netexec:NETEXEC"; do
     elf_name="${entry%%:*}"
     macro="${entry##*:}"
     bss_val=$(i686-elf-size "$BUILD_DIR/${elf_name}.elf" | tail -1 | awk '{print $3}')
@@ -430,8 +458,9 @@ MEX_WINDOW_LIBS="$BINARIES_DIR/libwindow.o $BINARIES_DIR/libwindow_surface.o \
     $BINARIES_DIR/libwindow_toolbar.o $BINARIES_DIR/libwindow_statusbar.o \
     $BINARIES_DIR/libwindow_menubar.o $BINARIES_DIR/libwindow_treeview.o \
     $BINARIES_DIR/libwindow_textarea.o $BINARIES_DIR/libwindow_radiogroup.o \
+    $BINARIES_DIR/libwindow_tabs.o \
     $BINARIES_DIR/libwindow_malloc.o $BINARIES_DIR/libwm.o \
-    $BINARIES_DIR/libmemory.o \
+    $BINARIES_DIR/libmemory.o $BINARIES_DIR/libfs.o \
     $BINARIES_DIR/executive_queue.o $BINARIES_DIR/liblog.o $BINARIES_DIR/libcell.o \
     $BINARIES_DIR/libgui.o $BINARIES_DIR/printgui.o $BINARIES_DIR/font8x16.o \
     $BINARIES_DIR/kbd.o $BINARIES_DIR/console.o $BINARIES_DIR/libio.o \
@@ -507,14 +536,14 @@ i686-elf-objcopy -O binary "$BUILD_DIR/procexp.elf" "$BUILD_DIR/procexp.bin"
 i686-elf-gcc -c "$SRC_DIR/apps/diskexp/diskexp.c" -o "$BINARIES_DIR/diskexp.o" $UFLAGS
 i686-elf-ld -T "$SRC_DIR/apps/mex_app.ld" -o "$BUILD_DIR/diskexp.elf" \
     "$BINARIES_DIR/mex_entry.o" "$BINARIES_DIR/diskexp.o" \
-    "$BINARIES_DIR/libdisk.o" "$BINARIES_DIR/libfs.o" $MEX_WINDOW_LIBS
+    "$BINARIES_DIR/libdisk.o" $MEX_WINDOW_LIBS
 i686-elf-objcopy -O binary "$BUILD_DIR/diskexp.elf" "$BUILD_DIR/diskexp.bin"
 
 # --- wordwrit.mex (windowed GUI app - WordWrite Text Editor) ---
 i686-elf-gcc -c "$SRC_DIR/apps/wordwrite/wordwrite.c" -o "$BINARIES_DIR/wordwrite.o" $UFLAGS
 i686-elf-ld -T "$SRC_DIR/apps/mex_app.ld" -o "$BUILD_DIR/wordwrit.elf" \
     "$BINARIES_DIR/mex_entry.o" "$BINARIES_DIR/wordwrite.o" \
-    "$BINARIES_DIR/libfs.o" $MEX_WINDOW_LIBS
+    $MEX_WINDOW_LIBS
 i686-elf-objcopy -O binary "$BUILD_DIR/wordwrit.elf" "$BUILD_DIR/wordwrit.bin"
 
 # --- logexp.mex (windowed GUI app - Log Explorer) ---
@@ -524,47 +553,82 @@ i686-elf-ld -T "$SRC_DIR/apps/mex_app.ld" -o "$BUILD_DIR/logexp.elf" \
     $MEX_WINDOW_LIBS
 i686-elf-objcopy -O binary "$BUILD_DIR/logexp.elf" "$BUILD_DIR/logexp.bin"
 
+# --- ping.mex (console non-interactive) ---
+i686-elf-gcc -c "$SRC_DIR/apps/ping/ping.c" -o "$BINARIES_DIR/ping.o" $UFLAGS
+i686-elf-ld -T "$SRC_DIR/apps/mex_app.ld" -o "$BUILD_DIR/ping.elf" \
+    "$BINARIES_DIR/mex_entry.o" "$BINARIES_DIR/ping.o" \
+    "$BINARIES_DIR/libnet.o" $MEX_CONSOLE_LIBS
+i686-elf-objcopy -O binary "$BUILD_DIR/ping.elf" "$BUILD_DIR/ping.bin"
+
+# --- fetch.mex (console non-interactive - network stack test) ---
+i686-elf-gcc -c "$SRC_DIR/apps/fetch/fetch.c" -o "$BINARIES_DIR/fetch.o" $UFLAGS
+i686-elf-ld -T "$SRC_DIR/apps/mex_app.ld" -o "$BUILD_DIR/fetch.elf" \
+    "$BINARIES_DIR/mex_entry.o" "$BINARIES_DIR/fetch.o" \
+    "$BINARIES_DIR/libhttp.o" "$BINARIES_DIR/libnet.o" \
+    "$BINARIES_DIR/tls_crypto.o" "$BINARIES_DIR/tls_certs.o" "$BINARIES_DIR/libtls.o" \
+    $MEX_CONSOLE_LIBS
+i686-elf-objcopy -O binary "$BUILD_DIR/fetch.elf" "$BUILD_DIR/fetch.bin"
+
+# --- netexp.mex (windowed GUI app - Network Explorer) ---
+i686-elf-gcc -c "$SRC_DIR/apps/netexp/netexp.c" -o "$BINARIES_DIR/netexp.o" $UFLAGS
+i686-elf-ld -T "$SRC_DIR/apps/mex_app.ld" -o "$BUILD_DIR/netexp.elf" \
+    "$BINARIES_DIR/mex_entry.o" "$BINARIES_DIR/netexp.o" \
+    "$BINARIES_DIR/libnet.o" $MEX_WINDOW_LIBS
+i686-elf-objcopy -O binary "$BUILD_DIR/netexp.elf" "$BUILD_DIR/netexp.bin"
+
+# --- browser.mex (windowed GUI app - Web Browser) ---
+i686-elf-gcc -c "$SRC_DIR/apps/browser/browser.c" -o "$BINARIES_DIR/browser.o" $UFLAGS
+i686-elf-ld -T "$SRC_DIR/apps/mex_app.ld" -o "$BUILD_DIR/browser.elf" \
+    "$BINARIES_DIR/mex_entry.o" "$BINARIES_DIR/browser.o" \
+    "$BINARIES_DIR/libhtml.o" "$BINARIES_DIR/libjs.o" "$BINARIES_DIR/libhttp.o" "$BINARIES_DIR/libnet.o" \
+    "$BINARIES_DIR/tls_crypto.o" "$BINARIES_DIR/tls_certs.o" "$BINARIES_DIR/libtls.o" \
+    $MEX_WINDOW_LIBS
+i686-elf-objcopy -O binary "$BUILD_DIR/browser.elf" "$BUILD_DIR/browser.bin"
+
 # Pack all MEX files
-MEX_PACK="python3 ../tools/mex_pack.py"
-MEX_PACK_ALT="/c/Users/panrai/AppData/Local/Programs/Python/Launcher/py.exe ../tools/mex_pack.py"
+# Detect working Python command
+if (python3 --version) &>/dev/null 2>&1; then
+    MEX_PACK="python3 ../tools/mex_pack.py"
+elif [ -x "/c/Users/panrai/AppData/Local/Programs/Python/Launcher/py.exe" ]; then
+    MEX_PACK="/c/Users/panrai/AppData/Local/Programs/Python/Launcher/py.exe ../tools/mex_pack.py"
+else
+    echo "ERROR: No working Python found"
+    exit 1
+fi
 
-$MEX_PACK "$BUILD_DIR/hello.bin" "$BUILD_DIR/hello.mex" --name "hello" --type app --flags console --elf "$BUILD_DIR/hello.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/hello.bin" "$BUILD_DIR/hello.mex" --name "hello" --type app --flags console --elf "$BUILD_DIR/hello.elf" -v
+$MEX_PACK "$BUILD_DIR/hello.bin" "$BUILD_DIR/hello.mex" --name "hello" --type app --flags console --elf "$BUILD_DIR/hello.elf" -v
 
-$MEX_PACK "$BUILD_DIR/procman.bin" "$BUILD_DIR/procman.mex" --name "procman" --type app --flags console --elf "$BUILD_DIR/procman.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/procman.bin" "$BUILD_DIR/procman.mex" --name "procman" --type app --flags console --elf "$BUILD_DIR/procman.elf" -v
+$MEX_PACK "$BUILD_DIR/procman.bin" "$BUILD_DIR/procman.mex" --name "procman" --type app --flags console --elf "$BUILD_DIR/procman.elf" -v
 
-$MEX_PACK "$BUILD_DIR/diskman.bin" "$BUILD_DIR/diskman.mex" --name "diskman" --type app --flags console --elf "$BUILD_DIR/diskman.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/diskman.bin" "$BUILD_DIR/diskman.mex" --name "diskman" --type app --flags console --elf "$BUILD_DIR/diskman.elf" -v
+$MEX_PACK "$BUILD_DIR/diskman.bin" "$BUILD_DIR/diskman.mex" --name "diskman" --type app --flags console --elf "$BUILD_DIR/diskman.elf" -v
 
-$MEX_PACK "$BUILD_DIR/fileman.bin" "$BUILD_DIR/fileman.mex" --name "fileman" --type app --flags console --elf "$BUILD_DIR/fileman.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/fileman.bin" "$BUILD_DIR/fileman.mex" --name "fileman" --type app --flags console --elf "$BUILD_DIR/fileman.elf" -v
+$MEX_PACK "$BUILD_DIR/fileman.bin" "$BUILD_DIR/fileman.mex" --name "fileman" --type app --flags console --elf "$BUILD_DIR/fileman.elf" -v
 
-$MEX_PACK "$BUILD_DIR/boxdrop.bin" "$BUILD_DIR/boxdrop.mex" --name "boxdrop" --type app --flags gui --elf "$BUILD_DIR/boxdrop.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/boxdrop.bin" "$BUILD_DIR/boxdrop.mex" --name "boxdrop" --type app --flags gui --elf "$BUILD_DIR/boxdrop.elf" -v
+$MEX_PACK "$BUILD_DIR/boxdrop.bin" "$BUILD_DIR/boxdrop.mex" --name "boxdrop" --type app --flags gui --elf "$BUILD_DIR/boxdrop.elf" -v
 
-$MEX_PACK "$BUILD_DIR/sysinfo.bin" "$BUILD_DIR/sysinfo.mex" --name "sysinfo" --type app --flags console --elf "$BUILD_DIR/sysinfo.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/sysinfo.bin" "$BUILD_DIR/sysinfo.mex" --name "sysinfo" --type app --flags console --elf "$BUILD_DIR/sysinfo.elf" -v
+$MEX_PACK "$BUILD_DIR/sysinfo.bin" "$BUILD_DIR/sysinfo.mex" --name "sysinfo" --type app --flags console --elf "$BUILD_DIR/sysinfo.elf" -v
 
-$MEX_PACK "$BUILD_DIR/shutdown.bin" "$BUILD_DIR/shutdown.mex" --name "shutdown" --type app --flags console --elf "$BUILD_DIR/shutdown.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/shutdown.bin" "$BUILD_DIR/shutdown.mex" --name "shutdown" --type app --flags console --elf "$BUILD_DIR/shutdown.elf" -v
+$MEX_PACK "$BUILD_DIR/shutdown.bin" "$BUILD_DIR/shutdown.mex" --name "shutdown" --type app --flags console --elf "$BUILD_DIR/shutdown.elf" -v
 
-$MEX_PACK "$BUILD_DIR/hellogui.bin" "$BUILD_DIR/hellogui.mex" --name "hellogui" --type app --flags gui --elf "$BUILD_DIR/hellogui.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/hellogui.bin" "$BUILD_DIR/hellogui.mex" --name "hellogui" --type app --flags gui --elf "$BUILD_DIR/hellogui.elf" -v
+$MEX_PACK "$BUILD_DIR/hellogui.bin" "$BUILD_DIR/hellogui.mex" --name "hellogui" --type app --flags gui --elf "$BUILD_DIR/hellogui.elf" -v
 
-$MEX_PACK "$BUILD_DIR/procexp.bin" "$BUILD_DIR/procexp.mex" --name "procexp" --type app --flags gui --elf "$BUILD_DIR/procexp.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/procexp.bin" "$BUILD_DIR/procexp.mex" --name "procexp" --type app --flags gui --elf "$BUILD_DIR/procexp.elf" -v
+$MEX_PACK "$BUILD_DIR/procexp.bin" "$BUILD_DIR/procexp.mex" --name "procexp" --type app --flags gui --elf "$BUILD_DIR/procexp.elf" -v
 
-$MEX_PACK "$BUILD_DIR/diskexp.bin" "$BUILD_DIR/diskexp.mex" --name "diskexp" --type app --flags gui --elf "$BUILD_DIR/diskexp.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/diskexp.bin" "$BUILD_DIR/diskexp.mex" --name "diskexp" --type app --flags gui --elf "$BUILD_DIR/diskexp.elf" -v
+$MEX_PACK "$BUILD_DIR/diskexp.bin" "$BUILD_DIR/diskexp.mex" --name "diskexp" --type app --flags gui --elf "$BUILD_DIR/diskexp.elf" -v
 
-$MEX_PACK "$BUILD_DIR/wordwrit.bin" "$BUILD_DIR/wordwrit.mex" --name "wordwrit" --type app --flags gui --elf "$BUILD_DIR/wordwrit.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/wordwrit.bin" "$BUILD_DIR/wordwrit.mex" --name "wordwrit" --type app --flags gui --elf "$BUILD_DIR/wordwrit.elf" -v
+$MEX_PACK "$BUILD_DIR/wordwrit.bin" "$BUILD_DIR/wordwrit.mex" --name "wordwrit" --type app --flags gui --elf "$BUILD_DIR/wordwrit.elf" -v
 
-$MEX_PACK "$BUILD_DIR/logexp.bin" "$BUILD_DIR/logexp.mex" --name "logexp" --type app --flags gui --elf "$BUILD_DIR/logexp.elf" -v || \
-    $MEX_PACK_ALT "$BUILD_DIR/logexp.bin" "$BUILD_DIR/logexp.mex" --name "logexp" --type app --flags gui --elf "$BUILD_DIR/logexp.elf" -v
+$MEX_PACK "$BUILD_DIR/logexp.bin" "$BUILD_DIR/logexp.mex" --name "logexp" --type app --flags gui --elf "$BUILD_DIR/logexp.elf" -v
 
-echo -e "${GREEN}\xE2\x9C\x93 MEX apps built (hello, procman, diskman, fileman, boxdrop, sysinfo, shutdown, hellogui, procexp, diskexp, wordwrit, logexp)${NC}"
+$MEX_PACK "$BUILD_DIR/ping.bin" "$BUILD_DIR/ping.mex" --name "ping" --type app --flags console --elf "$BUILD_DIR/ping.elf" -v
+
+$MEX_PACK "$BUILD_DIR/fetch.bin" "$BUILD_DIR/fetch.mex" --name "fetch" --type app --flags console --elf "$BUILD_DIR/fetch.elf" -v
+
+$MEX_PACK "$BUILD_DIR/netexp.bin" "$BUILD_DIR/netexp.mex" --name "netexp" --type app --flags gui --elf "$BUILD_DIR/netexp.elf" -v
+
+$MEX_PACK "$BUILD_DIR/browser.bin" "$BUILD_DIR/browser.mex" --name "browser" --type app --flags gui --elf "$BUILD_DIR/browser.elf" -v
+
+echo -e "${GREEN}\xE2\x9C\x93 MEX apps built (hello, procman, diskman, fileman, boxdrop, sysinfo, shutdown, hellogui, procexp, diskexp, wordwrit, logexp, ping, fetch, netexp, browser)${NC}"
 
 # Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 # CREATE ISO
@@ -584,6 +648,7 @@ cp "$BUILD_DIR/ioexec.bin" "$ISODIR/boot/ioexec.bin"
 cp "$BUILD_DIR/wmexec.bin" "$ISODIR/boot/wmexec.bin"
 cp "$BUILD_DIR/orbit.bin" "$ISODIR/boot/orbit.bin"
 cp "$BUILD_DIR/terminal.bin" "$ISODIR/boot/terminal.bin"
+cp "$BUILD_DIR/netexec.bin" "$ISODIR/boot/netexec.bin"
 cp "$BUILD_DIR/hello.mex" "$ISODIR/hello.mex"
 cp "$BUILD_DIR/procman.mex" "$ISODIR/procman.mex"
 cp "$BUILD_DIR/diskman.mex" "$ISODIR/diskman.mex"
@@ -596,14 +661,19 @@ cp "$BUILD_DIR/procexp.mex" "$ISODIR/procexp.mex"
 cp "$BUILD_DIR/diskexp.mex" "$ISODIR/diskexp.mex"
 cp "$BUILD_DIR/wordwrit.mex" "$ISODIR/wordwrit.mex"
 cp "$BUILD_DIR/logexp.mex" "$ISODIR/logexp.mex"
+cp "$BUILD_DIR/ping.mex" "$ISODIR/ping.mex"
+cp "$BUILD_DIR/fetch.mex" "$ISODIR/fetch.mex"
+cp "$BUILD_DIR/netexp.mex" "$ISODIR/netexp.mex"
+cp "$BUILD_DIR/browser.mex" "$ISODIR/browser.mex"
 
-# Copy icon BMP files to ISO root
+# Copy icon BMP files to ISO icons/ subfolder
+mkdir -p "$ISODIR/icons"
 for icon in "$SRC_DIR/images/icons/TERMINAL.BMP" "$SRC_DIR/images/icons/HELLOGUI.BMP" "$SRC_DIR/images/icons/DEFAULT.BMP" "$SRC_DIR/images/icons/PROCEXP.BMP" "$SRC_DIR/images/icons/DISKEXP.BMP" "$SRC_DIR/images/icons/WORDWRT.BMP" "$SRC_DIR/images/icons/LOGEXP.BMP"; do
     if [ -f "$icon" ]; then
-        cp "$icon" "$ISODIR/"
+        cp "$icon" "$ISODIR/icons/"
     fi
 done
-echo -e "${GREEN}\xE2\x9C\x93 Icon BMPs copied to ISO${NC}"
+echo -e "${GREEN}\xE2\x9C\x93 Icon BMPs copied to ISO/icons/${NC}"
 
 cat > "$ISODIR/boot/grub/grub.cfg" << 'EOF'
 set default=0
@@ -623,6 +693,7 @@ menuentry "MaahiOS" {
     module /boot/wmexec.bin
     module /boot/orbit.bin
     module /boot/terminal.bin
+    module /boot/netexec.bin
 }
 EOF
 
@@ -642,9 +713,9 @@ fi
 echo -e "${GREEN}✓ boot.iso created${NC}"
 
 # ── Step 18: Clean up intermediate build artifacts ──
-echo -e "\n${YELLOW}[18/18] Cleaning intermediate .elf and .bin files...${NC}"
-rm -f "$BUILD_DIR"/*.elf "$BUILD_DIR"/*.bin
-echo -e "${GREEN}✓ Removed .elf and .bin files (rebuilt each build)${NC}"
+echo -e "\n${YELLOW}[18/18] Cleaning intermediate .bin files (keeping .elf for analysis)...${NC}"
+rm -f "$BUILD_DIR"/*.bin
+echo -e "${GREEN}✓ Removed .bin files, kept .elf files${NC}"
 
 echo -e "\n${YELLOW}======================================${NC}"
 echo -e "${GREEN}Build Complete! (Kernel + Sysman + Log + Cell + Process + Memory + Disk + FS + GUI + I/O + WM Executives + Orbit + Terminal)${NC}"

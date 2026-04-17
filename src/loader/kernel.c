@@ -24,6 +24,7 @@
 #include "managers/grub_module/grub_module_manager.h"
 #include "managers/time/time_manager.h"
 #include "managers/syscall/syscall_manager.h"
+#include "drivers/display/display.h"
 
 /* Port I/O */
 #include "system/libraries/shared/io.h"
@@ -72,7 +73,7 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
      *=======================================================================*/
     /* Detect graphics framebuffer address (BGA on QEMU, VBE everywhere else) */
     uint32_t fb_addr = 0;
-    uint32_t fb_size = 1280 * 800 * 4;
+    uint32_t fb_size = DISPLAY_DEFAULT_WIDTH * DISPLAY_DEFAULT_HEIGHT * (DISPLAY_DEFAULT_BPP / 8);
     
     if (bga_is_available()) {
         fb_addr = bga_get_framebuffer_addr();
@@ -129,7 +130,7 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
      * STEP 5: Graphics Initialization (BGA on QEMU, VBE fallback elsewhere)
      *=======================================================================*/
     KLOG_INFO("GFX", "Initializing graphics layer");
-    if (gfx_init(1280, 800, 32) != 0) {
+    if (gfx_init(DISPLAY_DEFAULT_WIDTH, DISPLAY_DEFAULT_HEIGHT, DISPLAY_DEFAULT_BPP) != 0) {
         kernel_panic("Graphics initialization failed!");
     }
     gfx_clear(0x001020);  /* Dark blue background */
@@ -174,6 +175,11 @@ void kernel_main(unsigned int magic, struct multiboot_info *mbi) {
      *=======================================================================*/
     KLOG_INFO("KERNEL", "Initializing Device Manager (auto-discovery)");
     device_manager_init();
+    
+    /* Initialize network manager (needs E1000 from device_manager) */
+    KLOG_INFO("KERNEL", "Initializing Network Manager");
+    extern int network_manager_init(void);
+    network_manager_init();  /* Non-fatal if E1000 not present */
     
     /* Initialize partition and volume layers (builds on disk_init from device_manager) */
     KLOG_INFO("PART", "Initializing partition driver");

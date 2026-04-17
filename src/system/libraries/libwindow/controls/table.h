@@ -52,6 +52,7 @@
 #define TABLE_ROW_H          20     /* Data row height (pixels)             */
 #define TABLE_PAD_X           6     /* Horizontal cell padding              */
 #define TABLE_BORDER_W        2     /* Sunken border width                  */
+#define TABLE_SCROLLBAR_W    14     /* Scrollbar width (pixels)             */
 
 /*=============================================================================
  * TABLE ALIGNMENT

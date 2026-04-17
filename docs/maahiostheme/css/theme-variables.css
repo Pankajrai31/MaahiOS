@@ -1,0 +1,105 @@
+/* ================================================================
+   MAAHI OS — THEME VARIABLES
+   Central token file. Every OS component references these.
+   AI Reference: Import this file first in any MaahiOS app.
+   ================================================================ */
+
+:root {
+    /* ── Chrome (System UI Base) ────────────────────────────── */
+    --os-chrome:          #D8DBE8;
+    --os-chrome-light:    #E8EAF2;
+    --os-chrome-lighter:  #F0F1F6;
+    --os-chrome-dark:     #C0C4D4;
+    --os-chrome-darker:   #B0B4C6;
+
+    /* ── 3D Bevel (Embossed depth) ──────────────────────────── */
+    --bevel-light:        #F4F5FA;
+    --bevel-dark:         #9498AC;
+
+    /* ── Accent Colors ──────────────────────────────────────── */
+    --os-accent:          #2B5BB5;
+    --os-accent-light:    #4A7BD5;
+    --os-accent-dark:     #1B4A9A;
+    --os-teal:            #1E8A65;
+    --os-teal-dark:       #156B4E;
+    --os-cyan:            #18A080;
+
+    /* ── Title Bar Gradient ─────────────────────────────────── */
+    --titlebar-start:           #1B3F8B;
+    --titlebar-end:             #2B5BB5;
+    --titlebar-inactive-start:  #9498AC;
+    --titlebar-inactive-end:    #B0B4C6;
+
+    /* ── Surfaces ───────────────────────────────────────────── */
+    --os-surface:         #FFFFFF;
+    --os-surface-raised:  #D8DBE8;
+    --os-surface-sunken:  #C8CBD8;
+    --os-input-bg:        #FFFFFF;
+    --os-white:           #FFFFFF;
+
+    /* ── Status ─────────────────────────────────────────────── */
+    --os-success:         #28A745;
+    --os-warning:         #E8A317;
+    --os-danger:          #DC3545;
+    --os-info:            #17A2B8;
+
+    /* ── Text ───────────────────────────────────────────────── */
+    --os-text:            #1A1A2E;
+    --os-text-secondary:  #5A5D76;
+    --os-text-disabled:   #9CA0B4;
+    --os-text-inverse:    #FFFFFF;
+
+    /* ── Fonts ──────────────────────────────────────────────── */
+    --os-font:            'Segoe UI', Tahoma, sans-serif;
+    --os-font-mono:       'Consolas', 'Courier New', monospace;
+
+    /* ── Sizing Tokens ──────────────────────────────────────── */
+    --os-radius-sm:       2px;
+    --os-radius-md:       4px;
+    --os-radius-lg:       8px;
+    --os-space-xs:        2px;
+    --os-space-sm:        4px;
+    --os-space-md:        8px;
+    --os-space-lg:        16px;
+    --os-space-xl:        24px;
+
+    /* ── Desktop Background ─────────────────────────────────── */
+    --os-desktop-bg:      linear-gradient(135deg, #3A7BB8 0%, #5A9BD8 50%, #3A8BC8 100%);
+}
+
+/* ── Embossed Border Utility Classes ────────────────────────── */
+
+/* Raised = interactive / clickable (buttons, toolbars) */
+.os-raised {
+    border: 2px solid;
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+}
+
+/* Sunken = content well / input fields */
+.os-sunken {
+    border: 2px solid;
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+}
+
+/* Groove = groupbox / section divider */
+.os-groove {
+    border: 2px groove var(--os-chrome-light);
+}
+
+/* Ridge = prominent divider */
+.os-ridge {
+    border: 2px ridge var(--os-chrome-light);
+}
+
+/* Etched horizontal separator (1px dark + 1px light) */
+.os-etch {
+    border: none;
+    border-top: 1px solid var(--bevel-dark);
+    border-bottom: 1px solid var(--bevel-light);
+    height: 0;
+}
+
+/* Desktop wallpaper background */
+.os-desktop-bg {
+    background: var(--os-desktop-bg);
+}

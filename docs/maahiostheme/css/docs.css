@@ -1,0 +1,272 @@
+/* ================================================================
+   DOCUMENTATION PAGE STYLES
+   These style the reference page itself — NOT the OS theme.
+   ================================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: #f5f7fa;
+    color: #1a1a2e;
+    line-height: 1.6;
+}
+
+/* ── Page Shell ─────────────────────────────────────────────── */
+.ds-shell {
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 24px 32px;
+}
+
+.ds-header {
+    margin-bottom: 8px;
+}
+.ds-header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: #131A22;
+}
+.ds-header .ds-subtitle {
+    font-size: 14px;
+    color: #888;
+    margin-top: 4px;
+}
+
+/* ── Tab Bar ────────────────────────────────────────────────── */
+.ds-tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 24px;
+    margin-top: 16px;
+    overflow-x: auto;
+}
+.ds-tab {
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    border: none;
+    background: none;
+    border-bottom: 3px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+.ds-tab:hover {
+    color: #2B5BB5;
+}
+.ds-tab.active {
+    color: #2B5BB5;
+    border-bottom-color: #2B5BB5;
+}
+
+/* ── Tab Panels ─────────────────────────────────────────────── */
+.ds-panel {
+    display: none;
+}
+.ds-panel.active {
+    display: block;
+}
+.ds-loading {
+    padding: 40px;
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+}
+
+/* ── Section Cards ──────────────────────────────────────────── */
+.ds-section {
+    margin-bottom: 40px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 28px 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.ds-section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #131A22;
+    margin-bottom: 4px;
+}
+
+.ds-section-desc {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 20px;
+}
+
+.ds-subsection {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 10px;
+    margin-top: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── Preview Box (where OS components are rendered) ─────────── */
+.ds-preview {
+    background: #f0f1f6;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.ds-preview-chrome {
+    background: var(--os-chrome);
+}
+
+.ds-preview-sunken {
+    background: var(--os-surface-sunken);
+}
+
+.ds-preview-desktop {
+    background: linear-gradient(135deg, #3A7BB8 0%, #5A9BD8 50%, #3A8BC8 100%);
+}
+
+/* ── Flex Helpers ───────────────────────────────────────────── */
+.ds-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.ds-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ds-grow { flex: 1; }
+
+/* ── Component Label ────────────────────────────────────────── */
+.ds-label {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+/* ── Property Table (for AI reference) ──────────────────────── */
+.ds-prop-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 12px;
+    margin-bottom: 8px;
+}
+.ds-prop-table th {
+    text-align: left;
+    padding: 6px 10px;
+    background: #f0f1f6;
+    color: #444;
+    font-weight: 600;
+    border-bottom: 2px solid #ddd;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.ds-prop-table td {
+    padding: 5px 10px;
+    border-bottom: 1px solid #eee;
+    color: #333;
+    vertical-align: top;
+}
+.ds-prop-table tr:hover td {
+    background: #fafbfd;
+}
+.ds-prop-table code {
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    color: #1E8A65;
+    background: #f0f6f3;
+    padding: 1px 5px;
+    border-radius: 3px;
+}
+.ds-prop-table .ds-val {
+    color: #2B5BB5;
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+}
+
+/* ── Icon Grid (for icons tab) ──────────────────────────────── */
+.ds-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+}
+.ds-icon-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 6px;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    background: #fff;
+    text-align: center;
+}
+.ds-icon-card:hover {
+    border-color: #2B5BB5;
+    box-shadow: 0 2px 8px rgba(43,91,181,0.12);
+}
+.ds-icon-card img {
+    width: 32px;
+    height: 32px;
+}
+.ds-icon-card .ds-icon-sm {
+    width: 16px;
+    height: 16px;
+    opacity: 0.8;
+}
+.ds-icon-card .ds-icon-name {
+    font-size: 10px;
+    color: #666;
+    word-break: break-word;
+    line-height: 1.2;
+}
+.ds-icon-sizes {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+/* ── Code Block ─────────────────────────────────────────────── */
+.ds-code {
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    background: #1a1a2e;
+    color: #e8eaf2;
+    padding: 12px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    line-height: 1.5;
+    margin-top: 8px;
+}
+.ds-code .hl-cls  { color: #4DC7A5; }
+.ds-code .hl-prop { color: #7BAFDE; }
+.ds-code .hl-val  { color: #E8A317; }
+.ds-code .hl-tag  { color: #DC6B73; }
+.ds-code .hl-cmt  { color: #6a6d80; }
+
+/* ── Swatch (color preview) ─────────────────────────────────── */
+.ds-swatch {
+    width: 48px; height: 48px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    display: inline-block;
+}
+.ds-swatch-sm {
+    width: 18px; height: 14px;
+    border: 1px solid #aaa;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 4px;
+}

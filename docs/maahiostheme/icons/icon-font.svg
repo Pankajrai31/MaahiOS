@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Letter A for font -->
+  <path d="M16 4 L6 28 L10 28 L12.5 21 L19.5 21 L22 28 L26 28 L16 4 Z" fill="#2B5BB5" stroke="#1A1A2E" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- A crossbar -->
+  <line x1="13.5" y1="18" x2="18.5" y2="18" stroke="#FFFFFF" stroke-width="2"/>
+  <!-- Serifs hint -->
+  <line x1="4" y1="28" x2="12" y2="28" stroke="#2B5BB5" stroke-width="2" stroke-linecap="round"/>
+  <line x1="20" y1="28" x2="28" y2="28" stroke="#2B5BB5" stroke-width="2" stroke-linecap="round"/>
+</svg>

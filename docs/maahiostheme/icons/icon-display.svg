@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Monitor bezel -->
+  <rect x="3" y="3" width="26" height="19" rx="2" ry="2" fill="#1A1A2E" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Screen -->
+  <rect x="5" y="5" width="22" height="14" rx="1" ry="1" fill="#2B5BB5"/>
+  <!-- Screen highlight -->
+  <rect x="6" y="6" width="8" height="4" rx="1" fill="#3A6BC5" opacity="0.4"/>
+  <!-- Stand -->
+  <rect x="13" y="22" width="6" height="3" fill="#D8DBE8" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Base -->
+  <rect x="9" y="25" width="14" height="3" rx="1.5" fill="#D8DBE8" stroke="#1A1A2E" stroke-width="1.5"/>
+</svg>

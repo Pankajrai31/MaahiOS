@@ -31,6 +31,7 @@ extern void syscall_register_module_handlers(void);
 extern void syscall_register_time_handlers(void);
 extern void syscall_register_debug_handlers(void);
 extern void syscall_register_fs_handlers(void);
+extern void syscall_register_network_handlers(void);
 
 int syscall_manager_init(void) {
     KLOG_INFO("SYSCALL", "Initializing syscall manager...");
@@ -52,6 +53,7 @@ int syscall_manager_init(void) {
     syscall_register_time_handlers();        /* 112-127: Time */
     syscall_register_debug_handlers();      /* 240-255: Debug */
     syscall_register_fs_handlers();          /* 128-143: Filesystem */
+    syscall_register_network_handlers();     /* 144-159: Network */
     
     initialized = 1;
     

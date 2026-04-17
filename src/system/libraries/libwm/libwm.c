@@ -26,9 +26,21 @@ static int g_initialized = 0;
 static uint32_t g_msg_counter = 1;
 static uint32_t g_my_pid = 0;
 
+/* Per-handle tracking for queue-based heartbeat */
+#define LIBWM_MAX_LOCAL  4
+static int g_hb_handles[LIBWM_MAX_LOCAL];
+static int g_hb_handle_count = 0;
+
+/* Throttle: send queue heartbeat at most once per interval */
+#define LIBWM_HB_INTERVAL 50   /* ticks (~1 sec at 50Hz) */
+static uint32_t g_hb_last_sent_tick = 0;
+
 /*=============================================================================
  * HELPERS
  *===========================================================================*/
+
+/* Forward declaration — defined below init */
+static void _libwm_heartbeat_all(void);
 
 static void str_copy(char *dst, const char *src, int max) {
     int i;
@@ -59,6 +71,7 @@ static exec_response_t send_request(exec_request_t *req) {
     for (int i = 0; i < 500; i++) {
         if (exe_response_queue_pop_by_id(g_resp_queue, req->msg_id, &resp) == EXEC_OK)
             return resp;
+        _libwm_heartbeat_all();
         syscall0(SYS_YIELD);
     }
 
@@ -77,6 +90,32 @@ static void send_request_async(exec_request_t *req) {
     while (exe_request_queue_push(g_req_queue, req) != EXEC_OK) {
         syscall0(SYS_YIELD);
         if (++retries > 100) return;
+    }
+}
+
+/*=============================================================================
+ * GLOBAL HEARTBEAT HOOK (called from all library poll loops)
+ *===========================================================================*/
+
+/**
+ * Send throttled queue-based heartbeat for ALL local window handles.
+ * Registered into exe_poll_heartbeat_hook so that blocking IPC in any
+ * library (libnet, libcell, libfs, etc.) keeps WM heartbeat alive.
+ */
+static void _libwm_heartbeat_all(void) {
+    if (g_hb_handle_count == 0 || !g_initialized) return;
+    uint32_t now = (uint32_t)syscall0(SYS_TIME_GET_TICKS);
+    if (now - g_hb_last_sent_tick < LIBWM_HB_INTERVAL) return;
+    g_hb_last_sent_tick = now;
+
+    for (int i = 0; i < g_hb_handle_count; i++) {
+        exec_request_t req;
+        exe_memset(&req, 0, sizeof(req));
+        req.func_id = WM_CMD_HEARTBEAT;
+        wm_handle_payload_t *p = (wm_handle_payload_t *)req.payload;
+        p->handle = g_hb_handles[i];
+        req.payload_size = sizeof(wm_handle_payload_t);
+        send_request_async(&req);
     }
 }
 
@@ -109,6 +148,11 @@ int libwm_init(void) {
     if (!g_req_queue || !g_resp_queue) return -1;
 
     g_initialized = 1;
+
+    /* Register global poll heartbeat hook so ALL library _send_and_wait()
+     * loops keep our WM heartbeat alive during blocking IPC. */
+    exe_poll_heartbeat_hook = _libwm_heartbeat_all;
+
     return 0;
 }
 
@@ -137,11 +181,27 @@ int libwm_create(int x, int y, int w, int h, const char *title,
 
     wm_create_response_t *rp = (wm_create_response_t *)resp.payload;
     if (out_shm_id) *out_shm_id = rp->surface_shm_id;
+
+    /* Remember handle for queue-based heartbeat */
+    if (g_hb_handle_count < LIBWM_MAX_LOCAL) {
+        g_hb_handles[g_hb_handle_count++] = rp->handle;
+    }
+
     return rp->handle;
 }
 
 void libwm_destroy(int handle) {
     if (!g_initialized) return;
+
+    /* Remove handle from heartbeat tracking */
+    for (int i = 0; i < g_hb_handle_count; i++) {
+        if (g_hb_handles[i] == handle) {
+            for (int j = i; j < g_hb_handle_count - 1; j++)
+                g_hb_handles[j] = g_hb_handles[j + 1];
+            g_hb_handle_count--;
+            break;
+        }
+    }
 
     exec_request_t req;
     exe_memset(&req, 0, sizeof(req));
@@ -318,6 +378,11 @@ int libwm_is_focused(int handle) {
 
 void libwm_heartbeat(int handle) {
     if (!g_initialized) return;
+
+    /* Throttled queue-based heartbeat */
+    uint32_t now = (uint32_t)syscall0(SYS_TIME_GET_TICKS);
+    if (now - g_hb_last_sent_tick < LIBWM_HB_INTERVAL) return;
+    g_hb_last_sent_tick = now;
 
     exec_request_t req;
     exe_memset(&req, 0, sizeof(req));

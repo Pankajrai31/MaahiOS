@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Scissors -->
+  <!-- Top blade -->
+  <circle cx="10" cy="8" r="4" fill="none" stroke="#1A1A2E" stroke-width="2"/>
+  <!-- Bottom blade -->
+  <circle cx="10" cy="24" r="4" fill="none" stroke="#1A1A2E" stroke-width="2"/>
+  <!-- Top blade line -->
+  <line x1="13" y1="10" x2="26" y2="20" stroke="#D8DBE8" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="13" y1="10" x2="26" y2="20" stroke="#1A1A2E" stroke-width="2" stroke-linecap="round"/>
+  <!-- Bottom blade line -->
+  <line x1="13" y1="22" x2="26" y2="12" stroke="#D8DBE8" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="13" y1="22" x2="26" y2="12" stroke="#1A1A2E" stroke-width="2" stroke-linecap="round"/>
+  <!-- Finger holes -->
+  <circle cx="10" cy="8" r="2" fill="#FFFFFF"/>
+  <circle cx="10" cy="24" r="2" fill="#FFFFFF"/>
+  <!-- Pivot -->
+  <circle cx="17" cy="16" r="1.5" fill="#1A1A2E"/>
+</svg>

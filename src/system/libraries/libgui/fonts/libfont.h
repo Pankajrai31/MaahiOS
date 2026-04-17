@@ -3,7 +3,7 @@
  *
  * Description:
  *   Anti-aliased, proportional font rendering from pre-generated
- *   glyph data (Segoe UI at 12/14/16/18/24 px).  Renders glyphs
+ *   glyph data (Segoe UI at 14/16/18/20/28 px).  Renders glyphs
  *   with per-pixel alpha blending onto a pixel buffer.
  *
  *   This library operates on raw uint32_t* pixel buffers.
@@ -30,11 +30,11 @@
  *===========================================================================*/
 
 typedef enum {
-    FONT_SMALL  = 0,    /* 12 px — captions, footnotes              */
-    FONT_BODY   = 1,    /* 14 px — default body / UI labels         */
-    FONT_H3     = 2,    /* 16 px — sub-heading                      */
-    FONT_H2     = 3,    /* 18 px — heading                          */
-    FONT_TITLE  = 4,    /* 24 px — window titles, large headings    */
+    FONT_SMALL  = 0,    /* 14 px — captions, footnotes, menus       */
+    FONT_BODY   = 1,    /* 16 px — default body / UI labels         */
+    FONT_H3     = 2,    /* 18 px — sub-heading                      */
+    FONT_H2     = 3,    /* 20 px — heading                          */
+    FONT_TITLE  = 4,    /* 28 px — window titles, large headings    */
 } font_size_t;
 
 #define FONT_SIZE_COUNT  5

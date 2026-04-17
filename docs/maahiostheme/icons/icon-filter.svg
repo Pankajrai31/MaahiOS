@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Funnel filter -->
+  <path d="M4 5 L28 5 L19 16 L19 25 L13 28 L13 16 Z" fill="#D8DBE8" stroke="#1A1A2E" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Inner highlight -->
+  <path d="M6 6 L26 6 L19 15" fill="#FFFFFF" opacity="0.3"/>
+</svg>

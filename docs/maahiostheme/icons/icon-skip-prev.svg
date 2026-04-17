@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Skip prev: bar + triangle -->
+  <rect x="6" y="6" width="4" height="20" rx="1" fill="#2B5BB5" stroke="#1A1A2E" stroke-width="1.5"/>
+  <path d="M26 6 L12 16 L26 26 Z" fill="#2B5BB5" stroke="#1A1A2E" stroke-width="1.5" stroke-linejoin="round"/>
+</svg>

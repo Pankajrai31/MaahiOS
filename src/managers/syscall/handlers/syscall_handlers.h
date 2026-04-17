@@ -62,4 +62,10 @@ void syscall_register_time_handlers(void);
  */
 void syscall_register_debug_handlers(void);
 
+/**
+ * Network handlers (144-159)
+ * Manager: Network Manager
+ */
+void syscall_register_network_handlers(void);
+
 #endif /* SYSCALL_HANDLERS_H */

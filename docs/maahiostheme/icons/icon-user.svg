@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Head -->
+  <circle cx="16" cy="10" r="6" fill="#2B5BB5" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Body -->
+  <path d="M6 28 Q6 19 16 19 Q26 19 26 28 Z" fill="#2B5BB5" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Highlight -->
+  <circle cx="14" cy="8.5" r="1.5" fill="#FFFFFF" opacity="0.25"/>
+</svg>

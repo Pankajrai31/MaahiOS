@@ -100,7 +100,9 @@ static const char* get_exception_description(unsigned int num) {
 
 /* Handle user mode exception - TERMINATE PROCESS, CONTINUE RUNNING */
 static void handle_user_exception(unsigned int exception_num, unsigned int error_code,
-                                   unsigned int eip, unsigned int cr2) {
+                                   unsigned int eip, unsigned int cr2,
+                                   unsigned int user_esp, unsigned int saved_eax,
+                                   unsigned int saved_ebx, unsigned int saved_ebp) {
     /* Get faulting process info */
     int pid = scheduler_get_current_pid();
     
@@ -150,6 +152,37 @@ static void handle_user_exception(unsigned int exception_num, unsigned int error
             serial_puts(", User mode");
         }
         serial_puts("\n");
+    }
+    
+    /* Dump registers for debugging */
+    serial_puts("  ESP(user): ");
+    serial_hex(user_esp);
+    serial_puts("\n");
+    serial_puts("  EBP:       ");
+    serial_hex(saved_ebp);
+    serial_puts("\n");
+    serial_puts("  EAX:       ");
+    serial_hex(saved_eax);
+    serial_puts("\n");
+    serial_puts("  EBX:       ");
+    serial_hex(saved_ebx);
+    serial_puts("\n");
+    
+    /* Dump stack words around user ESP (if mapped in identity region) */
+    if (user_esp >= 0x00200000 && user_esp < 0x08000000) {
+        serial_puts("  Stack dump (ESP-8 .. ESP+24):\n");
+        uint32_t *sp = (uint32_t *)(user_esp & ~3);  /* align to 4 bytes */
+        for (int i = -2; i <= 6; i++) {
+            uint32_t addr = (uint32_t)(sp + i);
+            if (addr >= 0x00200000 && addr < 0x08000000) {
+                serial_puts("    [");
+                serial_hex(addr);
+                serial_puts("] = ");
+                serial_hex(sp[i]);
+                if (i == 0) serial_puts("  <-- ESP");
+                serial_puts("\n");
+            }
+        }
     }
     
     serial_puts("======================================================================\n\n");
@@ -377,6 +410,7 @@ void exception_handler(unsigned int dummy1, unsigned int dummy2) {
     (void)dummy2;
     
     unsigned int exception_num, error_code, cs, eip, cr2;
+    unsigned int user_esp, saved_eax, saved_ebx, saved_ebp;
     
     __asm__ volatile(
         "movl 36(%%ebp), %0\n"
@@ -386,11 +420,19 @@ void exception_handler(unsigned int dummy1, unsigned int dummy2) {
         "movl %%cr2, %4"
         : "=r"(exception_num), "=r"(error_code), "=r"(eip), "=r"(cs), "=r"(cr2)
     );
+    __asm__ volatile(
+        "movl 56(%%ebp), %0\n"
+        "movl 32(%%ebp), %1\n"
+        "movl 28(%%ebp), %2\n"
+        "movl 8(%%ebp), %3"
+        : "=r"(user_esp), "=r"(saved_eax), "=r"(saved_ebx), "=r"(saved_ebp)
+    );
     
     /* Check CS lowest 2 bits for privilege level */
     if (cs & 0x3) {
         /* Ring 3 - user mode exception */
-        handle_user_exception(exception_num, error_code, eip, cr2);
+        handle_user_exception(exception_num, error_code, eip, cr2,
+                              user_esp, saved_eax, saved_ebx, saved_ebp);
     } else {
         /* Ring 0 - kernel mode exception */
         handle_kernel_exception(exception_num, error_code, eip);

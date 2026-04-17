@@ -293,6 +293,10 @@ int process_terminate(int pid) {
         return -2;  /* Protected */
     }
     
+    /* Clean up SHM attachments BEFORE freeing page directory */
+    extern void kernel_shm_cleanup_process(int pid);
+    kernel_shm_cleanup_process(pid);
+    
     /* Remove from scheduler */
     extern void scheduler_remove_process(int pid);
     scheduler_remove_process(pid);

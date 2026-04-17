@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Undo arrow -->
+  <path d="M8 12 L4 16 L8 20" fill="none" stroke="#2B5BB5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M4 16 L18 16 Q25 16 25 22 Q25 28 18 28 L14 28" fill="none" stroke="#2B5BB5" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

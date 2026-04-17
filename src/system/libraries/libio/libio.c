@@ -156,6 +156,7 @@ static int _send_and_wait(exec_request_t *req, exec_response_t *resp) {
         int pop_result = exe_response_queue_pop_by_id(g_resp_queue,
                                                        my_id, resp);
         if (pop_result == EXEC_OK) return EXEC_OK;
+        exe_poll_heartbeat();
         syscall1(SYS_SLEEP, 1);
     }
 
@@ -171,11 +172,23 @@ int libio_dev_read(uint32_t device_id, void *buffer, uint32_t max_size) {
      * Keyboard fast path: read directly from shared ring buffer.
      * Zero syscalls, zero IPC — just a memory read from shared memory.
      * The I/O Executive continuously polls keyboard and writes events here.
+     *
+     * Focus gating: WM writes focused_pid to the ring.  Only the app
+     * whose PID matches may consume events.  This prevents multiple
+     * apps from racing to steal keystrokes from a shared ring.
      */
     if (device_id == IO_DEV_KEYBOARD) {
         if (!g_kbd_ring) _libio_init_kbd_ring();
 
         if (g_kbd_ring) {
+            /* Focus gate: only the focused app may consume */
+            int32_t fp = g_kbd_ring->focused_pid;
+            if (fp > 0) {
+                if (!g_my_pid) g_my_pid = (uint32_t)syscall0(SYS_GETPID);
+                if ((int32_t)g_my_pid != fp)
+                    return 0;  /* Not focused — don't consume */
+            }
+
             uint32_t t = g_kbd_ring->tail;
             uint32_t h = g_kbd_ring->head;
             if (t == h) return 0;  /* Ring empty — no events */

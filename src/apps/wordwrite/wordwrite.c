@@ -573,6 +573,13 @@ void mex_main(void) {
     g_win = window_create("WordWrite - Untitled", WIN_X, WIN_Y, WIN_W, WIN_H);
     if (!g_win) return;
 
+    /* Load titlebar icon */
+    {
+        static uint8_t icon_buf[4096];
+        int sz = libfs_read_file("C:/icons/", "WORDWRT.BMP", icon_buf, sizeof(icon_buf));
+        if (sz > 0) window_set_icon(g_win, icon_buf, sz);
+    }
+
     /* Get content area dimensions */
     int cw = g_win->content_w;
     int ch = g_win->content_h;

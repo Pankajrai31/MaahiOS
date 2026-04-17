@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Stop square -->
+  <rect x="6" y="6" width="20" height="20" rx="2" ry="2" fill="#DC3545" stroke="#1A1A2E" stroke-width="1.5"/>
+</svg>

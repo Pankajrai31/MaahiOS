@@ -265,6 +265,13 @@ void mex_main(void) {
     if (!win) return;
     g_win = win;
 
+    /* Load titlebar icon */
+    {
+        static uint8_t icon_buf[4096];
+        int sz = libfs_read_file("C:/icons/", "DISKEXP.BMP", icon_buf, sizeof(icon_buf));
+        if (sz > 0) window_set_icon(win, icon_buf, sz);
+    }
+
     int content_w = WIN_W;
     int content_h = WIN_H - THEME_TITLEBAR_HEIGHT;
     int y_cursor = 0;

@@ -1,0 +1,370 @@
+﻿[1;33m======================================[0m
+[1;33mMaahiOS Build System (Minimal)[0m
+[1;33m======================================[0m
+
+[1;33m[1/18] Compiling Drivers...[0m
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô All drivers compiled[0m
+
+[1;33m[2/18] Compiling Kernel Managers...[0m
+[0;32m├ó┼ôΓÇ£ All managers compiled[0m
+
+[1;33m[3/18] Linking kernel...[0m
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô kernel.bin linked[0m
+
+[1;33m[4/18] Building shared libs + sysman entry (sysman.c deferred)...[0m
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô Shared libs + sysman entry compiled (sysman.c deferred)[0m
+
+[1;33m[5/18] Building Log Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./logexec.elf has a LOAD segment with RWX permissions
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô logexec.bin built[0m
+
+[1;33m[6/18] Building Cell Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./cellexec.elf has a LOAD segment with RWX permissions
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô cellexec.bin built[0m
+
+[1;33m[7/18] Building Process Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./procexec.elf has a LOAD segment with RWX permissions
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô procexec.bin built[0m
+
+[1;33m[8/18] Building Memory Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./memexec.elf has a LOAD segment with RWX permissions
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô memexec.bin built[0m
+
+[1;33m[9/18] Building Disk Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./diskexec.elf has a LOAD segment with RWX permissions
+[0;32m diskexec.bin built[0m
+
+[1;33m[10/18] Building FS Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./fsexec.elf has a LOAD segment with RWX permissions
+[0;32m fsexec.bin built[0m
+
+[1;33m[11/18] Building GUI Executive + libgui...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./guiexec.elf has a LOAD segment with RWX permissions
+[0;32m guiexec.bin + libgui built[0m
+
+[1;33m[12/18] Building I/O Executive + libio...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./ioexec.elf has a LOAD segment with RWX permissions
+[0;32m ioexec.bin + libio built[0m
+
+[1;33m[13/18] Building WM Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./wmexec.elf has a LOAD segment with RWX permissions
+[0;32m wmexec.bin built[0m
+
+[1;33m    Compiling libwindow...[0m
+[0;32m├ó┼ôΓÇ£ libwindow + libwm compiled[0m
+
+[1;33m[14/18] Building Orbit...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./orbit.elf has a LOAD segment with RWX permissions
+[0;32m orbit.bin built[0m
+
+[1;33m[15/18] Building Terminal...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./terminal.elf has a LOAD segment with RWX permissions
+[0;32m terminal.bin built[0m
+
+[1;33m[15a/18] Building Network Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./netexec.elf has a LOAD segment with RWX permissions
+[0;32m netexec.bin built[0m
+
+[1;33m[15.5/18] Generating module BSS sizes + building sysman...[0m
+  logexec: BSS = 152 bytes
+  cellexec: BSS = 164 bytes
+  procexec: BSS = 180 bytes
+  memexec: BSS = 180 bytes
+  diskexec: BSS = 564 bytes
+  fsexec: BSS = 2612 bytes
+  guiexec: BSS = 180 bytes
+  ioexec: BSS = 180 bytes
+  wmexec: BSS = 916 bytes
+  orbit: BSS = 329488 bytes
+  terminal: BSS = 116336 bytes
+  netexec: BSS = 180 bytes
+[0;32m├ó┼ôΓÇ£ module_bss_sizes.h generated[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./sysman.elf has a LOAD segment with RWX permissions
+[0;32m├ó┼ôΓÇ£ sysman.bin built with BSS-aware module sizes[0m
+
+[1;33m[16/18] Building MEX apps...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./hello.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./procman.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./diskman.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./fileman.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./boxdrop.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./sysinfo.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./shutdown.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./hellogui.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./procexp.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./diskexp.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./wordwrit.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./logexp.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./ping.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./fetch.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./netexp.elf has a LOAD segment with RWX permissions
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./browser.elf has a LOAD segment with RWX permissions
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./hello.bin                 |
+| Output:      ./hello.mex                 |
+| Name:        hello                       |
+| Type:        app                         |
+| Flags:       console                     |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:         1496 bytes           |
+| BSS size:            12 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0x924E2D0A                 |
+| Total:             1560 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./procman.bin               |
+| Output:      ./procman.mex               |
+| Name:        procman                     |
+| Type:        app                         |
+| Flags:       console                     |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:        13836 bytes           |
+| BSS size:            52 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0xAF9C291F                 |
+| Total:            13900 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./diskman.bin               |
+| Output:      ./diskman.mex               |
+| Name:        diskman                     |
+| Type:        app                         |
+| Flags:       console                     |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:        17760 bytes           |
+| BSS size:            68 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0x7D579438                 |
+| Total:            17824 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./fileman.bin               |
+| Output:      ./fileman.mex               |
+| Name:        fileman                     |
+| Type:        app                         |
+| Flags:       console                     |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:        15044 bytes           |
+| BSS size:          4176 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0xB1046B32                 |
+| Total:            15108 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./boxdrop.bin               |
+| Output:      ./boxdrop.mex               |
+| Name:        boxdrop                     |
+| Type:        app                         |
+| Flags:       gui                         |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:        88752 bytes           |
+| BSS size:           400 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0x34BF1E20                 |
+| Total:            88816 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./sysinfo.bin               |
+| Output:      ./sysinfo.mex               |
+| Name:        sysinfo                     |
+| Type:        app                         |
+| Flags:       console                     |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:        10964 bytes           |
+| BSS size:            52 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0xF016091A                 |
+| Total:            11028 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./shutdown.bin              |
+| Output:      ./shutdown.mex              |
+| Name:        shutdown                    |
+| Type:        app                         |
+| Flags:       console                     |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:        10956 bytes           |
+| BSS size:            52 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0x966C80C3                 |
+| Total:            11020 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./hellogui.bin              |
+| Output:      ./hellogui.mex              |
+| Name:        hellogui                    |
+| Type:        app                         |
+| Flags:       gui                         |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:       142996 bytes           |
+| BSS size:          6340 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0xFEDB0DBF                 |
+| Total:           143060 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./procexp.bin               |
+| Output:      ./procexp.mex               |
+| Name:        procexp                     |
+| Type:        app                         |
+| Flags:       gui                         |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:       148192 bytes           |
+| BSS size:          7896 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0xDA83A4CC                 |
+| Total:           148256 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./diskexp.bin               |
+| Output:      ./diskexp.mex               |
+| Name:        diskexp                     |
+| Type:        app                         |
+| Flags:       gui                         |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:       147040 bytes           |
+| BSS size:          6360 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0x87239B68                 |
+| Total:           147104 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./wordwrit.bin              |
+| Output:      ./wordwrit.mex              |
+| Name:        wordwrit                    |
+| Type:        app                         |
+| Flags:       gui                         |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:       147604 bytes           |
+| BSS size:         19588 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0x54DE1D9C                 |
+| Total:           147668 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./logexp.bin                |
+| Output:      ./logexp.mex                |
+| Name:        logexp                      |
+| Type:        app                         |
+| Flags:       gui                         |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:       144392 bytes           |
+| BSS size:         31984 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0xF5748C72                 |
+| Total:           144456 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./ping.bin                  |
+| Output:      ./ping.mex                  |
+| Name:        ping                        |
+| Type:        app                         |
+| Flags:       console                     |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:        16928 bytes           |
+| BSS size:          1160 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0x554D745E                 |
+| Total:            16992 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./fetch.bin                 |
+| Output:      ./fetch.mex                 |
+| Name:        fetch                       |
+| Type:        app                         |
+| Flags:       console                     |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:        50500 bytes           |
+| BSS size:         23044 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0x72672DBE                 |
+| Total:            50564 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./netexp.bin                |
+| Output:      ./netexp.mex                |
+| Name:        netexp                      |
+| Type:        app                         |
+| Flags:       gui                         |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:       153804 bytes           |
+| BSS size:         11692 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0x00C202A6                 |
+| Total:           153868 bytes           |
++==========================================+
++==========================================+
+|         MEX Packer - MaahiOS             |
++==========================================+
+| Input:       ./browser.bin               |
+| Output:      ./browser.mex               |
+| Name:        browser                     |
+| Type:        app                         |
+| Flags:       gui                         |
+| Base:        0x10000000                 |
+| Entry:       0x00000000                 |
+| Code size:       237752 bytes           |
+| BSS size:        507200 bytes           |
+| Stack size:       16384 bytes           |
+| CRC32:       0x6141E3F4                 |
+| Total:           237816 bytes           |
++==========================================+
+[0;32mΓ£ô MEX apps built (hello, procman, diskman, fileman, boxdrop, sysinfo, shutdown, hellogui, procexp, diskexp, wordwrit, logexp, ping, fetch, netexp, browser)[0m
+
+[1;33m[17/18] Creating ISO...[0m
+[0;32mΓ£ô Icon BMPs copied to ISO/icons/[0m
+
+[1;33m[18/18] Building ISO image...[0m
+GNU xorriso 1.5.6 : RockRidge filesystem manipulator, libburnia project.
+
+Drive current: -outdev 'stdio:./boot.iso'
+Media current: stdio file, overwriteable
+Media status : is blank
+Media summary: 0 sessions, 0 data blocks, 0 data,  483g free
+xorriso : UPDATE :     100 files added in 3 seconds

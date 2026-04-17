@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Drive body -->
+  <rect x="3" y="9" width="26" height="14" rx="2" ry="2" fill="#D8DBE8" stroke="#1A1A2E" stroke-width="2"/>
+  <!-- Front panel line -->
+  <line x1="3" y1="19" x2="29" y2="19" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Drive slots -->
+  <rect x="5" y="11" width="12" height="2" rx="0.5" fill="#1A1A2E" opacity="0.3"/>
+  <rect x="5" y="14.5" width="12" height="2" rx="0.5" fill="#1A1A2E" opacity="0.3"/>
+  <!-- Activity LED -->
+  <circle cx="25" cy="22" r="1.5" fill="#1E8A65"/>
+  <!-- Label area -->
+  <rect x="20" y="11" width="6" height="6" rx="1" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="0.75"/>
+  <!-- Subtle top highlight -->
+  <rect x="4" y="9.5" width="24" height="2" rx="1" fill="#FFFFFF" opacity="0.3"/>
+</svg>

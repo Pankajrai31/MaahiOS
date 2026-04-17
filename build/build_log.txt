@@ -1,0 +1,69 @@
+﻿[1;33m======================================[0m
+[1;33mMaahiOS Build System (Minimal)[0m
+[1;33m======================================[0m
+
+[1;33m[1/18] Compiling Drivers...[0m
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô All drivers compiled[0m
+
+[1;33m[2/18] Compiling Kernel Managers...[0m
+[0;32m├ó┼ôΓÇ£ All managers compiled[0m
+
+[1;33m[3/18] Linking kernel...[0m
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô kernel.bin linked[0m
+
+[1;33m[4/18] Building shared libs + sysman entry (sysman.c deferred)...[0m
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô Shared libs + sysman entry compiled (sysman.c deferred)[0m
+
+[1;33m[5/18] Building Log Executive...[0m
+bash.exe : C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./logexec.elf has a 
+LOAD segment with RWX permissions
+At line:1 char:69
++ ... :\msys64\usr\bin;" + $env:PATH; bash.exe -c './build.sh' 2>&1 | Out-F ...
++                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\i686-elf-too...RWX permissions 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô logexec.bin built[0m
+
+[1;33m[6/18] Building Cell Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./cellexec.elf has a LOAD 
+segment with RWX permissions
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô cellexec.bin built[0m
+
+[1;33m[7/18] Building Process Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./procexec.elf has a LOAD 
+segment with RWX permissions
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô procexec.bin built[0m
+
+[1;33m[8/18] Building Memory Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./memexec.elf has a LOAD 
+segment with RWX permissions
+[0;32m├â┬ó├àΓÇ£├óΓé¼┼ô memexec.bin built[0m
+
+[1;33m[9/18] Building Disk Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./diskexec.elf has a LOAD 
+segment with RWX permissions
+[0;32m diskexec.bin built[0m
+
+[1;33m[10/18] Building FS Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./fsexec.elf has a LOAD 
+segment with RWX permissions
+[0;32m fsexec.bin built[0m
+
+[1;33m[11/18] Building GUI Executive + libgui...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./guiexec.elf has a LOAD 
+segment with RWX permissions
+[0;32m guiexec.bin + libgui built[0m
+
+[1;33m[12/18] Building I/O Executive + libio...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./ioexec.elf has a LOAD 
+segment with RWX permissions
+[0;32m ioexec.bin + libio built[0m
+
+[1;33m[13/18] Building WM Executive...[0m
+C:\i686-elf-tools\bin\i686-elf-ld.exe: warning: ./wmexec.elf has a LOAD 
+segment with RWX permissions
+[0;32m wmexec.bin built[0m
+
+[1;33m    Compiling libwindow...[0m

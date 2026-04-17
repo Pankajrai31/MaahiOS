@@ -40,6 +40,7 @@
 #include "controls/treeview.h"
 #include "controls/textarea.h"
 #include "controls/radiogroup.h"
+#include "controls/tabs.h"
 #include "../shared/taskbar_types.h"
 
 /*=============================================================================
@@ -131,6 +132,11 @@ struct window_s {
     void (*on_close)(void *userdata);
     void *close_data;
 
+    /* Titlebar icon — 16x16 decoded pixel buffer (0x00RRGGBB)
+     * If non-NULL, drawn in the titlebar before the title text.
+     * Caller owns the buffer; must remain valid while window is alive. */
+    uint32_t *icon_pixels;
+
     /* Custom content callbacks (for apps like Terminal that need
      * full control over the content area rendering and keyboard) */
     void (*on_key)(window_t *win, int scancode, char ascii, void *userdata);
@@ -141,6 +147,10 @@ struct window_s {
 
     void (*on_tick)(window_t *win, void *userdata);
     void *on_tick_data;
+
+    void (*on_mouse)(window_t *win, int content_x, int content_y,
+                     int event, void *userdata);
+    void *on_mouse_data;
 };
 
 /*=============================================================================
@@ -238,6 +248,17 @@ void window_set_on_close(window_t *win,
  */
 void window_invalidate(window_t *win);
 
+/**
+ * window_set_icon - Set a 16x16 titlebar icon (downscaled from 32x32 BMP)
+ * @win:  Window
+ * @bmp_data:  Raw BMP file bytes (loaded via libfs_read_file)
+ * @bmp_size:  Size of the BMP data in bytes
+ *
+ * Decodes the BMP, downscales from 32x32 to 16x16, and stores the
+ * pixels internally. Pass NULL/0 to remove the icon.
+ */
+void window_set_icon(window_t *win, const uint8_t *bmp_data, int bmp_size);
+
 /*=============================================================================
  * CUSTOM CONTENT CALLBACKS
  *
@@ -285,5 +306,25 @@ void window_set_on_paint(window_t *win,
 void window_set_on_tick(window_t *win,
                         void (*callback)(window_t *win, void *userdata),
                         void *userdata);
+
+/**
+ * window_set_on_mouse - Set custom mouse handler for content area
+ * @win:      Window
+ * @callback: Called for mouse events in the content area.
+ *            content_x/y are relative to content origin.
+ *            event: 0=MOUSE_DOWN, 1=MOUSE_UP, 2=MOUSE_MOVE
+ * @userdata: Passed to callback
+ *
+ * When set, mouse down/up/move in the content area goes to this
+ * callback instead of being dispatched to controls.
+ */
+#define WIN_MOUSE_DOWN  0
+#define WIN_MOUSE_UP    1
+#define WIN_MOUSE_MOVE  2
+void window_set_on_mouse(window_t *win,
+                         void (*callback)(window_t *win, int content_x,
+                                          int content_y, int event,
+                                          void *userdata),
+                         void *userdata);
 
 #endif /* LIBWINDOW_H */

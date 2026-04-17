@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Pin head -->
+  <circle cx="16" cy="10" r="6" fill="#DC3545" stroke="#1A1A2E" stroke-width="1.5"/>
+  <circle cx="16" cy="10" r="2.5" fill="#FFFFFF" opacity="0.3"/>
+  <!-- Pin needle -->
+  <line x1="16" y1="16" x2="16" y2="28" stroke="#D8DBE8" stroke-width="2" stroke-linecap="round"/>
+  <!-- Pin point -->
+  <circle cx="16" cy="28" r="1" fill="#1A1A2E"/>
+</svg>

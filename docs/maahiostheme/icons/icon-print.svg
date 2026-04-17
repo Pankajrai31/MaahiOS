@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Printer body -->
+  <rect x="4" y="12" width="24" height="12" rx="2" ry="2" fill="#D8DBE8" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Paper input (top) -->
+  <rect x="8" y="4" width="16" height="9" rx="1" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Paper output (bottom) -->
+  <rect x="8" y="22" width="16" height="7" rx="1" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Print lines on output -->
+  <line x1="10" y1="25" x2="22" y2="25" stroke="#D8DBE8" stroke-width="1"/>
+  <line x1="10" y1="27" x2="18" y2="27" stroke="#D8DBE8" stroke-width="1"/>
+  <!-- Printer slot -->
+  <rect x="6" y="15" width="20" height="2" rx="0.5" fill="#1A1A2E" opacity="0.3"/>
+  <!-- Power button -->
+  <circle cx="24" cy="20" r="1.5" fill="#1E8A65"/>
+</svg>

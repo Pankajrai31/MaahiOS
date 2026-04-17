@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Top arrow (clockwise) -->
+  <path d="M24 10 A9 9 0 1 0 16 25" fill="none" stroke="#2B5BB5" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Bottom arrow (clockwise) -->
+  <path d="M8 22 A9 9 0 1 0 16 7" fill="none" stroke="#1E8A65" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Arrow head top -->
+  <path d="M21 7 L24 10 L27 7" fill="none" stroke="#2B5BB5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Arrow head bottom -->
+  <path d="M11 25 L8 22 L5 25" fill="none" stroke="#1E8A65" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

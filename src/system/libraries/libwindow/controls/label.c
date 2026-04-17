@@ -30,16 +30,12 @@ static void label_draw(control_t *ctrl, surface_t *surf) {
     }
 
     /* Draw text, vertically centered in the control height */
-    int text_y = ctrl->y + (ctrl->height - THEME_FONT_HEIGHT) / 2;
+    int th = surface_text_height(FONT_SMALL);
+    int text_y = ctrl->y + (ctrl->height - th) / 2;
     if (text_y < ctrl->y) text_y = ctrl->y;
 
-    if (lbl->transparent) {
-        surface_draw_string_transparent(surf, ctrl->x, text_y,
-                                        lbl->text, lbl->fg_color);
-    } else {
-        surface_draw_string(surf, ctrl->x, text_y,
-                            lbl->text, lbl->fg_color, lbl->bg_color);
-    }
+    surface_draw_text(surf, ctrl->x, text_y,
+                      lbl->text, FONT_SMALL, lbl->fg_color);
 }
 
 static int label_event(control_t *ctrl, gui_event_t *evt) {
@@ -75,8 +71,8 @@ label_t *label_create(int x, int y, const char *text, uint32_t fg) {
     lbl->text[i] = '\0';
 
     /* Calculate dimensions */
-    int text_w = surface_measure_string(lbl->text);
-    int text_h = THEME_FONT_HEIGHT;
+    int text_w = surface_measure_text(lbl->text, FONT_SMALL);
+    int text_h = surface_text_height(FONT_SMALL);
 
     /* Initialize base control */
     CONTROL_INIT(&lbl->base, CONTROL_LABEL, x, y, text_w, text_h, &label_ops);
@@ -99,7 +95,7 @@ void label_set_text(label_t *lbl, const char *text) {
     lbl->text[i] = '\0';
 
     /* Recalculate width */
-    lbl->base.width = surface_measure_string(lbl->text);
+    lbl->base.width = surface_measure_text(lbl->text, FONT_SMALL);
     lbl->base.dirty = 1;
 }
 

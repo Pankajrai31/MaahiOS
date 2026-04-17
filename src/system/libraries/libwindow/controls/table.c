@@ -204,6 +204,53 @@ static void table_draw(control_t *ctrl, surface_t *surf) {
         }
     }
 
+    /* ---- Scrollbar (right edge of data area) ---- */
+    if (tbl->row_count > tbl->visible_rows && tbl->visible_rows > 0) {
+        int sb_x = inner_x + inner_w - TABLE_SCROLLBAR_W;
+        int sb_y = data_y;
+        int sb_w = TABLE_SCROLLBAR_W;
+        int sb_h = data_h;
+
+        /* Scrollbar track background */
+        surface_fill_rect(surf, sb_x, sb_y, sb_w, sb_h, THEME_CHROME_LIGHT);
+
+        /* Track bevel: sunken look */
+        surface_draw_vline(surf, sb_x, sb_y, sb_h, TBL_BEVEL_DARK);
+        surface_draw_vline(surf, sb_x + sb_w - 1, sb_y, sb_h, TBL_BEVEL_LIGHT);
+
+        /* Compute thumb size and position */
+        int total_rows = tbl->row_count;
+        int thumb_h = sb_h * tbl->visible_rows / total_rows;
+        if (thumb_h < 16) thumb_h = 16;
+        if (thumb_h > sb_h) thumb_h = sb_h;
+
+        int max_scroll = total_rows - tbl->visible_rows;
+        int thumb_y = sb_y;
+        if (max_scroll > 0) {
+            thumb_y = sb_y + (sb_h - thumb_h) * tbl->scroll_offset / max_scroll;
+        }
+
+        /* Thumb: raised chrome rectangle */
+        surface_fill_rect(surf, sb_x + 1, thumb_y, sb_w - 2, thumb_h, THEME_CHROME);
+        surface_draw_hline(surf, sb_x + 1, thumb_y, sb_w - 2, TBL_BEVEL_LIGHT);
+        surface_draw_hline(surf, sb_x + 1, thumb_y + thumb_h - 1, sb_w - 2, TBL_BEVEL_DARK);
+        surface_draw_vline(surf, sb_x + 1, thumb_y, thumb_h, TBL_BEVEL_LIGHT);
+        surface_draw_vline(surf, sb_x + sb_w - 2, thumb_y, thumb_h, TBL_BEVEL_DARK);
+
+        /* Grip lines in center of thumb (3 horizontal lines) */
+        int grip_y = thumb_y + thumb_h / 2 - 3;
+        int grip_x = sb_x + 3;
+        int grip_w = sb_w - 6;
+        if (thumb_h >= 20) {
+            surface_draw_hline(surf, grip_x, grip_y,     grip_w, TBL_BEVEL_DARK);
+            surface_draw_hline(surf, grip_x, grip_y + 1, grip_w, TBL_BEVEL_LIGHT);
+            surface_draw_hline(surf, grip_x, grip_y + 3, grip_w, TBL_BEVEL_DARK);
+            surface_draw_hline(surf, grip_x, grip_y + 4, grip_w, TBL_BEVEL_LIGHT);
+            surface_draw_hline(surf, grip_x, grip_y + 6, grip_w, TBL_BEVEL_DARK);
+            surface_draw_hline(surf, grip_x, grip_y + 7, grip_w, TBL_BEVEL_LIGHT);
+        }
+    }
+
     /* If no rows, show "(empty)" placeholder */
     if (tbl->row_count == 0) {
         const char *empty_text = "(empty)";

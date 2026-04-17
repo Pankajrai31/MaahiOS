@@ -90,4 +90,11 @@ unsigned int kernel_shm_get_phys_addr(int shm_id);
  */
 int kernel_shm_get_info(int shm_id, shm_info_t *info);
 
+/**
+ * Clean up all SHM attachments for a process.
+ * Must be called before freeing the process's page directory.
+ * @param pid Process ID to clean up
+ */
+void kernel_shm_cleanup_process(int pid);
+
 #endif /* SHM_MANAGER_H */

@@ -127,6 +127,24 @@
 #define SYS_FS_VOL_COUNT        136 /* fs_vol_count() - Get mounted volume count */
 #define SYS_FS_VOL_INFO         137 /* fs_vol_info(idx, info) - Get volume info */
 
+/* ═════════════════════════════════════════════════════════════════════════
+ * DOMAIN 144-159: NETWORK (ping, config, stats, raw send/recv)
+ * Manager: Network Manager
+ * ═════════════════════════════════════════════════════════════════════════ */
+#define SYS_NET_GET_CONFIG      144 /* net_get_config(config) - Get network config */
+#define SYS_NET_PING            145 /* net_ping(ip, timeout, result) - ICMP ping */
+#define SYS_NET_GET_STATUS      146 /* net_get_status(stats) - Get network stats */
+#define SYS_NET_SEND_PACKET     147 /* net_send(data, len) - Send raw Ethernet frame */
+#define SYS_NET_RECV_PACKET     148 /* net_recv(buf, max_len) - Recv raw Ethernet frame */
+#define SYS_NET_GET_PKT_LOG     149 /* net_get_pkt_log(log) - Get packet log snapshot */
+#define SYS_NET_SOCK_CREATE     150 /* net_sock_create(type) - Create socket (TCP=2,UDP=1) */
+#define SYS_NET_SOCK_CONNECT    151 /* net_sock_connect(sock, ip, port) - TCP connect */
+#define SYS_NET_SOCK_SEND       152 /* net_sock_send(sock, data, len) - Send data */
+#define SYS_NET_SOCK_RECV       153 /* net_sock_recv(sock, buf, max) - Receive data */
+#define SYS_NET_SOCK_CLOSE      154 /* net_sock_close(sock) - Close socket */
+#define SYS_NET_SOCK_SENDTO     155 /* net_sock_sendto(sock, ip_port, data, len) - UDP sendto */
+#define SYS_NET_SOCK_RECV_BULK  156 /* net_sock_recv_bulk(sock, buf, max) - Bulk recv (bypass exec) */
+
 /* ═══════════════════════════════════════════════════════════════════════════
  * DOMAIN 240-255: DEBUG/KLOG
  * Manager: Klog Manager

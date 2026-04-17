@@ -90,6 +90,7 @@ typedef struct {
 typedef struct {
     int32_t  handle;               /* WM-assigned window handle             */
     int32_t  surface_shm_id;      /* SHM region for the pixel surface      */
+    int32_t  heartbeat_slot;      /* Index into heartbeat SHM table (0..5) */
 } wm_create_response_t;
 
 /** Response to WM_CMD_GET_INPUT */
@@ -146,5 +147,18 @@ typedef struct {
 #define CELL_WM_RESP_QUEUE      "system.wm.resp_queue"
 #define CELL_WM_REGISTRY        "system.wm.registry"
 #define CELL_WM_READY           "system.wm.ready"
+#define CELL_WM_HEARTBEAT_SHM  "system.wm.heartbeat_shm"
+
+/*=============================================================================
+ * SHM HEARTBEAT TABLE
+ *
+ * Shared memory region where window clients write their last-alive tick
+ * directly (no queue, no contention).  WM reads this table to detect
+ * not-responding windows.  Indexed by window slot (0..WM_MAX_WINDOWS-1).
+ *===========================================================================*/
+
+typedef struct {
+    volatile uint32_t ticks[WM_MAX_WINDOWS];
+} wm_heartbeat_table_t;
 
 #endif /* WM_TYPES_H */

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Chain link -->
+  <path d="M13 12 L10 12 Q4 12 4 16 Q4 20 10 20 L13 20" fill="none" stroke="#2B5BB5" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M19 12 L22 12 Q28 12 28 16 Q28 20 22 20 L19 20" fill="none" stroke="#2B5BB5" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Connecting bar -->
+  <line x1="12" y1="16" x2="20" y2="16" stroke="#1A1A2E" stroke-width="2" stroke-linecap="round"/>
+</svg>

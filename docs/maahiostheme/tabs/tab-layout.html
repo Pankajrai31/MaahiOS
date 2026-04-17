@@ -1,0 +1,420 @@
+<!-- ================================================================
+     TAB: LAYOUT — Windows, Dialogs, Menus, Taskbar, Desktop
+     ================================================================ -->
+
+<!-- ────────── WINDOWS ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Windows</h2>
+    <p class="ds-section-desc">Full window chrome: gradient titlebar, menu bar, toolbar, address bar, scrollable body, and status bar.</p>
+
+    <div class="ds-preview ds-preview-sunken">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+            <!-- Active Window -->
+            <div>
+                <div class="ds-label">Active Window</div>
+                <div class="os-window">
+                    <div class="os-titlebar">
+                        <span class="os-titlebar-icon"><img src="icons/icon-folder.svg" width="14"></span>
+                        <span class="os-titlebar-text">MaahiOS File Explorer — C:\Users\Documents</span>
+                        <div class="os-titlebar-btns">
+                            <div class="os-titlebar-btn"><img src="icons/icon-minimize.svg" width="10"></div>
+                            <div class="os-titlebar-btn"><img src="icons/icon-maximize.svg" width="10"></div>
+                            <div class="os-titlebar-btn"><img src="icons/icon-close.svg" width="10"></div>
+                        </div>
+                    </div>
+                    <div class="os-menubar">
+                        <span class="os-menu-item"><u>F</u>ile</span>
+                        <span class="os-menu-item"><u>E</u>dit</span>
+                        <span class="os-menu-item"><u>V</u>iew</span>
+                        <span class="os-menu-item"><u>H</u>elp</span>
+                    </div>
+                    <div class="os-toolbar">
+                        <div class="os-toolbar-btn"><img src="icons/icon-back.svg" width="16"></div>
+                        <div class="os-toolbar-btn"><img src="icons/icon-forward.svg" width="16"></div>
+                        <div class="os-toolbar-btn"><img src="icons/icon-up.svg" width="16"></div>
+                        <div class="os-toolbar-sep"></div>
+                        <div class="os-toolbar-btn"><img src="icons/icon-cut.svg" width="16"></div>
+                        <div class="os-toolbar-btn"><img src="icons/icon-copy.svg" width="16"></div>
+                        <div class="os-toolbar-btn"><img src="icons/icon-paste.svg" width="16"></div>
+                        <div class="os-toolbar-sep"></div>
+                        <div class="os-toolbar-btn"><img src="icons/icon-delete.svg" width="16"></div>
+                    </div>
+                    <div class="os-addressbar">
+                        <span class="os-addressbar-label">Address</span>
+                        <input type="text" class="os-addressbar-input" value="C:\Users\Documents">
+                    </div>
+                    <div class="os-window-body">
+                        <div>📄 readme.txt</div>
+                        <div>📁 Projects</div>
+                        <div>📁 Downloads</div>
+                        <div>📄 notes.md</div>
+                    </div>
+                    <div class="os-statusbar">
+                        <span class="os-statusbar-section">4 object(s)</span>
+                        <span class="os-statusbar-section">1.2 KB</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Inactive Window -->
+            <div>
+                <div class="ds-label">Inactive Window</div>
+                <div class="os-window" style="max-width:340px;">
+                    <div class="os-titlebar inactive">
+                        <span class="os-titlebar-icon"><img src="icons/icon-notepad.svg" width="14"></span>
+                        <span class="os-titlebar-text">Untitled — Notepad</span>
+                        <div class="os-titlebar-btns">
+                            <div class="os-titlebar-btn"><img src="icons/icon-minimize.svg" width="10"></div>
+                            <div class="os-titlebar-btn"><img src="icons/icon-maximize.svg" width="10"></div>
+                            <div class="os-titlebar-btn"><img src="icons/icon-close.svg" width="10"></div>
+                        </div>
+                    </div>
+                    <div class="os-window-body" style="min-height:40px;max-height:50px;">
+                        <span style="color:var(--os-text-disabled);">Start typing...</span>
+                    </div>
+                    <div class="os-statusbar">
+                        <span class="os-statusbar-section">Ln 1, Col 1</span>
+                        <span class="os-statusbar-section">UTF-8</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-window</code></td><td>Window container (raised border, shadow)</td></tr>
+            <tr><td><code>.os-titlebar</code></td><td>Blue gradient title bar</td></tr>
+            <tr><td><code>.os-titlebar.inactive</code></td><td>Gray gradient for inactive</td></tr>
+            <tr><td><code>.os-titlebar-icon</code></td><td>App icon (16×16)</td></tr>
+            <tr><td><code>.os-titlebar-text</code></td><td>Window title (white, bold, ellipsis)</td></tr>
+            <tr><td><code>.os-titlebar-btns</code></td><td>Min/Max/Close button group</td></tr>
+            <tr><td><code>.os-titlebar-btn</code></td><td>Individual window control button (20×18)</td></tr>
+            <tr><td><code>.os-menubar</code></td><td>Menu bar with .os-menu-item children</td></tr>
+            <tr><td><code>.os-toolbar</code></td><td>Toolbar row with .os-toolbar-btn children</td></tr>
+            <tr><td><code>.os-toolbar-btn</code></td><td>Toolbar icon button (24×22, flat until hover)</td></tr>
+            <tr><td><code>.os-toolbar-sep</code></td><td>Vertical separator line</td></tr>
+            <tr><td><code>.os-addressbar</code></td><td>Address/location bar</td></tr>
+            <tr><td><code>.os-window-body</code></td><td>Scrollable content area (sunken, white)</td></tr>
+            <tr><td><code>.os-statusbar</code></td><td>Bottom status bar with sections</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>Event</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td>onclose</td><td>Close button clicked (✕)</td></tr>
+            <tr><td>onminimize</td><td>Minimize button clicked (─)</td></tr>
+            <tr><td>onmaximize</td><td>Maximize button clicked (□)</td></tr>
+            <tr><td>onrestore</td><td>Restore from maximized</td></tr>
+            <tr><td>ondragstart</td><td>Titlebar drag started</td></tr>
+            <tr><td>onresize</td><td>Window border dragged</td></tr>
+            <tr><td>onfocus</td><td>Window brought to front</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── DIALOGS ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Dialog Boxes</h2>
+    <p class="ds-section-desc">Confirmation, Error, Warning, Info, and About dialogs.</p>
+
+    <div class="ds-preview ds-preview-sunken">
+        <div style="display:flex;flex-wrap:wrap;gap:20px;">
+            <div>
+                <div class="ds-label">Confirm</div>
+                <div class="os-dialog">
+                    <div class="os-dialog-titlebar">
+                        <span class="os-dialog-title">Confirm Delete</span>
+                        <div class="os-dialog-close">✕</div>
+                    </div>
+                    <div class="os-dialog-body">
+                        <div class="os-dialog-icon"><img src="icons/icon-question.svg" width="28"></div>
+                        <div class="os-dialog-msg">Delete "readme.txt"?</div>
+                    </div>
+                    <div class="os-dialog-buttons">
+                        <button class="os-btn os-btn-default" style="min-width:72px;">Yes</button>
+                        <button class="os-btn" style="min-width:72px;">No</button>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="ds-label">Error</div>
+                <div class="os-dialog">
+                    <div class="os-dialog-titlebar">
+                        <span class="os-dialog-title">Error</span>
+                        <div class="os-dialog-close">✕</div>
+                    </div>
+                    <div class="os-dialog-body">
+                        <div class="os-dialog-icon"><img src="icons/icon-error.svg" width="28"></div>
+                        <div class="os-dialog-msg">Access denied.</div>
+                    </div>
+                    <div class="os-dialog-buttons">
+                        <button class="os-btn os-btn-default" style="min-width:72px;">OK</button>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="ds-label">About</div>
+                <div class="os-dialog">
+                    <div class="os-dialog-titlebar">
+                        <span class="os-dialog-title">About MaahiOS</span>
+                        <div class="os-dialog-close">✕</div>
+                    </div>
+                    <div class="os-dialog-body" style="flex-direction:column;align-items:center;text-align:center;">
+                        <div><img src="icons/icon-computer.svg" width="36"></div>
+                        <div style="font-size:16px;font-weight:bold;color:var(--os-teal);">MaahiOS</div>
+                        <div class="os-dialog-msg">Version 1.0.0<br>© 2026 Maahi</div>
+                    </div>
+                    <div class="os-dialog-buttons">
+                        <button class="os-btn os-btn-default" style="min-width:72px;">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-dialog</code></td><td>Dialog container</td></tr>
+            <tr><td><code>.os-dialog-titlebar</code></td><td>Blue gradient title</td></tr>
+            <tr><td><code>.os-dialog-body</code></td><td>Content area (icon + message)</td></tr>
+            <tr><td><code>.os-dialog-icon</code></td><td>Large icon (28px)</td></tr>
+            <tr><td><code>.os-dialog-msg</code></td><td>Message text</td></tr>
+            <tr><td><code>.os-dialog-buttons</code></td><td>Centered button row</td></tr>
+        </tbody>
+    </table>
+    <table class="ds-prop-table">
+        <thead><tr><th>Dialog Type</th><th>Icon</th><th>Buttons</th></tr></thead>
+        <tbody>
+            <tr><td>Confirm</td><td>icon-question.svg</td><td>Yes / No (or OK / Cancel)</td></tr>
+            <tr><td>Error</td><td>icon-error.svg</td><td>OK</td></tr>
+            <tr><td>Warning</td><td>icon-warning.svg</td><td>OK / Cancel</td></tr>
+            <tr><td>Info</td><td>icon-info.svg</td><td>OK</td></tr>
+            <tr><td>About</td><td>App icon</td><td>OK</td></tr>
+            <tr><td>Input</td><td>icon-question.svg</td><td>OK / Cancel + text input</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── MENUS ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Menus</h2>
+    <p class="ds-section-desc">Drop-down menus, context menus with shortcuts, checkmarks, and submenu arrows.</p>
+
+    <div class="ds-preview ds-preview-sunken">
+        <div style="display:flex;flex-wrap:wrap;gap:24px;">
+            <div>
+                <div class="ds-label">File Menu</div>
+                <div class="os-menu">
+                    <div class="os-menu-entry">New<span class="os-menu-shortcut">Ctrl+N</span></div>
+                    <div class="os-menu-entry">Open...<span class="os-menu-shortcut">Ctrl+O</span></div>
+                    <div class="os-menu-entry">Save<span class="os-menu-shortcut">Ctrl+S</span></div>
+                    <div class="os-menu-sep"></div>
+                    <div class="os-menu-entry">Print...<span class="os-menu-shortcut">Ctrl+P</span></div>
+                    <div class="os-menu-sep"></div>
+                    <div class="os-menu-entry">Exit<span class="os-menu-shortcut">Alt+F4</span></div>
+                </div>
+            </div>
+            <div>
+                <div class="ds-label">Context Menu</div>
+                <div class="os-menu">
+                    <div class="os-menu-entry">Open</div>
+                    <div class="os-menu-entry">Open with...<span class="os-menu-arrow">▶</span></div>
+                    <div class="os-menu-sep"></div>
+                    <div class="os-menu-entry">Cut<span class="os-menu-shortcut">Ctrl+X</span></div>
+                    <div class="os-menu-entry">Copy<span class="os-menu-shortcut">Ctrl+C</span></div>
+                    <div class="os-menu-entry disabled">Paste<span class="os-menu-shortcut">Ctrl+V</span></div>
+                    <div class="os-menu-sep"></div>
+                    <div class="os-menu-entry">Properties</div>
+                </div>
+            </div>
+            <div>
+                <div class="ds-label">View (checkmarks)</div>
+                <div class="os-menu">
+                    <div class="os-menu-entry"><span class="os-menu-check">✓</span>Toolbar</div>
+                    <div class="os-menu-entry"><span class="os-menu-check">✓</span>Status Bar</div>
+                    <div class="os-menu-sep"></div>
+                    <div class="os-menu-entry"><span class="os-menu-check">●</span>Large Icons</div>
+                    <div class="os-menu-entry">Details</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-menu</code></td><td>Menu container (embossed, shadow)</td></tr>
+            <tr><td><code>.os-menu-entry</code></td><td>Menu item (hover = accent bg)</td></tr>
+            <tr><td><code>.os-menu-entry.disabled</code></td><td>Grayed out item</td></tr>
+            <tr><td><code>.os-menu-shortcut</code></td><td>Right-aligned keyboard shortcut</td></tr>
+            <tr><td><code>.os-menu-check</code></td><td>Checkmark (✓) or radio (●) indicator</td></tr>
+            <tr><td><code>.os-menu-arrow</code></td><td>Submenu indicator (▶)</td></tr>
+            <tr><td><code>.os-menu-sep</code></td><td>Separator line</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── TASKBAR ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Taskbar</h2>
+    <p class="ds-section-desc">Bottom taskbar with Start button, quick launch, running app buttons, and system tray.</p>
+
+    <div class="ds-preview ds-preview-sunken" style="padding:20px 8px;">
+        <div class="os-taskbar">
+            <div class="os-start-btn"><span class="os-start-logo"><img src="icons/icon-computer.svg" width="14"></span> Start</div>
+            <div class="os-quicklaunch">
+                <span class="os-quicklaunch-btn"><img src="icons/icon-folder.svg" width="16"></span>
+                <span class="os-quicklaunch-btn"><img src="icons/icon-browser.svg" width="16"></span>
+                <span class="os-quicklaunch-btn"><img src="icons/icon-notepad.svg" width="16"></span>
+            </div>
+            <div class="os-task-btn active"><img src="icons/icon-folder.svg" width="14"> File Explorer</div>
+            <div class="os-task-btn"><img src="icons/icon-notepad.svg" width="14"> Notepad</div>
+            <div class="os-systray">
+                <span class="os-systray-icon"><img src="icons/icon-volume.svg" width="14"></span>
+                <span class="os-systray-icon"><img src="icons/icon-wifi.svg" width="14"></span>
+                <span>12:45 PM</span>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-taskbar</code></td><td>Taskbar container (32px height, embossed)</td></tr>
+            <tr><td><code>.os-start-btn</code></td><td>Start button (embossed, bold text)</td></tr>
+            <tr><td><code>.os-quicklaunch</code></td><td>Quick launch icon area (right-bordered)</td></tr>
+            <tr><td><code>.os-quicklaunch-btn</code></td><td>Individual quick launch icon (20×20)</td></tr>
+            <tr><td><code>.os-task-btn</code></td><td>Running app button (embossed)</td></tr>
+            <tr><td><code>.os-task-btn.active</code></td><td>Active/focused app (sunken, bold)</td></tr>
+            <tr><td><code>.os-systray</code></td><td>System tray (clock + status icons)</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── START MENU ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Start Menu</h2>
+    <p class="ds-section-desc">Classic start menu with branded sidebar, program list, and shutdown options.</p>
+
+    <div class="ds-preview ds-preview-sunken">
+        <div class="os-startmenu">
+            <div class="os-startmenu-sidebar">
+                <span class="os-startmenu-sidebar-text">MaahiOS</span>
+            </div>
+            <div class="os-startmenu-list">
+                <div class="os-startmenu-item"><span class="os-startmenu-item-icon"><img src="icons/icon-folder.svg" width="18"></span> Programs <span class="os-startmenu-item-arrow">▶</span></div>
+                <div class="os-startmenu-item"><span class="os-startmenu-item-icon"><img src="icons/icon-file.svg" width="18"></span> Documents <span class="os-startmenu-item-arrow">▶</span></div>
+                <div class="os-startmenu-item"><span class="os-startmenu-item-icon"><img src="icons/icon-settings.svg" width="18"></span> Settings <span class="os-startmenu-item-arrow">▶</span></div>
+                <div class="os-startmenu-item"><span class="os-startmenu-item-icon"><img src="icons/icon-search.svg" width="18"></span> Find <span class="os-startmenu-item-arrow">▶</span></div>
+                <div class="os-startmenu-item"><span class="os-startmenu-item-icon"><img src="icons/icon-help.svg" width="18"></span> Help</div>
+                <div class="os-startmenu-item"><span class="os-startmenu-item-icon"><img src="icons/icon-play.svg" width="18"></span> Run...</div>
+                <div class="os-startmenu-sep"></div>
+                <div class="os-startmenu-item"><span class="os-startmenu-item-icon"><img src="icons/icon-lock.svg" width="18"></span> Log Off...</div>
+                <div class="os-startmenu-item"><span class="os-startmenu-item-icon"><img src="icons/icon-power.svg" width="18"></span> Shut Down...</div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-startmenu</code></td><td>Container (flex row, 320px width)</td></tr>
+            <tr><td><code>.os-startmenu-sidebar</code></td><td>Branded blue sidebar (28px, vertical text)</td></tr>
+            <tr><td><code>.os-startmenu-list</code></td><td>Item list area</td></tr>
+            <tr><td><code>.os-startmenu-item</code></td><td>Menu item (icon + text + arrow)</td></tr>
+            <tr><td><code>.os-startmenu-item-arrow</code></td><td>Submenu indicator</td></tr>
+            <tr><td><code>.os-startmenu-sep</code></td><td>Separator</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── DESKTOP ICONS ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Desktop Icons</h2>
+    <p class="ds-section-desc">Desktop shortcut icons on the wallpaper. Single-click highlight, double-click opens.</p>
+
+    <div class="ds-preview ds-preview-desktop" style="min-height:140px;">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+            <div class="os-desktop-icon selected">
+                <span class="os-desktop-icon-img"><img src="icons/icon-computer.svg" width="32"></span>
+                <span class="os-desktop-icon-label">My Computer</span>
+            </div>
+            <div class="os-desktop-icon">
+                <span class="os-desktop-icon-img"><img src="icons/icon-folder.svg" width="32"></span>
+                <span class="os-desktop-icon-label">Documents</span>
+            </div>
+            <div class="os-desktop-icon">
+                <span class="os-desktop-icon-img"><img src="icons/icon-recycle-bin.svg" width="32"></span>
+                <span class="os-desktop-icon-label">Recycle Bin</span>
+            </div>
+            <div class="os-desktop-icon">
+                <span class="os-desktop-icon-img"><img src="icons/icon-network.svg" width="32"></span>
+                <span class="os-desktop-icon-label">Network</span>
+            </div>
+            <div class="os-desktop-icon">
+                <span class="os-desktop-icon-img"><img src="icons/icon-terminal.svg" width="32"></span>
+                <span class="os-desktop-icon-label">Terminal</span>
+            </div>
+            <div class="os-desktop-icon">
+                <span class="os-desktop-icon-img"><img src="icons/icon-settings.svg" width="32"></span>
+                <span class="os-desktop-icon-label">Control Panel</span>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Description</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-desktop-icon</code></td><td>Icon wrapper (70px wide, vertical flex)</td></tr>
+            <tr><td><code>.os-desktop-icon-img</code></td><td>32px icon</td></tr>
+            <tr><td><code>.os-desktop-icon-label</code></td><td>White text with text-shadow</td></tr>
+            <tr><td><code>.os-desktop-icon.selected</code></td><td>Blue highlight on label, icon filter</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── BORDER STYLES ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Border Styles (Embossed Vocabulary)</h2>
+    <p class="ds-section-desc">Core visual language. Raised = clickable, Sunken = content well, Groove = grouping, Ridge = highlight.</p>
+
+    <div class="ds-preview" style="background:var(--os-chrome);">
+        <div style="display:flex;gap:24px;flex-wrap:wrap;">
+            <div style="text-align:center;">
+                <div class="os-raised" style="width:120px;height:60px;background:var(--os-chrome);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--os-text);">Raised</div>
+                <div style="font-size:10px;color:#888;margin-top:4px;">Buttons, toolbars</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="os-sunken" style="width:120px;height:60px;background:var(--os-surface-sunken);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--os-text);">Sunken</div>
+                <div style="font-size:10px;color:#888;margin-top:4px;">Inputs, content</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="os-groove" style="width:120px;height:60px;background:var(--os-chrome);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--os-text);">Groove</div>
+                <div style="font-size:10px;color:#888;margin-top:4px;">Group boxes</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="os-ridge" style="width:120px;height:60px;background:var(--os-chrome);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--os-text);">Ridge</div>
+                <div style="font-size:10px;color:#888;margin-top:4px;">Dividers</div>
+            </div>
+        </div>
+    </div>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>CSS</th><th>Usage</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-raised</code></td><td>border: light dark dark light</td><td>Buttons, toolbar, raised panels</td></tr>
+            <tr><td><code>.os-sunken</code></td><td>border: dark light light dark</td><td>Inputs, content wells, scroll areas</td></tr>
+            <tr><td><code>.os-groove</code></td><td>border: 2px groove</td><td>Group boxes, fieldsets</td></tr>
+            <tr><td><code>.os-ridge</code></td><td>border: 2px ridge</td><td>Highlighted section dividers</td></tr>
+            <tr><td><code>.os-etch</code></td><td>1px dark top + 1px light bottom</td><td>Horizontal separator line</td></tr>
+        </tbody>
+    </table>
+</div>

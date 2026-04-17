@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaahiOS Architecture Audit Report</title>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #161b22;
+            --surface2: #1c2333;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+            --green: #3fb950;
+            --red: #f85149;
+            --orange: #d29922;
+            --purple: #bc8cff;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.25rem;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { color: var(--text-muted); margin-bottom: 2rem; font-size: 0.95rem; }
+        h2 {
+            font-size: 1.4rem;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+            margin: 2rem 0 1rem;
+        }
+        h3 { font-size: 1.1rem; color: var(--purple); margin: 1.25rem 0 0.5rem; }
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-pass { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+        .badge-warn { background: rgba(210,153,34,0.15); color: var(--orange); border: 1px solid rgba(210,153,34,0.3); }
+        .badge-fail { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+        .badge-info { background: rgba(88,166,255,0.15); color: var(--accent); border: 1px solid rgba(88,166,255,0.3); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.75rem 0;
+            font-size: 0.9rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        th { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        tr:hover { background: var(--surface2); }
+        code {
+            background: var(--surface2);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.85em;
+            color: var(--accent);
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .stat-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .stat-card .value { font-size: 2rem; font-weight: 700; color: var(--accent); }
+        .stat-card .label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .finding {
+            background: var(--surface2);
+            border-left: 3px solid var(--orange);
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .finding.critical { border-left-color: var(--red); }
+        .finding.good { border-left-color: var(--green); }
+        .finding.info { border-left-color: var(--accent); }
+        .finding-title { font-weight: 600; margin-bottom: 0.25rem; }
+        .finding-detail { font-size: 0.9rem; color: var(--text-muted); }
+        .toc {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        .toc a {
+            color: var(--accent);
+            text-decoration: none;
+            display: block;
+            padding: 3px 0;
+            font-size: 0.95rem;
+        }
+        .toc a:hover { text-decoration: underline; }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--surface2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        .progress-fill.green { background: var(--green); }
+        .progress-fill.orange { background: var(--orange); }
+        .progress-fill.red { background: var(--red); }
+        ul { padding-left: 1.5rem; }
+        li { margin: 0.25rem 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>MaahiOS Architecture Audit Report</h1>
+    <p class="subtitle">Generated: April 7, 2026 &mdash; Comprehensive audit of architecture compliance, maturity gaps, documentation alignment, and dead code</p>
+
+    <div class="toc">
+        <strong>Table of Contents</strong>
+        <a href="#summary">Executive Summary</a>
+        <a href="#s1">Section 1: Architecture Compliance</a>
+        <a href="#s1-libs">&nbsp;&nbsp;&nbsp;1a. Library &rarr; Executive Compliance</a>
+        <a href="#s1-apps">&nbsp;&nbsp;&nbsp;1b. App &rarr; Library Compliance</a>
+        <a href="#s1-exec">&nbsp;&nbsp;&nbsp;1c. Executive &rarr; Manager &rarr; Driver Flow</a>
+        <a href="#s1-wm">&nbsp;&nbsp;&nbsp;1d. Window Management Flow</a>
+        <a href="#s2">Section 2: OS Maturity Gap Analysis &amp; Roadmap Guidance</a>
+        <a href="#s3">Section 3: Documentation vs. Code Alignment</a>
+        <a href="#s4">Section 4: Dead Code &amp; Unused Files</a>
+        <a href="#s5">Section 5: Recommendations</a>
+    </div>
+
+    <div id="summary" class="section">
+        <h2>Executive Summary</h2>
+        <div class="stat-grid">
+            <div class="stat-card"><div class="value" id="stat-checks">82</div><div class="label">Checks Run</div></div>
+            <div class="stat-card"><div class="value" id="stat-pass" style="color:var(--green)">41</div><div class="label">Passed</div></div>
+            <div class="stat-card"><div class="value" id="stat-warn" style="color:var(--orange)">14</div><div class="label">Warnings</div></div>
+            <div class="stat-card"><div class="value" id="stat-fail" style="color:var(--red)">27</div><div class="label">Failures</div></div>
+        </div>
+        <p id="summary-text"><em>Audit in progress... sections will populate as analysis completes.</em></p>
+    </div>
+
+    <!-- SECTION 1: Architecture Compliance -->
+    <div id="s1" class="section">
+        <h2>Section 1: Architecture Compliance</h2>
+        <p>Validates that the MaahiOS layered architecture is followed: <strong>App &rarr; Library &rarr; Executive &rarr; Manager &rarr; Driver</strong></p>
+
+        <div id="s1-libs">
+            <h3>1a. Library &rarr; Executive Communication</h3>
+            <p>Rule: Libraries talk to Executives via SHM queue — not directly via syscalls. Documented exceptions: <code>libgui</code> (framebuffer flip), <code>libcell</code> (bootstrap).</p>
+
+            <table>
+                <tr><th>Library</th><th>Comm Method</th><th>Executive</th><th>Verdict</th><th>Notes</th></tr>
+                <tr><td><code>libcell</code></td><td>SHM queue + direct fallback</td><td>Cell Executive</td><td><span class="badge badge-info">Exception</span></td><td>Raw SYS_CELL_READ for bootstrap — must discover own SHM IDs</td></tr>
+                <tr><td><code>libconsole</code></td><td>SHM buffer write</td><td>None (Terminal SHM)</td><td><span class="badge badge-pass">Pass</span></td><td>Fire-and-forget stdout via shared buffer</td></tr>
+                <tr><td><code>libdisk</code></td><td>SHM queue</td><td>Disk Executive</td><td><span class="badge badge-pass">Pass</span></td><td>Model citizen — libcell_read() init + exec queue</td></tr>
+                <tr><td><code>libfs</code></td><td>SHM queue + direct syscall</td><td>FS Executive</td><td><span class="badge badge-fail">Violation</span></td><td>SYS_FS_VOL_COUNT / SYS_FS_VOL_INFO bypass FS Executive entirely</td></tr>
+                <tr><td><code>libgui</code></td><td>Cell reads + direct IOCTL</td><td>GUI Executive</td><td><span class="badge badge-info">Exception</span></td><td>SYS_DEV_IOCTL for display flip — documented perf exception</td></tr>
+                <tr><td><code>libio</code></td><td>SHM queue + SHM ring</td><td>IO Executive</td><td><span class="badge badge-pass">Pass</span></td><td>Proper SHM ring buffers for kbd/mouse, filled by IO Executive</td></tr>
+                <tr><td><code>liblog</code></td><td>SHM queue + direct fallback</td><td>Log Executive</td><td><span class="badge badge-pass">Pass</span></td><td>SYS_KLOG fallback only when exec not running</td></tr>
+                <tr><td><code>libmemory</code></td><td>SHM queue + direct fallback</td><td>Memory Executive</td><td><span class="badge badge-pass">Pass</span></td><td>Every function exec-first; syscalls are fallbacks only</td></tr>
+                <tr><td><code>libmex</code></td><td>Function calls</td><td>N/A</td><td><span class="badge badge-pass">Pass</span></td><td>Pure parser, delegates to libprocess</td></tr>
+                <tr><td><code>libprocess</code></td><td>SHM queue + direct fallback</td><td>Process Executive</td><td><span class="badge badge-pass">Pass</span></td><td>Every function exec-first; syscalls are fallbacks only</td></tr>
+                <tr><td><code>libwindow</code></td><td>Calls libwm functions</td><td>WM Executive (via libwm)</td><td><span class="badge badge-pass">Pass</span></td><td>Uses libwm for all WM ops, direct syscalls are infra only</td></tr>
+                <tr><td><code>libwm</code></td><td>SHM queue</td><td>WM Executive</td><td><span class="badge badge-pass">Pass</span></td><td>SYS_TIME_GET_TICKS is read-only timer, acceptable</td></tr>
+                <tr><td><code>libnet</code></td><td>SHM queue + direct syscall</td><td>Network Executive</td><td><span class="badge badge-fail">Violation</span></td><td>SYS_NET_SOCK_RECV_BULK bypasses Network Executive (undocumented)</td></tr>
+                <tr><td><code>libhttp</code></td><td>Calls libnet/libtls</td><td>Network (indirect)</td><td><span class="badge badge-fail">Violation</span></td><td>Direct SYS_KLOG/SYS_KLOG_HEX + magic number 115 for ticks</td></tr>
+                <tr><td><code>libtls</code></td><td>Calls libnet</td><td>Network (indirect)</td><td><span class="badge badge-fail">Violation</span></td><td>Direct SYS_KLOG/SYS_KLOG_HEX + magic number 115 for ticks</td></tr>
+                <tr><td><code>libhtml</code></td><td>Pure computation</td><td>N/A</td><td><span class="badge badge-pass">Pass</span></td><td>HTML tokenizer, no syscalls</td></tr>
+                <tr><td><code>libjs</code></td><td>Pure computation</td><td>N/A</td><td><span class="badge badge-pass">Pass</span></td><td>JS interpreter, no syscalls</td></tr>
+                <tr><td><code>libbmp</code></td><td>Pure computation</td><td>N/A</td><td><span class="badge badge-pass">Pass</span></td><td>BMP decoder, no syscalls</td></tr>
+            </table>
+
+            <div class="stat-grid">
+                <div class="stat-card"><div class="value" style="color:var(--green)">12</div><div class="label">Compliant</div></div>
+                <div class="stat-card"><div class="value" style="color:var(--accent)">2</div><div class="label">Documented Exceptions</div></div>
+                <div class="stat-card"><div class="value" style="color:var(--red)">4</div><div class="label">Violations</div></div>
+            </div>
+
+            <div class="finding critical">
+                <div class="finding-title">libfs: Volume syscalls bypass FS Executive</div>
+                <div class="finding-detail"><code>libfs_vol_count()</code> and <code>libfs_vol_info()</code> call <code>SYS_FS_VOL_COUNT</code> / <code>SYS_FS_VOL_INFO</code> directly. Fix: route through FS Executive or document as exception.</div>
+            </div>
+            <div class="finding critical">
+                <div class="finding-title">libnet: Bulk receive bypasses Network Executive</div>
+                <div class="finding-detail"><code>libnet_recv_bulk()</code> calls <code>SYS_NET_SOCK_RECV_BULK</code> directly. If perf-justified, document as exception like libgui flip.</div>
+            </div>
+            <div class="finding">
+                <div class="finding-title">libhttp &amp; libtls: Direct SYS_KLOG and magic syscall numbers</div>
+                <div class="finding-detail">Both use <code>SYS_KLOG</code>/<code>SYS_KLOG_HEX</code> directly (should use <code>liblog()</code>) and use raw <code>syscall0(115)</code> instead of named <code>SYS_TIME_GET_TICKS</code>.</div>
+            </div>
+            <div class="finding info">
+                <div class="finding-title">Advisory: Init bootstrapping inconsistency</div>
+                <div class="finding-detail">Some libraries (libfs, liblog, libmemory, libprocess) use raw <code>SYS_CELL_READ</code> for init while others (libdisk, libgui, libconsole, libnet) use <code>libcell_read()</code>. Consider standardizing.</div>
+            </div>
+        </div>
+
+        <div id="s1-apps">
+            <h3>1b. App &rarr; Library Communication</h3>
+            <p>Rule: Apps ONLY talk to Libraries — never call syscalls directly. Exception: <code>mex_entry.s</code> calls <code>SYS_EXIT</code> (asm stub).</p>
+
+            <table>
+                <tr><th>App</th><th>Type</th><th>Libraries Used</th><th>Verdict</th><th>Issues</th></tr>
+                <tr><td><code>hello</code></td><td>Console</td><td>liblog, libprocess</td><td><span class="badge badge-pass">Pass</span></td><td>—</td></tr>
+                <tr><td><code>procman</code></td><td>Console</td><td>liblog, libconsole, libprocess</td><td><span class="badge badge-pass">Pass</span></td><td>—</td></tr>
+                <tr><td><code>diskman</code></td><td>Console</td><td>liblog, libconsole, libdisk, libcell, libfs</td><td><span class="badge badge-pass">Pass</span></td><td>—</td></tr>
+                <tr><td><code>fileman</code></td><td>Console</td><td>liblog, libconsole, libfs, libcell</td><td><span class="badge badge-pass">Pass</span></td><td>—</td></tr>
+                <tr><td><code>boxdrop</code></td><td>GUI</td><td>liblog, libgui, libprocess</td><td><span class="badge badge-pass">Pass</span></td><td>—</td></tr>
+                <tr><td><code>sysinfo</code></td><td>Console</td><td>liblog, libconsole, libprocess, libcell</td><td><span class="badge badge-fail">Violation</span></td><td>Raw <code>SYS_GETPID</code> — use <code>libprocess_get_pid()</code></td></tr>
+                <tr><td><code>shutdown</code></td><td>Console</td><td>liblog, libconsole, libprocess</td><td><span class="badge badge-fail">Violation</span></td><td>2&times; raw <code>SYS_SLEEP</code> — use <code>libprocess_sleep()</code></td></tr>
+                <tr><td><code>hellogui</code></td><td>Windowed</td><td>libwindow, libgui, libfs</td><td><span class="badge badge-pass">Pass</span></td><td>—</td></tr>
+                <tr><td><code>procexp</code></td><td>Windowed</td><td>libwindow, libprocess, libgui, libfs</td><td><span class="badge badge-pass">Pass</span></td><td>—</td></tr>
+                <tr><td><code>diskexp</code></td><td>Windowed</td><td>libwindow, libdisk, libfs, libgui</td><td><span class="badge badge-pass">Pass</span></td><td>—</td></tr>
+                <tr><td><code>wordwrite</code></td><td>Windowed</td><td>libwindow, libfs, liblog</td><td><span class="badge badge-pass">Pass</span></td><td>—</td></tr>
+                <tr><td><code>logexp</code></td><td>Windowed</td><td>libwindow, libgui, libfs</td><td><span class="badge badge-fail">Violation</span></td><td>Raw <code>SYS_KLOG_READ</code> + includes kernel headers directly</td></tr>
+                <tr><td><code>ping</code></td><td>Console</td><td>liblog, libconsole, libnet</td><td><span class="badge badge-fail">Violation</span></td><td>Raw <code>SYS_SLEEP</code> — use <code>libprocess_sleep()</code></td></tr>
+                <tr><td><code>fetch</code></td><td>Console</td><td>liblog, libconsole, libnet, libhttp</td><td><span class="badge badge-fail">Violation</span></td><td>4&times; raw <code>SYS_SLEEP</code></td></tr>
+                <tr><td><code>netexp</code></td><td>Windowed</td><td>libwindow, libnet, libgui, libfs</td><td><span class="badge badge-pass">Pass</span></td><td>—</td></tr>
+                <tr><td><code>browser</code></td><td>Windowed</td><td>libwindow, libgui, libhttp, libhtml, libjs, liblog, libfs, libwm</td><td><span class="badge badge-fail">Violation</span></td><td>2&times; raw <code>SYS_KLOG</code> debug calls (leftover debug code)</td></tr>
+            </table>
+
+            <div class="stat-grid">
+                <div class="stat-card"><div class="value" style="color:var(--green)">10</div><div class="label">Compliant</div></div>
+                <div class="stat-card"><div class="value" style="color:var(--red)">6</div><div class="label">Violations</div></div>
+            </div>
+
+            <div class="finding">
+                <div class="finding-title">Common pattern: Raw SYS_SLEEP in network apps</div>
+                <div class="finding-detail">shutdown, ping, fetch all call <code>syscall1(SYS_SLEEP, ...)</code> directly. Library wrapper <code>libprocess_sleep()</code> exists — simple find-and-replace fix.</div>
+            </div>
+            <div class="finding critical">
+                <div class="finding-title">logexp includes kernel headers from app layer</div>
+                <div class="finding-detail"><code>logexp.c</code> includes <code>managers/klog/klog.h</code> and <code>managers/syscall/syscall_numbers.h</code> and calls <code>SYS_KLOG_READ</code> directly. Needs a <code>liblog_read_entries()</code> library wrapper (does not exist yet).</div>
+            </div>
+            <div class="finding">
+                <div class="finding-title">browser: Debug code left behind</div>
+                <div class="finding-detail"><code>browser.c</code> has leftover debug <code>syscall3(240, ...)</code> calls for "LAYOUT" and "RAWHTML" tags. Should use <code>liblog()</code> or be removed entirely.</div>
+            </div>
+        </div>
+
+        <div id="s1-exec">
+            <h3>1c. Executive &rarr; Manager &rarr; Driver Flow</h3>
+            <p>Rule: Executives are Ring 3 — they call kernel via <code>int 0x80</code> syscalls only. Managers dispatch to drivers via <code>device_ops_t</code> function pointers.</p>
+
+            <table>
+                <tr><th>Executive</th><th>Pattern</th><th>Key Syscalls</th><th>Publishes Cells</th><th>Verdict</th></tr>
+                <tr><td><code>Cell</code></td><td>SHM queue poll</td><td>SYS_CELL_READ/WRITE/DELETE/EXISTS</td><td>system.exec.cell.*</td><td><span class="badge badge-pass">Pass</span></td></tr>
+                <tr><td><code>Disk</code></td><td>SHM queue poll</td><td>SYS_DEV_OPEN/READ/WRITE/IOCTL, SYS_DISK_FORMAT</td><td>system.exec.disk.*, system.disk.*</td><td><span class="badge badge-pass">Pass</span></td></tr>
+                <tr><td><code>FS</code></td><td>SHM queue poll</td><td>SYS_FS_LIST_DIR/READ_FILE/WRITE_FILE/DELETE_FILE/CREATE_DIR</td><td>system.exec.fs.*, system.fs.type</td><td><span class="badge badge-pass">Pass</span></td></tr>
+                <tr><td><code>GUI</code></td><td>SHM queue poll</td><td>SYS_DEV_OPEN/IOCTL</td><td>system.exec.gui.*, system.gui.*</td><td><span class="badge badge-pass">Pass</span></td></tr>
+                <tr><td><code>I/O</code></td><td>SHM queue + device poll</td><td>SYS_DEV_OPEN/READ</td><td>system.exec.io.*, system.io.keyboard.*, system.io.mouse.*</td><td><span class="badge badge-pass">Pass</span></td></tr>
+                <tr><td><code>Log</code></td><td>SHM queue poll</td><td>SYS_KLOG/SYS_KLOG_HEX</td><td>system.exec.log.*</td><td><span class="badge badge-pass">Pass</span></td></tr>
+                <tr><td><code>Memory</code></td><td>SHM queue poll</td><td>SYS_MEM_ALLOC_PAGE/FREE_PAGE/ALLOC, SYS_GET_MEM_INFO</td><td>system.exec.memory.*</td><td><span class="badge badge-pass">Pass</span></td></tr>
+                <tr><td><code>Process</code></td><td>SHM queue + mem monitor</td><td>SYS_PROCESS_*, SYS_MOD_*, SYS_SHUTDOWN/RESTART</td><td>system.exec.process.*, system.process.*, system.memory.*</td><td><span class="badge badge-pass">Pass</span></td></tr>
+                <tr><td><code>WM</code></td><td>SHM queue + compositor</td><td>SYS_DEV_IOCTL (flip), SYS_PROCESS_KILL, SYS_TIME_GET_TICKS</td><td>CELL_WM_*, CELL_TASKBAR_*</td><td><span class="badge badge-pass">Pass</span></td></tr>
+                <tr><td><code>Network</code></td><td>SHM queue + idle sleep</td><td>SYS_NET_*, SYS_NET_SOCK_*</td><td>system.exec.net.*, system.net.ready</td><td><span class="badge badge-pass">Pass</span></td></tr>
+            </table>
+
+            <div class="stat-grid">
+                <div class="stat-card"><div class="value" style="color:var(--green)">10/10</div><div class="label">Executives Compliant</div></div>
+                <div class="stat-card"><div class="value" style="color:var(--green)">&check;</div><div class="label">Device Manager HAL</div></div>
+            </div>
+
+            <div class="finding good">
+                <div class="finding-title">All executives follow the architecture</div>
+                <div class="finding-detail">Every executive receives SHM queue requests, fulfills them via <code>int 0x80</code> syscalls, and never calls kernel functions directly. Device Manager properly dispatches to drivers via <code>device_ops_t</code> function pointer tables.</div>
+            </div>
+            <div class="finding info">
+                <div class="finding-title">Minor: Log Executive duplicates syscall helpers</div>
+                <div class="finding-detail">Log Executive defines its own inline asm syscall wrappers instead of including <code>syscall_helpers.h</code>. Cosmetic inconsistency only.</div>
+            </div>
+        </div>
+
+        <div id="s1-wm">
+            <h3>1d. Window Management Flow</h3>
+            <p>Complete trace of window lifecycle: creation, rendering, input routing, taskbar integration, and destruction.</p>
+
+            <h3 style="font-size:1rem; color:var(--text)">Window Creation</h3>
+            <div class="finding good">
+                <div class="finding-title">Zero-copy SHM surface model</div>
+                <div class="finding-detail">App calls <code>window_create()</code> &rarr; <code>libwm_create()</code> &rarr; WM Executive creates SHM surface &rarr; both app and WM attach same SHM. App writes pixels directly; WM reads during compositing. No copy.</div>
+            </div>
+
+            <h3 style="font-size:1rem; color:var(--text)">Compositing</h3>
+            <div class="finding good">
+                <div class="finding-title">Damage-rect compositor with partial flip</div>
+                <div class="finding-detail">Apps signal <code>WM_CMD_DAMAGE</code> (async, fire-and-forget). WM accumulates dirty rect, composites via painter's algorithm (desktop &rarr; windows bottom-to-top &rarr; NR dialog), flips only the dirty rect via <code>DISPLAY_IOCTL_FLIP_RECT</code>.</div>
+            </div>
+
+            <h3 style="font-size:1rem; color:var(--text)">Input Routing</h3>
+            <table>
+                <tr><th>Device</th><th>Mechanism</th><th>Focus Model</th></tr>
+                <tr><td>Keyboard</td><td>IO Exec &rarr; SHM ring buffer &rarr; apps read</td><td><span class="badge badge-pass">Focus-gated</span> via <code>focused_pid</code></td></tr>
+                <tr><td>Mouse</td><td>IO Exec &rarr; SHM state slot &rarr; all apps read</td><td><span class="badge badge-warn">No gating</span> — apps self-filter by window bounds</td></tr>
+            </table>
+
+            <h3 style="font-size:1rem; color:var(--text)">Taskbar / Orbit</h3>
+            <div class="finding good">
+                <div class="finding-title">Cell-based publish/subscribe</div>
+                <div class="finding-detail">WM publishes <code>system.taskbar.windows</code> on every state change. Orbit polls and does change detection. Minimize/restore use per-PID signal cells.</div>
+            </div>
+
+            <h3 style="font-size:1rem; color:var(--text)">Issues Found</h3>
+
+            <div class="finding">
+                <div class="finding-title">Minimize/Restore cell signaling is race-prone</div>
+                <div class="finding-detail">Single-value cells (<code>CELL_TASKBAR_RESTORE</code>, <code>CELL_TASKBAR_MINIMIZE</code>) store one PID at a time. If two windows minimize simultaneously, one signal is lost. Low severity with max 6 windows.</div>
+            </div>
+            <div class="finding">
+                <div class="finding-title">Drag outline bypasses WM compositor</div>
+                <div class="finding-detail"><code>xor_drag_outline()</code> writes directly to backbuffer via <code>gui_get_framebuffer()</code>, bypassing the compositor. Potential visual glitch if WM composites the same region mid-drag. Cleaned up by recomposite after drag ends.</div>
+            </div>
+            <div class="finding info">
+                <div class="finding-title">WM Executive reads display cells with raw SYS_CELL_READ</div>
+                <div class="finding-detail">In <code>init_display()</code>, WM uses raw syscalls instead of <code>libcell_read()</code>. Likely a bootstrap-timing workaround. Minor layering inconsistency.</div>
+            </div>
+            <div class="finding info">
+                <div class="finding-title">Heartbeat has redundant SHM table path</div>
+                <div class="finding-detail">Heartbeat uses both a SHM table and queue-based commands, but clients only send queue heartbeats. The SHM table is effectively a mirror — could be simplified.</div>
+            </div>
+            <div class="finding info">
+                <div class="finding-title">Single global damage rect can over-composite</div>
+                <div class="finding-detail">All damage is unioned into one rect. Distant windows cause full-screen recomposite. A damage-list approach would reduce overdraw at higher resolutions.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: OS Maturity -->
+    <div id="s2" class="section">
+        <h2>Section 2: OS Maturity Gap Analysis &amp; Roadmap Guidance</h2>
+        <p>Comprehensive analysis of 10 subsystem areas, rating current maturity and gaps required for commercial viability.</p>
+
+        <!-- 2.1 Virtual Memory / Paging -->
+        <h3>2.1 Virtual Memory &amp; Paging</h3>
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>Current State: Partial — Identity-Mapped with Per-Process Directories</span>
+                <span class="badge badge-warn">Needs Work</span>
+            </div>
+            <p><strong>What exists:</strong> Two-level x86 page tables, 128 MB kernel identity map (virt == phys 0x00–0x08000000), per-process page directories via <code>paging_clone_kernel_directory()</code>, CR3 switched on context switch, WP bit enabled in CR0, bitmap-based PMM with contiguous multi-page alloc.</p>
+            <table>
+                <thead><tr><th>Gap</th><th>Priority</th><th>Effort</th></tr></thead>
+                <tbody>
+                    <tr><td>No page-fault handler — ISR 14 terminates process; no demand paging or recovery</td><td><span class="badge badge-fail">Critical</span></td><td>Medium</td></tr>
+                    <tr><td>No copy-on-write (COW) — no <code>fork()</code> semantics possible</td><td><span class="badge badge-warn">High</span></td><td>Large</td></tr>
+                    <tr><td>No swap / page-out — all pages resident; no disk-backed virtual memory</td><td><span class="badge badge-warn">High</span></td><td>Large</td></tr>
+                    <tr><td>Kernel space identity-mapped — kernel virt == phys; a proper VMM would decouple them</td><td><span class="badge badge-info">Medium</span></td><td>Large</td></tr>
+                    <tr><td>VMM wrappers are stubs — <code>vmm_alloc_page()</code> just calls PMM directly ("Phase 3" comments)</td><td><span class="badge badge-info">Medium</span></td><td>Medium</td></tr>
+                    <tr><td>No guard pages — stack overflow goes undetected</td><td><span class="badge badge-info">Medium</span></td><td>Small</td></tr>
+                    <tr><td>No ASLR — fixed load address (0x10000000) for all user processes</td><td><span class="badge badge-info">Low</span></td><td>Medium</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2.2 Threading -->
+        <h3>2.2 Threading</h3>
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>Current State: Not Supported — Processes Only</span>
+                <span class="badge badge-fail">Missing</span>
+            </div>
+            <p><strong>What exists:</strong> Round-robin scheduler across processes. PCB has no thread list, no thread ID, no TLS pointer. One execution context per process. Spinlocks exist in user-space executive queues for SHM synchronization only.</p>
+            <table>
+                <thead><tr><th>Gap</th><th>Priority</th><th>Effort</th></tr></thead>
+                <tbody>
+                    <tr><td>No threads within a process — each task is a full process with its own page directory</td><td><span class="badge badge-fail">Critical</span></td><td>Large</td></tr>
+                    <tr><td>No thread-local storage (TLS)</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td>No mutex / semaphore / condition variable — only basic spinlocks</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td>No futex or kernel-assisted synchronization</td><td><span class="badge badge-info">Medium</span></td><td>Medium</td></tr>
+                    <tr><td>No SMP support — single-core only</td><td><span class="badge badge-info">Medium</span></td><td>Very Large</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2.3 Security -->
+        <h3>2.3 Security</h3>
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>Current State: Basic Ring Separation, Minimal Enforcement</span>
+                <span class="badge badge-fail">Critical Gaps</span>
+            </div>
+            <p><strong>What exists:</strong> Ring 0/Ring 3 via GDT, per-process page directories, syscall number range checks, system-process kill protection. <strong>However:</strong> EFLAGS <code>IOPL=3</code> on process creation gives every user process direct I/O port access.</p>
+            <table>
+                <thead><tr><th>Gap</th><th>Priority</th><th>Effort</th></tr></thead>
+                <tbody>
+                    <tr><td><code>IOPL=3</code> for all processes — user code can <code>inb()</code>/<code>outb()</code> any port</td><td><span class="badge badge-fail">Critical</span></td><td>Small</td></tr>
+                    <tr><td>No file permissions — MFS entries have no owner/group/mode bits</td><td><span class="badge badge-fail">Critical</span></td><td>Medium</td></tr>
+                    <tr><td>Kernel identity map accessible from user mode — 128 MB mapped <code>PAGE_USER</code></td><td><span class="badge badge-fail">Critical</span></td><td>Medium</td></tr>
+                    <tr><td>No syscall argument pointer validation — user can pass kernel-space pointers</td><td><span class="badge badge-fail">Critical</span></td><td>Medium</td></tr>
+                    <tr><td>No user accounts / authentication</td><td><span class="badge badge-warn">High</span></td><td>Large</td></tr>
+                    <tr><td>SHM has no permission model — any process can attach to any region</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td>No SMEP/SMAP protections</td><td><span class="badge badge-info">Medium</span></td><td>Small</td></tr>
+                    <tr><td>No capabilities or ACLs</td><td><span class="badge badge-info">Medium</span></td><td>Large</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2.4 Power Management -->
+        <h3>2.4 Power Management</h3>
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>Current State: None</span>
+                <span class="badge badge-fail">Missing</span>
+            </div>
+            <p>Shutdown/restart via direct port I/O. Kernel idle loop is a simple <code>hlt</code>. No ACPI tables parsed.</p>
+            <table>
+                <thead><tr><th>Gap</th><th>Priority</th><th>Effort</th></tr></thead>
+                <tbody>
+                    <tr><td>No ACPI — no RSDP/RSDT/FADT/DSDT parsing, no AML interpreter</td><td><span class="badge badge-warn">High</span></td><td>Very Large</td></tr>
+                    <tr><td>No sleep/hibernate (S3/S4)</td><td><span class="badge badge-info">Medium</span></td><td>Large</td></tr>
+                    <tr><td>No CPU idle states (C-states)</td><td><span class="badge badge-info">Medium</span></td><td>Medium</td></tr>
+                    <tr><td>No thermal management</td><td><span class="badge badge-info">Low</span></td><td>Medium</td></tr>
+                    <tr><td>No battery/power events</td><td><span class="badge badge-info">Low</span></td><td>Medium</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2.5 Filesystem -->
+        <h3>2.5 Filesystem</h3>
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>Current State: ISO9660 Read-Only + MFS Read-Write</span>
+                <span class="badge badge-warn">Functional but Fragile</span>
+            </div>
+            <p><strong>What exists:</strong> ISO9660 for boot/app loading, MFS with cluster-based storage, format/mount/read/write/delete/mkdir syscalls, 256-entry MFT, 4 KB clusters, hierarchical directories, volume/partition abstraction routing to ISO9660 or MFS.</p>
+            <table>
+                <thead><tr><th>Gap</th><th>Priority</th><th>Effort</th></tr></thead>
+                <tbody>
+                    <tr><td>No journaling — power failure = corrupt filesystem</td><td><span class="badge badge-fail">Critical</span></td><td>Large</td></tr>
+                    <tr><td>No file permissions — no owner/group/mode in MFT entries</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td>256-entry MFT limit — tiny filesystem capacity</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td>MFS untested on real hardware</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td>No hard links / symlinks</td><td><span class="badge badge-info">Medium</span></td><td>Medium</td></tr>
+                    <tr><td>No file locking</td><td><span class="badge badge-info">Medium</span></td><td>Small</td></tr>
+                    <tr><td>No sparse files or extents</td><td><span class="badge badge-info">Medium</span></td><td>Medium</td></tr>
+                    <tr><td>No FAT/ext2/NTFS support for external media</td><td><span class="badge badge-info">Medium</span></td><td>Large</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2.6 Networking -->
+        <h3>2.6 Networking</h3>
+        <div class="finding pass">
+            <div class="finding-header">
+                <span>Current State: Functional TCP/IP Stack</span>
+                <span class="badge badge-pass">Strongest Area</span>
+            </div>
+            <p><strong>What exists:</strong> E1000 NIC driver, full IP stack (ARP, IP, checksum, gateway routing), TCP state machine, UDP, DNS resolver, TLS 1.2 (SHA-256, AES, RSA, session caching), HTTP client with chunked transfer &amp; redirects &amp; HTTPS, 8 sockets max, 32 KB recv buffer.</p>
+            <table>
+                <thead><tr><th>Gap</th><th>Priority</th><th>Effort</th></tr></thead>
+                <tbody>
+                    <tr><td>No DHCP client — hardcoded IP/gateway/subnet</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td>No listen/accept — TCP client-only, no server sockets</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td>TCP simplified — single-flight, no sliding window, no congestion control</td><td><span class="badge badge-warn">High</span></td><td>Large</td></tr>
+                    <tr><td>8-socket limit</td><td><span class="badge badge-info">Medium</span></td><td>Small</td></tr>
+                    <tr><td>No firewall or packet filtering</td><td><span class="badge badge-info">Medium</span></td><td>Medium</td></tr>
+                    <tr><td>No IPv6</td><td><span class="badge badge-info">Medium</span></td><td>Large</td></tr>
+                    <tr><td>Single NIC driver (E1000 only)</td><td><span class="badge badge-info">Medium</span></td><td>Medium/driver</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2.7 Developer Experience -->
+        <h3>2.7 Developer Experience</h3>
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>Current State: Custom Toolchain, No Standard Library</span>
+                <span class="badge badge-fail">Critical Gaps</span>
+            </div>
+            <p><strong>What exists:</strong> <code>malloc/free</code> in libwindow, custom .mex format (64-byte header), all libraries freestanding, klog printf-style formatting (kernel only), 15+ user-space libraries.</p>
+            <table>
+                <thead><tr><th>Gap</th><th>Priority</th><th>Effort</th></tr></thead>
+                <tbody>
+                    <tr><td>No libc / POSIX layer — every app reinvents string ops; blocks porting existing software</td><td><span class="badge badge-fail">Critical</span></td><td>Very Large</td></tr>
+                    <tr><td>No ELF loader — custom .mex only; can't use standard toolchain output</td><td><span class="badge badge-fail">Critical</span></td><td>Large</td></tr>
+                    <tr><td>No stdio (<code>FILE*</code>, <code>fopen</code>, <code>printf</code>, <code>scanf</code>)</td><td><span class="badge badge-fail">Critical</span></td><td>Large</td></tr>
+                    <tr><td>No math library (<code>sin</code>, <code>cos</code>, <code>sqrt</code>)</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td><code>malloc</code> bundled inside libwindow — non-GUI apps must link it or go without</td><td><span class="badge badge-warn">High</span></td><td>Small</td></tr>
+                    <tr><td>No debugger support (GDB stub, DWARF)</td><td><span class="badge badge-warn">High</span></td><td>Large</td></tr>
+                    <tr><td>No dynamic linker — all statically linked</td><td><span class="badge badge-info">Medium</span></td><td>Large</td></tr>
+                    <tr><td>No package manager or SDK</td><td><span class="badge badge-info">Medium</span></td><td>Large</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2.8 Hardware Support -->
+        <h3>2.8 Hardware Support</h3>
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>Current State: Minimal, QEMU-Focused</span>
+                <span class="badge badge-fail">Critical Gaps</span>
+            </div>
+            <p><strong>What exists:</strong> BGA/VBE display (1024×768×32bpp double-buffered), PS/2 keyboard &amp; mouse, ATA/IDE disk, PCI enumeration, RTC, E1000 NIC. <strong>No FPU init or save/restore on context switch.</strong></p>
+            <table>
+                <thead><tr><th>Gap</th><th>Priority</th><th>Effort</th></tr></thead>
+                <tbody>
+                    <tr><td>No FPU save/restore — context switch corrupts FPU state; floating-point unusable in multitasking</td><td><span class="badge badge-fail">Critical</span></td><td>Medium</td></tr>
+                    <tr><td>No FPU init at boot (<code>fninit</code> never called)</td><td><span class="badge badge-fail">Critical</span></td><td>Tiny</td></tr>
+                    <tr><td>No USB — can't use modern keyboards, mice, storage</td><td><span class="badge badge-fail">Critical</span></td><td>Very Large</td></tr>
+                    <tr><td>No DMA — all I/O is PIO-based (slow disk, slow network)</td><td><span class="badge badge-warn">High</span></td><td>Large</td></tr>
+                    <tr><td>No AHCI/SATA — only legacy ATA/IDE</td><td><span class="badge badge-warn">High</span></td><td>Large</td></tr>
+                    <tr><td>No audio — no sound card driver</td><td><span class="badge badge-info">Medium</span></td><td>Large</td></tr>
+                    <tr><td>No GPU acceleration</td><td><span class="badge badge-info">Medium</span></td><td>Very Large</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2.9 IPC / Communication -->
+        <h3>2.9 IPC &amp; Communication</h3>
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>Current State: SHM Queues + Cell Registry</span>
+                <span class="badge badge-warn">Functional but Non-Standard</span>
+            </div>
+            <p><strong>What exists:</strong> SHM create/attach/detach/destroy (max 64 regions), spinlock-protected circular request/response queues, Cell Manager key-value store, lock-free sequence counters for time.</p>
+            <table>
+                <thead><tr><th>Gap</th><th>Priority</th><th>Effort</th></tr></thead>
+                <tbody>
+                    <tr><td>No POSIX pipes (<code>pipe()</code>, <code>dup2()</code>)</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td>No signals (<code>SIGTERM</code>, <code>SIGKILL</code>, <code>SIGINT</code>) — only cell-based signaling</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td>No select/poll/epoll — apps busy-loop for events</td><td><span class="badge badge-warn">High</span></td><td>Large</td></tr>
+                    <tr><td>No blocking I/O — all recv non-blocking; apps spin-wait</td><td><span class="badge badge-warn">High</span></td><td>Medium</td></tr>
+                    <tr><td>No message queues beyond SHM</td><td><span class="badge badge-info">Medium</span></td><td>Medium</td></tr>
+                    <tr><td>64 SHM region limit</td><td><span class="badge badge-info">Medium</span></td><td>Small</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2.10 Miscellaneous -->
+        <h3>2.10 Miscellaneous</h3>
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>Assorted Gaps</span>
+                <span class="badge badge-warn">Various</span>
+            </div>
+            <table>
+                <thead><tr><th>Gap</th><th>Priority</th><th>Effort</th></tr></thead>
+                <tbody>
+                    <tr><td>No Unicode/UTF-8 — ASCII only throughout</td><td><span class="badge badge-warn">High</span></td><td>Large</td></tr>
+                    <tr><td>No timezone support — UTC only from RTC</td><td><span class="badge badge-info">Medium</span></td><td>Small</td></tr>
+                    <tr><td>No dynamic linking — all statically linked</td><td><span class="badge badge-info">Medium</span></td><td>Large</td></tr>
+                    <tr><td>No clipboard / drag-and-drop</td><td><span class="badge badge-info">Medium</span></td><td>Medium</td></tr>
+                    <tr><td>6-window limit in WM</td><td><span class="badge badge-info">Medium</span></td><td>Small</td></tr>
+                    <tr><td>50 Hz timer — low resolution; need HPET/TSC</td><td><span class="badge badge-info">Medium</span></td><td>Medium</td></tr>
+                    <tr><td>No multi-monitor</td><td><span class="badge badge-info">Low</span></td><td>Large</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Priority Roadmap -->
+        <h3>2.11 Priority Roadmap — Road to Commercial Viability</h3>
+        <div class="finding info">
+            <div class="finding-header">
+                <span>Tier 1: Blockers — System is unsafe/broken without these</span>
+                <span class="badge badge-fail">Do First</span>
+            </div>
+            <ol>
+                <li><strong>FPU init + save/restore on context switch</strong> — floating-point is silently corrupt today</li>
+                <li><strong>Fix IOPL=3</strong> — set IOPL=0 for user processes, block direct port I/O</li>
+                <li><strong>Kernel memory protection</strong> — remove <code>PAGE_USER</code> from kernel identity map</li>
+                <li><strong>Syscall pointer validation</strong> — verify user pointers don't reference kernel memory</li>
+                <li><strong>Page fault handler</strong> — at minimum, clean termination with diagnostics</li>
+            </ol>
+        </div>
+        <div class="finding info">
+            <div class="finding-header">
+                <span>Tier 2: Core OS Competitiveness</span>
+                <span class="badge badge-warn">Build Next</span>
+            </div>
+            <ol start="6">
+                <li><strong>Threads</strong> (pthreads-like API) + synchronization primitives</li>
+                <li><strong>libc port</strong> (Newlib or musl) — unlocks porting of existing software</li>
+                <li><strong>ELF loader</strong> — replaces .mex, standard toolchain compatibility</li>
+                <li><strong>DHCP client</strong> — network auto-configuration</li>
+                <li><strong>USB stack</strong> (at least UHCI/EHCI for keyboard, mouse, mass storage)</li>
+                <li><strong>Journaling filesystem</strong> or adopt ext2 driver</li>
+            </ol>
+        </div>
+        <div class="finding info">
+            <div class="finding-header">
+                <span>Tier 3: Developer Platform</span>
+                <span class="badge badge-info">Long-Term</span>
+            </div>
+            <ol start="12">
+                <li>POSIX pipes + signals — standard IPC</li>
+                <li>DMA for disk and network — performance</li>
+                <li>ACPI — proper shutdown, sleep, power management</li>
+                <li>select/poll or event-based I/O</li>
+                <li>GDB remote stub for debugging</li>
+                <li>Dynamic linker — shared libraries</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- SECTION 3: Doc Alignment -->
+    <div id="s3" class="section">
+        <h2>Section 3: Documentation vs. Code Alignment</h2>
+        <p>Cross-referenced <code>copilot-instructions.md</code>, <code>architecture.html</code>, and <code>MaahiOsWiki.html</code> against actual source code. <strong>Root cause:</strong> The entire networking stack was added after docs were last updated. All three documents reflect a pre-networking snapshot.</p>
+
+        <h3>3.1 Summary</h3>
+        <table>
+            <thead><tr><th>Category</th><th>Count</th></tr></thead>
+            <tbody>
+                <tr><td>Major discrepancies</td><td><span class="badge badge-fail">9</span></td></tr>
+                <tr><td>Moderate discrepancies</td><td><span class="badge badge-warn">4</span></td></tr>
+                <tr><td>Minor discrepancies</td><td><span class="badge badge-info">1</span></td></tr>
+                <tr><td>Undocumented components</td><td><span class="badge badge-fail">15+</span></td></tr>
+                <tr><td>Phantom documented features</td><td><span class="badge badge-pass">0</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>3.2 Major Discrepancies</h3>
+
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>D1: Syscall Count — All Docs</span>
+                <span class="badge badge-fail">Major</span>
+            </div>
+            <p><strong>Claim:</strong> copilot-instructions.md says "63 syscalls"; architecture.html and Wiki say "64 syscalls across 10 domains".</p>
+            <p><strong>Reality:</strong> <code>syscall_numbers.h</code> defines <strong>77 syscalls</strong> across <strong>11 domains</strong>. The Network domain (144–156) adds 13 syscalls, and <code>SYS_KLOG_READ</code> (246) is also missing from copilot-instructions.md.</p>
+        </div>
+
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>D2: Network Syscall Domain Missing — All Docs</span>
+                <span class="badge badge-fail">Major</span>
+            </div>
+            <p><strong>Claim:</strong> "10 domains" — tables list Core, Process, Memory, SHM, Cell, Device, Module, Time, Filesystem, Debug/KLog.</p>
+            <p><strong>Reality:</strong> <strong>11 domains.</strong> The Network domain (SYS 144–156, 13 syscalls) is completely absent from all documentation.</p>
+        </div>
+
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>D5: Font Sizes — copilot-instructions.md</span>
+                <span class="badge badge-fail">Major</span>
+            </div>
+            <p><strong>Claim:</strong> "5 sizes: 12/14/16/18/24px" with FONT_SMALL(12), FONT_BODY(14), FONT_H3(16), FONT_H2(18), FONT_TITLE(24).</p>
+            <p><strong>Reality:</strong> Actual enum in libfont.h: FONT_SMALL=<strong>14</strong>, FONT_BODY=<strong>16</strong>, FONT_H3=<strong>18</strong>, FONT_H2=<strong>20</strong>, FONT_TITLE=<strong>28</strong>. Every value is wrong.</p>
+        </div>
+
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>D6: Library Count — All Docs</span>
+                <span class="badge badge-fail">Major</span>
+            </div>
+            <p><strong>Claim:</strong> "15 libraries".</p>
+            <p><strong>Reality:</strong> <strong>19 library directories</strong> (excluding <code>shared/</code>). Undocumented: <code>libnet</code>, <code>libtls</code>, <code>libhttp</code>, <code>libhtml</code>, <code>libjs</code>.</p>
+        </div>
+
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>D7: Executive Count — All Docs</span>
+                <span class="badge badge-fail">Major</span>
+            </div>
+            <p><strong>Claim:</strong> "9 executives".</p>
+            <p><strong>Reality:</strong> <strong>10 executives</strong> (+ common). <code>networkexecutive/</code> is undocumented.</p>
+        </div>
+
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>D8: App Count — copilot-instructions.md</span>
+                <span class="badge badge-fail">Major</span>
+            </div>
+            <p><strong>Claim:</strong> "8 apps" — lists diskman, fileman, hello, hellogui, boxdrop, procman, shutdown, sysinfo.</p>
+            <p><strong>Reality:</strong> <strong>16 app directories</strong>. Missing from docs: browser, diskexp, fetch, logexp, netexp, ping, procexp, wordwrite.</p>
+        </div>
+
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>D9: App Count — architecture.html &amp; Wiki</span>
+                <span class="badge badge-fail">Major</span>
+            </div>
+            <p><strong>Claim:</strong> "12 apps".</p>
+            <p><strong>Reality:</strong> <strong>16 app directories</strong>. Missing: browser, fetch, netexp, ping (all networking-related).</p>
+        </div>
+
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>D10: GRUB Module Indices — copilot-instructions.md</span>
+                <span class="badge badge-fail">Major</span>
+            </div>
+            <p><strong>Claim:</strong> "12 modules (0–11)".</p>
+            <p><strong>Reality:</strong> <strong>13 modules (0–12)</strong>. Index 12 is <code>netexec.bin</code> (Network Executive). architecture.html correctly says 0–12.</p>
+        </div>
+
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>D12: Directory Structure Tree — copilot-instructions.md</span>
+                <span class="badge badge-fail">Major</span>
+            </div>
+            <p><strong>Claim:</strong> Tree omits ~16 directories.</p>
+            <p><strong>Reality:</strong> Missing: <code>drivers/network/</code>, <code>executives/networkexecutive/</code>, <code>libraries/libnet|libtls|libhttp|libhtml|libjs/</code>, <code>apps/browser|fetch|netexp|ping|diskexp|logexp|procexp|wordwrite/</code>, <code>managers/network/</code>.</p>
+        </div>
+
+        <h3>3.3 Moderate Discrepancies</h3>
+
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>D3: Syscall Handler File Count</span>
+                <span class="badge badge-warn">Moderate</span>
+            </div>
+            <p><strong>Claim:</strong> "10 handler files". <strong>Reality:</strong> <strong>11 handler files</strong> — <code>network_handlers.c</code> is the 11th.</p>
+        </div>
+
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>D4: Debug/KLog Range — copilot-instructions.md</span>
+                <span class="badge badge-warn">Moderate</span>
+            </div>
+            <p><strong>Claim:</strong> Range 240–245, count 6. <strong>Reality:</strong> Range 240–<strong>246</strong>, count <strong>7</strong>. <code>SYS_KLOG_READ</code> (246) missing. architecture.html &amp; Wiki have this correct.</p>
+        </div>
+
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>D11: Network Driver Missing from architecture.html</span>
+                <span class="badge badge-warn">Moderate</span>
+            </div>
+            <p><strong>Claim:</strong> Badge says "8 driver areas" but only 7 component cards listed. <strong>Reality:</strong> <code>src/drivers/network/</code> (E1000) is the 8th — invisible in the doc.</p>
+        </div>
+
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>D14: Network Manager Omitted — architecture.html</span>
+                <span class="badge badge-warn">Moderate</span>
+            </div>
+            <p><strong>Claim:</strong> "8 managers + infrastructure". <strong>Reality:</strong> <code>src/managers/network/</code> (network_manager.c, tcp.c) exists but not documented.</p>
+        </div>
+
+        <h3>3.4 Minor Discrepancies</h3>
+        <div class="finding info">
+            <div class="finding-header">
+                <span>D13: 6-Layer vs 7-Layer Framing</span>
+                <span class="badge badge-info">Minor</span>
+            </div>
+            <p>copilot-instructions.md describes <strong>6 layers</strong>; architecture.html describes <strong>7 layers</strong> (splits Syscall into Interface + Handlers). Both valid views, just inconsistent.</p>
+        </div>
+
+        <h3>3.5 Undocumented Components (Entire Networking Stack)</h3>
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>15+ Networking Components Exist in Code but Absent from All Docs</span>
+                <span class="badge badge-fail">Major Gap</span>
+            </div>
+            <table>
+                <thead><tr><th>Component</th><th>Location</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td>E1000 NIC driver</td><td><code>src/drivers/network/</code></td><td>Intel E1000 Ethernet driver</td></tr>
+                    <tr><td>Network Manager + TCP</td><td><code>src/managers/network/</code></td><td>network_manager.c, tcp.c</td></tr>
+                    <tr><td>Network syscalls (13)</td><td><code>syscall_numbers.h</code></td><td>SYS 144–156</td></tr>
+                    <tr><td>network_handlers.c</td><td><code>src/managers/syscall/handlers/</code></td><td>11th handler file</td></tr>
+                    <tr><td>Network Executive</td><td><code>src/system/executives/networkexecutive/</code></td><td>10th executive</td></tr>
+                    <tr><td>libnet</td><td><code>src/system/libraries/libnet/</code></td><td>Network access library</td></tr>
+                    <tr><td>libtls</td><td><code>src/system/libraries/libtls/</code></td><td>TLS 1.2 library</td></tr>
+                    <tr><td>libhttp</td><td><code>src/system/libraries/libhttp/</code></td><td>HTTP client library</td></tr>
+                    <tr><td>libhtml</td><td><code>src/system/libraries/libhtml/</code></td><td>HTML parser</td></tr>
+                    <tr><td>libjs</td><td><code>src/system/libraries/libjs/</code></td><td>JavaScript engine</td></tr>
+                    <tr><td>browser</td><td><code>src/apps/browser/</code></td><td>Web browser application</td></tr>
+                    <tr><td>fetch</td><td><code>src/apps/fetch/</code></td><td>HTTP fetch utility</td></tr>
+                    <tr><td>netexp</td><td><code>src/apps/netexp/</code></td><td>Network explorer</td></tr>
+                    <tr><td>ping</td><td><code>src/apps/ping/</code></td><td>ICMP ping utility</td></tr>
+                    <tr><td>netexec.bin</td><td>GRUB module idx 12</td><td>Network Executive boot module</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>3.6 Phantom Features</h3>
+        <div class="finding pass">
+            <div class="finding-header">
+                <span>No phantom features found</span>
+                <span class="badge badge-pass">Clean</span>
+            </div>
+            <p>All documented features still exist in code. One note: <code>SYS_KLOG_GET_SHM</code> (242) is documented without noting it's deprecated in source comments.</p>
+        </div>
+    </div>
+
+    <!-- SECTION 4: Dead Code -->
+    <div id="s4" class="section">
+        <h2>Section 4: Dead Code &amp; Unused Files</h2>
+        <p>Audit of all source files against <code>build.sh</code>, cross-referenced function definitions with call sites, and scanned for stale/debug artifacts.</p>
+
+        <h3>4.1 Summary</h3>
+        <table>
+            <thead><tr><th>Category</th><th>Count</th><th>Severity</th></tr></thead>
+            <tbody>
+                <tr><td>Uncompiled source files</td><td>2</td><td><span class="badge badge-fail">High</span></td></tr>
+                <tr><td>Orphaned header files</td><td>4</td><td><span class="badge badge-fail">High</span></td></tr>
+                <tr><td>Duplicate syscall_numbers.h</td><td>2 copies</td><td><span class="badge badge-warn">Medium</span></td></tr>
+                <tr><td>Duplicate utility functions</td><td>26 implementations of 3 functions</td><td><span class="badge badge-warn">Medium</span></td></tr>
+                <tr><td><code>#if 0</code> dead code blocks</td><td>1 (~28 lines)</td><td><span class="badge badge-info">Low</span></td></tr>
+                <tr><td>TODO/FIXME markers</td><td>5</td><td><span class="badge badge-info">Low</span></td></tr>
+                <tr><td>Debug logging in libraries</td><td>2 files (~10 raw SYS_KLOG calls)</td><td><span class="badge badge-warn">Medium</span></td></tr>
+                <tr><td>Build artifacts in src/</td><td>0</td><td><span class="badge badge-pass">Clean</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>4.2 Uncompiled Source Files</h3>
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>2 source files exist but are never compiled by build.sh</span>
+                <span class="badge badge-fail">Dead Code</span>
+            </div>
+            <table>
+                <thead><tr><th>File</th><th>Description</th><th>Confidence</th></tr></thead>
+                <tbody>
+                    <tr><td><code>src/drivers/drive/disk/disk_subsystem.c</code></td><td>Old disk subsystem, replaced by <code>disk.c</code> (line 4 comment says "Replaces disk_subsystem.c")</td><td>High</td></tr>
+                    <tr><td><code>src/system/libraries/shared/shared_time.c</code></td><td>Shared time library impl; nothing includes its header or compiles this file</td><td>High</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>4.3 Orphaned Header Files</h3>
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>4 header files never <code>#include</code>d by any .c file</span>
+                <span class="badge badge-fail">Orphaned</span>
+            </div>
+            <table>
+                <thead><tr><th>File</th><th>Issue</th></tr></thead>
+                <tbody>
+                    <tr><td><code>src/managers/syscall/handlers/syscall_handlers.h</code></td><td>Declares all <code>syscall_register_*_handlers()</code> but <code>syscall_manager.c</code> uses <code>extern</code> directly</td></tr>
+                    <tr><td><code>src/managers/process/mex.h</code></td><td>Defines MEX format constants but never included; <code>libmex</code> redefines structs independently</td></tr>
+                    <tr><td><code>src/drivers/drive/disk/disk_subsystem.h</code></td><td>Only included by dead <code>disk_subsystem.c</code></td></tr>
+                    <tr><td><code>src/system/libraries/shared/shared_time.h</code></td><td>Only included by dead <code>shared_time.c</code>; referenced only in a comment in <code>time_manager.c</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>4.4 Duplicate <code>syscall_numbers.h</code></h3>
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>Two copies of syscall numbers — manual sync required</span>
+                <span class="badge badge-warn">Divergence Risk</span>
+            </div>
+            <table>
+                <thead><tr><th>File</th><th>Used By</th></tr></thead>
+                <tbody>
+                    <tr><td><code>src/managers/syscall/syscall_numbers.h</code></td><td>Kernel: all 11 handler files, <code>syscall_manager.c</code></td></tr>
+                    <tr><td><code>src/system/syscalls/syscall_numbers.h</code></td><td>User-space: <code>syscall_helpers.h</code>, <code>libprocess.h</code></td></tr>
+                </tbody>
+            </table>
+            <p>The user-space copy says <em>"If you add a new syscall, update BOTH files"</em>. Additionally, <code>logexp.c</code> violates layering by including the <strong>kernel</strong> copy directly.</p>
+        </div>
+
+        <h3>4.5 Duplicate Utility Functions (26 total)</h3>
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>memcpy (7×), memset (9×), strlen (10×) — reimplemented per-library</span>
+                <span class="badge badge-warn">Bloat</span>
+            </div>
+            <p>Each freestanding library reimplements basic string/memory functions with different prefixes (<code>_memcpy</code>, <code>js_memcpy</code>, <code>mfs_memcpy</code>, <code>_fs_memcpy</code>, etc.). This is a natural consequence of having no shared libc, but it adds ~26 redundant function bodies across the codebase.</p>
+            <table>
+                <thead><tr><th>Function</th><th>Count</th><th>Example Files</th></tr></thead>
+                <tbody>
+                    <tr><td><code>memcpy</code></td><td>7</td><td>libtls (×2), libjs, mfs, libfs, tcp.c, tls_crypto</td></tr>
+                    <tr><td><code>memset</code></td><td>9</td><td>libtls (×2), libjs, libhttp, mfs, dialog.c, libfs, tcp.c, browser.c</td></tr>
+                    <tr><td><code>strlen</code></td><td>10</td><td>libtls (×2), libjs, wordwrite, logexp, browser, mfs, toolbar.c, libhttp, table.c</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Recommendation:</strong> Extract to a shared <code>libstring</code> or as part of a future libc port.</p>
+        </div>
+
+        <h3>4.6 Stale / Debug Code</h3>
+        <div class="finding info">
+            <div class="finding-header">
+                <span><code>#if 0</code> Blocks &amp; TODO Markers</span>
+                <span class="badge badge-info">Low Priority</span>
+            </div>
+            <table>
+                <thead><tr><th>File</th><th>Line</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><code>orbit.c</code></td><td>~1488–1515</td><td><code>#if 0</code> — disabled desktop shortcut hover effect ("no desktop icons"), ~28 lines</td></tr>
+                    <tr><td><code>disk_executive.c</code></td><td>280</td><td><code>TODO: Add DISK_IOCTL_READ_SECTOR ioctl</code></td></tr>
+                    <tr><td><code>mfs.c</code></td><td>421</td><td><code>TODO: Support multi-cluster files with cluster chain</code></td></tr>
+                    <tr><td><code>mfs.c</code></td><td>534</td><td><code>TODO: get time from time_manager</code></td></tr>
+                    <tr><td><code>klog.c</code></td><td>218</td><td><code>TODO: Add timer ticks</code></td></tr>
+                    <tr><td><code>klog.c</code></td><td>220</td><td><code>TODO: Get current PID from scheduler</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>Debug Logging Left in Library Code</span>
+                <span class="badge badge-warn">Layering Bypass</span>
+            </div>
+            <table>
+                <thead><tr><th>File</th><th>Count</th><th>Nature</th></tr></thead>
+                <tbody>
+                    <tr><td><code>libhttp.c</code></td><td>~8 calls</td><td>Debug traces: "Reusing keep-alive", "tls_send failed", recv timing, status codes</td></tr>
+                    <tr><td><code>libtls.c</code></td><td>2+ (macros)</td><td><code>tls_log()</code> / <code>tls_log_hex()</code> wrappers around raw <code>SYS_KLOG</code></td></tr>
+                </tbody>
+            </table>
+            <p>These should either be removed for production or routed through <code>liblog</code>.</p>
+        </div>
+    </div>
+
+    <!-- SECTION 5: Recommendations -->
+    <div id="s5" class="section">
+        <h2>Section 5: Recommendations &amp; Next Steps</h2>
+
+        <h3>5.1 Immediate Actions (Quick Wins)</h3>
+        <div class="finding pass">
+            <div class="finding-header">
+                <span>Low effort, high impact fixes</span>
+                <span class="badge badge-pass">Do Now</span>
+            </div>
+            <ol>
+                <li><strong>FPU init at boot</strong> — add <code>fninit</code> to <code>boot.s</code>. Effort: ~2 lines of assembly. Blocks all floating-point use.</li>
+                <li><strong>FPU save/restore</strong> — add <code>fxsave</code>/<code>fxrstor</code> to context switch in PIT handler + 512-byte aligned buffer in PCB. Effort: ~20 lines.</li>
+                <li><strong>Fix IOPL=3</strong> — set EFLAGS <code>IOPL=0</code> in <code>process_create()</code>. Effort: change one constant. Currently any user process can talk to hardware directly.</li>
+                <li><strong>Delete dead files</strong> — remove <code>disk_subsystem.c/.h</code>, <code>shared_time.c/.h</code>, orphaned <code>mex.h</code>, orphaned <code>syscall_handlers.h</code>. Effort: 6 file deletions.</li>
+                <li><strong>Move malloc out of libwindow</strong> — extract to standalone <code>libmalloc</code> so non-GUI apps can allocate memory. Effort: move 1 file + update build.sh.</li>
+                <li><strong>Remove debug SYS_KLOG from apps</strong> — clean <code>browser.c</code>, <code>sysinfo.c</code> raw syscall calls. Effort: ~10 lines removed.</li>
+            </ol>
+        </div>
+
+        <h3>5.2 Architecture Compliance Fixes</h3>
+        <div class="finding warn">
+            <div class="finding-header">
+                <span>Fix the 10 layering violations found in Sections 1a &amp; 1b</span>
+                <span class="badge badge-warn">Medium Effort</span>
+            </div>
+            <ol>
+                <li><strong>libfs volume syscalls</strong> — route <code>SYS_FS_VOL_COUNT</code>/<code>SYS_FS_VOL_INFO</code> through FS Executive instead of direct syscalls.</li>
+                <li><strong>libnet bulk recv</strong> — route <code>SYS_NET_SOCK_RECV_BULK</code> through Network Executive.</li>
+                <li><strong>libhttp/libtls SYS_KLOG</strong> — replace raw <code>SYS_KLOG</code> calls with <code>liblog</code>. Also replace magic number 115 with named constant.</li>
+                <li><strong>App direct syscalls</strong> — wrap <code>SYS_GETPID</code> in libprocess, <code>SYS_SLEEP</code> in libprocess, <code>SYS_KLOG</code> in liblog for sysinfo, shutdown, ping, fetch, browser, logexp.</li>
+                <li><strong>logexp kernel header</strong> — switch from <code>managers/syscall/syscall_numbers.h</code> to user-space copy.</li>
+            </ol>
+        </div>
+
+        <h3>5.3 Documentation Update</h3>
+        <div class="finding fail">
+            <div class="finding-header">
+                <span>All 3 docs are stale — 14 discrepancies, 15+ undocumented components</span>
+                <span class="badge badge-fail">Overdue</span>
+            </div>
+            <ol>
+                <li><strong>Update copilot-instructions.md</strong>: Change 63→77 syscalls, 10→11 domains, 8→16 apps, 15→19 libraries, 9→10 executives, 12→13 GRUB modules. Add Network domain table. Fix font sizes (14/16/18/20/28).</li>
+                <li><strong>Update architecture.html</strong>: Add network driver card, network manager, network executive. Update app count 12→16. Add networking section.</li>
+                <li><strong>Update MaahiOsWiki.html</strong>: Same as architecture.html. Add browser, fetch, ping, netexp apps. Document TLS, HTTP, HTML, JS libraries.</li>
+                <li><strong>Merge syscall_numbers.h</strong>: Consider a build step that copies the kernel header to user-space, eliminating the manual-sync dual-file problem.</li>
+            </ol>
+        </div>
+
+        <h3>5.4 Road to Commercial Viability — Prioritized Roadmap</h3>
+        <div class="finding info">
+            <div class="finding-header">
+                <span>Phase 1: Safety &amp; Correctness (Estimated: 2–4 weeks)</span>
+                <span class="badge badge-fail">Critical</span>
+            </div>
+            <ol>
+                <li>FPU init + context-switch save/restore</li>
+                <li>IOPL=0 for user processes</li>
+                <li>Remove <code>PAGE_USER</code> from kernel identity map pages</li>
+                <li>Syscall pointer validation (verify user pointers are in user address range)</li>
+                <li>Proper page-fault handler with diagnostic output</li>
+            </ol>
+        </div>
+        <div class="finding info">
+            <div class="finding-header">
+                <span>Phase 2: Core OS Features (Estimated: 2–3 months)</span>
+                <span class="badge badge-warn">High</span>
+            </div>
+            <ol>
+                <li>Kernel threads + basic synchronization (mutex, semaphore)</li>
+                <li>Guard pages for stack overflow detection</li>
+                <li>Blocking I/O / sleep-on-event (eliminate spin-wait)</li>
+                <li>DHCP client for network autoconfiguration</li>
+                <li>TCP server sockets (listen/accept)</li>
+                <li>Move malloc to standalone library</li>
+            </ol>
+        </div>
+        <div class="finding info">
+            <div class="finding-header">
+                <span>Phase 3: Developer Platform (Estimated: 3–6 months)</span>
+                <span class="badge badge-info">Medium</span>
+            </div>
+            <ol>
+                <li>Shared libc (port Newlib or musl) — unlocks porting existing software</li>
+                <li>ELF loader — standard binary format, replaces .mex</li>
+                <li>POSIX pipes + signals</li>
+                <li>DMA for disk &amp; network performance</li>
+                <li>USB stack (UHCI/EHCI — keyboard, mouse, mass storage)</li>
+                <li>Journaling filesystem or ext2 driver</li>
+            </ol>
+        </div>
+        <div class="finding info">
+            <div class="finding-header">
+                <span>Phase 4: Polish &amp; Ecosystem (6+ months)</span>
+                <span class="badge badge-info">Long-term</span>
+            </div>
+            <ol>
+                <li>ACPI (proper shutdown, power management)</li>
+                <li>Unicode/UTF-8 support</li>
+                <li>Dynamic linker &amp; shared libraries</li>
+                <li>AHCI/SATA disk driver</li>
+                <li>Audio driver</li>
+                <li>GDB remote stub for debugging</li>
+                <li>SMP / multi-core support</li>
+            </ol>
+        </div>
+
+        <h3>5.5 What's Working Well</h3>
+        <div class="finding pass">
+            <div class="finding-header">
+                <span>Strengths to build on</span>
+                <span class="badge badge-pass">Solid</span>
+            </div>
+            <ul>
+                <li><strong>Executive architecture</strong> — All 10 executives are fully compliant with the layering model. The SHM queue IPC pattern is clean and consistent.</li>
+                <li><strong>Device manager HAL</strong> — Function-pointer dispatch creates genuine hardware abstraction. Adding new drivers requires only registering ops.</li>
+                <li><strong>Networking stack</strong> — From NIC driver to TLS 1.2 to a working browser is a remarkable achievement for a hobby OS. TCP state machine, DNS resolution, HTTP with chunked encoding all work.</li>
+                <li><strong>Window manager</strong> — Damage-rect compositing, z-ordering, taskbar integration, surface-per-window model — solid foundation for a GUI OS.</li>
+                <li><strong>Build system</strong> — 117 source files compiled and linked into a bootable ISO with one script. Cross-compilation on Windows works.</li>
+                <li><strong>No phantom code</strong> — Every documented feature still exists. Zero abandoned-but-documented features.</li>
+            </ul>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

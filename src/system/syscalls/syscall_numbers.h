@@ -101,6 +101,23 @@
 #define SYS_FS_VOL_COUNT        136
 #define SYS_FS_VOL_INFO         137
 
+/* ═════════════════════════════════════════════════════════════════
+ * DOMAIN 144-159: NETWORK
+ * ═════════════════════════════════════════════════════════════════ */
+#define SYS_NET_GET_CONFIG      144
+#define SYS_NET_PING            145
+#define SYS_NET_GET_STATUS      146
+#define SYS_NET_SEND_PACKET     147
+#define SYS_NET_RECV_PACKET     148
+#define SYS_NET_GET_PKT_LOG     149
+#define SYS_NET_SOCK_CREATE     150
+#define SYS_NET_SOCK_CONNECT    151
+#define SYS_NET_SOCK_SEND       152
+#define SYS_NET_SOCK_RECV       153
+#define SYS_NET_SOCK_CLOSE      154
+#define SYS_NET_SOCK_SENDTO     155
+#define SYS_NET_SOCK_RECV_BULK  156
+
 /* ═══════════════════════════════════════════════════════════════════
  * DOMAIN 240-255: DEBUG/KLOG
  * ═══════════════════════════════════════════════════════════════════ */

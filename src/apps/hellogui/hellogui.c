@@ -9,6 +9,7 @@
 
 #include "../../system/libraries/libwindow/libwindow.h"
 #include "../../system/libraries/libgui/libgui.h"
+#include "../../system/libraries/libfs/libfs.h"
 
 /*=============================================================================
  * GLOBALS & CALLBACKS
@@ -53,6 +54,13 @@ void mex_main(void) {
     window_t *win = window_create("Hello GUI", win_x, win_y, win_w, win_h);
     if (!win) return;
     g_win = win;
+
+    /* Load titlebar icon */
+    {
+        static uint8_t icon_buf[4096];
+        int sz = libfs_read_file("C:/icons/", "HELLOGUI.BMP", icon_buf, sizeof(icon_buf));
+        if (sz > 0) window_set_icon(win, icon_buf, sz);
+    }
 
     /* Status label at top */
     g_status_label = label_create(16, 8, "Click a button...", THEME_TEXT);

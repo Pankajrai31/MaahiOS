@@ -77,6 +77,10 @@ static int sys_getpid(uint32_t arg1, uint32_t arg2, uint32_t arg3,
 
 /**
  * sys_sleep - Sleep for N timer ticks
+ *
+ * Uses the same `int $0x20` yield path as sys_yield() so the process
+ * gives up its timeslice immediately on each iteration.  Without this,
+ * the process would spin-wait in Ring 0 consuming full timeslices.
  */
 static int sys_sleep(uint32_t ticks, uint32_t arg2, uint32_t arg3,
                      uint32_t arg4, uint32_t arg5) {
@@ -86,8 +90,8 @@ static int sys_sleep(uint32_t ticks, uint32_t arg2, uint32_t arg3,
     uint32_t end_tick = pit_get_ticks() + ticks;
     
     while (pit_get_ticks() < end_tick) {
-        scheduler_tick();  /* Yield during sleep */
-        __asm__ volatile("pause");
+        pit_request_yield();
+        __asm__ volatile("int $0x20");
     }
     
     return 0;

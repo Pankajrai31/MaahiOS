@@ -303,10 +303,3 @@ cd c:\Maahi\MaahiOS\build
 - Client flow: `libwindow` → `libwm` → SHM queue → WM Executive
 - Publishes `CELL_WM_REGISTRY` and `CELL_TASKBAR_WINDOWS` for Orbit
 
-## Component Prompts
-For detailed work on specific components, include the relevant prompt file:
-- `#file:prompts/executive.prompt.md` - Working on executives
-- `#file:prompts/manager.prompt.md` - Working on kernel managers
-- `#file:prompts/syscall.prompt.md` - Adding/modifying syscalls
-- `#file:prompts/driver.prompt.md` - Hardware drivers
-- `#file:prompts/uimanager.prompt.md` - UI system

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Folder -->
+  <path d="M3 10 L3 26 Q3 27 4 27 L24 27 Q25 27 25 26 L25 13 Q25 12 24 12 L14 12 L11 9 Q10.5 8.5 10 8.5 L4 8.5 Q3 8.5 3 9.5 Z" fill="#E8A317" stroke="#1A1A2E" stroke-width="1.5"/>
+  <rect x="3" y="14" width="22" height="13" rx="1" fill="#E8A317" stroke="#1A1A2E" stroke-width="1.5"/>
+  <!-- Arrow pointing into folder -->
+  <path d="M22 5 L28 5 L28 14" fill="none" stroke="#2B5BB5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M25 11 L28 14 L31 11" fill="none" stroke="#2B5BB5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

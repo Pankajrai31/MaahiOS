@@ -27,6 +27,7 @@
 
 #include "../../system/libraries/libwindow/libwindow.h"
 #include "../../system/libraries/libgui/libgui.h"
+#include "../../system/libraries/libfs/libfs.h"
 #include "../../system/libraries/core/syscall_helpers.h"
 #include "../../managers/syscall/syscall_numbers.h"
 #include "../../managers/klog/klog.h"
@@ -241,6 +242,13 @@ void mex_main(void) {
     window_t *win = window_create("Log Explorer", win_x, win_y, WIN_W, WIN_H);
     if (!win) return;
     g_win = win;
+
+    /* Load titlebar icon */
+    {
+        static uint8_t icon_buf[4096];
+        int sz = libfs_read_file("C:/icons/", "LOGEXP.BMP", icon_buf, sizeof(icon_buf));
+        if (sz > 0) window_set_icon(win, icon_buf, sz);
+    }
 
     int cw = win->content_w;
     int ch = win->content_h;

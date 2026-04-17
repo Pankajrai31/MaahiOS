@@ -20,6 +20,7 @@
 #include "../../drivers/mouse/mouse.h"
 #include "../../drivers/keyboard/keyboard.h"
 #include "../../drivers/rtc/rtc.h"
+#include "../../drivers/network/e1000.h"
 
 /* ===========================================================================
  * INTERNAL: Configuration & Data Structures
@@ -53,6 +54,7 @@ static driver_entry_t g_driver_table[] = {
     { "mouse",    mouse_init,              DEV_MOUSE    },
     { "keyboard", keyboard_init,           DEV_KEYBOARD },
     { "rtc",      rtc_init,                DEV_RTC      },
+    { "e1000",    e1000_init,              DEV_NETWORK  },
     { NULL, NULL, 0 }  /* Terminator */
 };
 

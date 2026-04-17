@@ -104,6 +104,7 @@ static int _send_and_wait(exec_request_t *req, exec_response_t *resp) {
         if (pop_result == EXEC_OK) {
             return EXEC_OK;
         }
+        exe_poll_heartbeat();
         syscall1(SYS_SLEEP, 1);
     }
     

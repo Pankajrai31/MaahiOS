@@ -40,8 +40,8 @@
  *   Sunken: top/left = BEVEL_DARK,  bottom/right = BEVEL_LIGHT
  *===========================================================================*/
 
-#define THEME_BEVEL_LIGHT       0x00F4F5FA
-#define THEME_BEVEL_DARK        0x009498AC
+#define THEME_BEVEL_LIGHT       0x00FAFBFF
+#define THEME_BEVEL_DARK        0x00808498
 
 /*=============================================================================
  * ACCENT COLORS
@@ -99,7 +99,7 @@
 #define THEME_TITLEBAR_INACT_S  0x009498AC  /* Inactive start               */
 #define THEME_TITLEBAR_INACT_E  0x00B0B4C6  /* Inactive end                 */
 #define THEME_TITLEBAR_FG       THEME_TEXT_INVERSE
-#define THEME_TITLEBAR_HEIGHT   24          /* pixels                       */
+#define THEME_TITLEBAR_HEIGHT   28          /* pixels                       */
 
 /* Legacy alias for old code referencing THEME_TITLEBAR_BG */
 #define THEME_TITLEBAR_BG       THEME_TITLEBAR_START
@@ -177,7 +177,7 @@
  *===========================================================================*/
 
 #define THEME_TASKBAR_BG        THEME_CHROME
-#define THEME_TASKBAR_HEIGHT    32
+#define THEME_TASKBAR_HEIGHT    36
 
 /*=============================================================================
  * DESKTOP BACKGROUND (blue gradient)
@@ -203,10 +203,10 @@
 
 #include "../libgui/fonts/libfont.h"
 
-#define THEME_FONT_TITLE        FONT_TITLE   /* 24px — window titles, hero  */
-#define THEME_FONT_H2           FONT_H2      /* 18px — section headings     */
-#define THEME_FONT_H3           FONT_H3      /* 16px — sub-headings         */
-#define THEME_FONT_BODY         FONT_BODY    /* 14px — body text, buttons   */
-#define THEME_FONT_SMALL        FONT_SMALL   /* 12px — captions, labels     */
+#define THEME_FONT_TITLE        FONT_TITLE   /* 28px — window titles, hero  */
+#define THEME_FONT_H2           FONT_H2      /* 20px — section headings     */
+#define THEME_FONT_H3           FONT_H3      /* 18px — sub-headings         */
+#define THEME_FONT_BODY         FONT_BODY    /* 16px — body text, buttons   */
+#define THEME_FONT_SMALL        FONT_SMALL   /* 14px — captions, labels     */
 
 #endif /* THEME_H */

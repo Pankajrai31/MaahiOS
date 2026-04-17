@@ -1,0 +1,218 @@
+<!-- ================================================================
+     TAB: THEME REFERENCE — Color palette, typography, spacing,
+     border styles, and full CSS variable table for MaahiOS.
+     AI agents should read this tab to get the correct tokens.
+     ================================================================ -->
+
+<!-- ────────── COLOR PALETTE ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Color Palette</h2>
+    <p class="ds-section-desc">All named colours used in MaahiOS, grouped by purpose.</p>
+
+    <!-- Chrome / Surface -->
+    <h3 style="margin:12px 0 8px;font-size:13px;color:var(--os-text);">Chrome &amp; Surface</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="ds-swatch" style="background:#D8DBE8;"><span class="ds-swatch-label">--os-chrome<br>#D8DBE8</span></div>
+        <div class="ds-swatch" style="background:#E8EAF2;"><span class="ds-swatch-label">--os-chrome-light<br>#E8EAF2</span></div>
+        <div class="ds-swatch" style="background:#C0C4D4;"><span class="ds-swatch-label">--os-chrome-dark<br>#C0C4D4</span></div>
+        <div class="ds-swatch" style="background:#FFFFFF;border:1px solid #ccc;"><span class="ds-swatch-label">--os-surface<br>#FFFFFF</span></div>
+        <div class="ds-swatch" style="background:#C8CBD8;"><span class="ds-swatch-label">--os-surface-sunken<br>#C8CBD8</span></div>
+        <div class="ds-swatch" style="background:#FFFFFF;border:1px solid #ccc;"><span class="ds-swatch-label">--os-input-bg<br>#FFFFFF</span></div>
+    </div>
+
+    <!-- Bevel -->
+    <h3 style="margin:16px 0 8px;font-size:13px;color:var(--os-text);">Bevel / 3D Edges</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="ds-swatch" style="background:#F4F5FA;border:1px solid #ccc;"><span class="ds-swatch-label">--bevel-light<br>#F4F5FA</span></div>
+        <div class="ds-swatch" style="background:#9498AC;color:#fff;"><span class="ds-swatch-label">--bevel-dark<br>#9498AC</span></div>
+    </div>
+
+    <!-- Accent -->
+    <h3 style="margin:16px 0 8px;font-size:13px;color:var(--os-text);">Accent &amp; Brand</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="ds-swatch" style="background:#2B5BB5;color:#fff;"><span class="ds-swatch-label">--os-accent<br>#2B5BB5</span></div>
+        <div class="ds-swatch" style="background:#4A7BD5;color:#fff;"><span class="ds-swatch-label">--os-accent-light<br>#4A7BD5</span></div>
+        <div class="ds-swatch" style="background:#1E8A65;color:#fff;"><span class="ds-swatch-label">--os-teal<br>#1E8A65</span></div>
+        <div class="ds-swatch" style="background:#18A080;color:#fff;"><span class="ds-swatch-label">--os-cyan<br>#18A080</span></div>
+    </div>
+
+    <!-- Status -->
+    <h3 style="margin:16px 0 8px;font-size:13px;color:var(--os-text);">Status Colours</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="ds-swatch" style="background:#DC3545;color:#fff;"><span class="ds-swatch-label">--os-danger<br>#DC3545</span></div>
+        <div class="ds-swatch" style="background:#E8A317;"><span class="ds-swatch-label">--os-warning<br>#E8A317</span></div>
+        <div class="ds-swatch" style="background:#1E8A65;color:#fff;"><span class="ds-swatch-label">--os-teal (success)<br>#1E8A65</span></div>
+        <div class="ds-swatch" style="background:#2B5BB5;color:#fff;"><span class="ds-swatch-label">--os-accent (info)<br>#2B5BB5</span></div>
+    </div>
+
+    <!-- Text -->
+    <h3 style="margin:16px 0 8px;font-size:13px;color:var(--os-text);">Text Colours</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="ds-swatch" style="background:#1A1A2E;color:#fff;"><span class="ds-swatch-label">--os-text<br>#1A1A2E</span></div>
+        <div class="ds-swatch" style="background:#5A5D76;color:#fff;"><span class="ds-swatch-label">--os-text-secondary<br>#5A5D76</span></div>
+        <div class="ds-swatch" style="background:#8C90A6;color:#fff;"><span class="ds-swatch-label">--os-text-disabled<br>#8C90A6</span></div>
+    </div>
+
+    <!-- Titlebar Gradient -->
+    <h3 style="margin:16px 0 8px;font-size:13px;color:var(--os-text);">Titlebar Gradient</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="ds-swatch" style="background:#1B3F8B;color:#fff;"><span class="ds-swatch-label">--titlebar-start<br>#1B3F8B</span></div>
+        <div class="ds-swatch" style="background:#2B5BB5;color:#fff;"><span class="ds-swatch-label">--titlebar-end<br>#2B5BB5</span></div>
+        <div class="ds-swatch" style="background:#7A8BB5;color:#fff;"><span class="ds-swatch-label">--titlebar-inactive-start<br>#7A8BB5</span></div>
+        <div class="ds-swatch" style="background:#9AACCC;color:#222;"><span class="ds-swatch-label">--titlebar-inactive-end<br>#9AACCC</span></div>
+    </div>
+</div>
+
+
+<!-- ────────── TYPOGRAPHY ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Typography</h2>
+    <p class="ds-section-desc">MaahiOS uses two font stacks: a proportional UI font and a monospaced font for data/code.</p>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Variable</th><th>Value</th><th>Usage</th></tr></thead>
+        <tbody>
+            <tr><td><code>--os-font</code></td><td>"Segoe UI", Tahoma, Geneva, Verdana, sans-serif</td><td>All UI text: labels, buttons, menus, titles</td></tr>
+            <tr><td><code>--os-font-mono</code></td><td>"Cascadia Mono", "Consolas", monospace</td><td>PIDs, addresses, code, terminal, file sizes</td></tr>
+        </tbody>
+    </table>
+
+    <h3 style="margin:12px 0 8px;font-size:13px;color:var(--os-text);">Type Scale</h3>
+    <div class="ds-preview" style="padding:16px;">
+        <div style="margin-bottom:8px;">
+            <span style="font-size:16px;font-weight:bold;font-family:var(--os-font);color:var(--os-text);">16px bold — Window titlebar text</span>
+        </div>
+        <div style="margin-bottom:8px;">
+            <span style="font-size:14px;font-weight:600;font-family:var(--os-font);color:var(--os-text);">14px semibold — Section headers</span>
+        </div>
+        <div style="margin-bottom:8px;">
+            <span style="font-size:12px;font-family:var(--os-font);color:var(--os-text);">12px regular — Standard body text (default)</span>
+        </div>
+        <div style="margin-bottom:8px;">
+            <span style="font-size:11px;font-family:var(--os-font);color:var(--os-text);">11px — Menu items, table cells, sidebar items, toolbar labels</span>
+        </div>
+        <div style="margin-bottom:8px;">
+            <span style="font-size:10px;font-family:var(--os-font);color:var(--os-text-secondary);">10px — Status bars, info bars, small labels, legends</span>
+        </div>
+        <div style="margin-bottom:8px;">
+            <span style="font-size:9px;font-family:var(--os-font);color:var(--os-text-secondary);">9px — Badge text, graph labels, secondary hints</span>
+        </div>
+        <div>
+            <span style="font-size:11px;font-family:var(--os-font-mono);color:var(--os-text);">11px mono — PID, addresses, file paths, code</span>
+        </div>
+    </div>
+</div>
+
+
+<!-- ────────── SPACING & SIZING ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Spacing &amp; Sizing</h2>
+    <table class="ds-prop-table">
+        <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+        <tbody>
+            <tr><td>Window border</td><td>3px</td><td>Outer window border (raised 3D)</td></tr>
+            <tr><td>Sunken border</td><td>2px</td><td>Input fields, list containers, tree views</td></tr>
+            <tr><td>Padding – tight</td><td>2–3px</td><td>Table cells, menu items, toolbar buttons</td></tr>
+            <tr><td>Padding – normal</td><td>4–8px</td><td>Buttons, inputs, sidebar items</td></tr>
+            <tr><td>Padding – roomy</td><td>12–16px</td><td>Dialog bodies, section padding</td></tr>
+            <tr><td>Gap – tight</td><td>2–4px</td><td>Toolbar button gap, inline elements</td></tr>
+            <tr><td>Gap – normal</td><td>6–8px</td><td>Action panel gap, stat group gap, form rows</td></tr>
+            <tr><td>Gap – wide</td><td>12–16px</td><td>Desktop icon grid, section spacing</td></tr>
+            <tr><td>Titlebar height</td><td>~26px</td><td>Titlebar padding: 4px 8px</td></tr>
+            <tr><td>Menubar height</td><td>~22px</td><td>Menu items with 2px 8px padding</td></tr>
+            <tr><td>Toolbar height</td><td>~28px</td><td>Toolbar buttons: 3px 6px padding</td></tr>
+            <tr><td>Statusbar height</td><td>~20px</td><td>Status text with 2px 8px padding</td></tr>
+            <tr><td>Taskbar height</td><td>36px</td><td>Bottom desktop taskbar</td></tr>
+            <tr><td>Icon – full</td><td>32×32</td><td>Desktop icons, file grid, control panel</td></tr>
+            <tr><td>Icon – small</td><td>16×16</td><td>Titlebars, menus, toolbars, tree view</td></tr>
+            <tr><td>Icon – tiny</td><td>10×10</td><td>Window control buttons (min/max/close)</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ────────── BORDER STYLES ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Border Styles</h2>
+    <p class="ds-section-desc">MaahiOS uses 3D beveled borders for its classic look. Apply these utility classes to any element.</p>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>Class</th><th>Effect</th><th>Use Case</th></tr></thead>
+        <tbody>
+            <tr><td><code>.os-raised</code></td><td>Light top-left, dark bottom-right (raised/button)</td><td>Buttons, toolbar buttons, window outer border</td></tr>
+            <tr><td><code>.os-sunken</code></td><td>Dark top-left, light bottom-right (pressed/inset)</td><td>Input fields, list boxes, graph containers</td></tr>
+            <tr><td><code>.os-groove</code></td><td>Groove border (inset line)</td><td>Group boxes, dividers</td></tr>
+            <tr><td><code>.os-ridge</code></td><td>Ridge border (raised line)</td><td>Decorative separators</td></tr>
+            <tr><td><code>.os-etch</code></td><td>1px etched line (dark + light shadow)</td><td>Toolbar separators, light dividers</td></tr>
+        </tbody>
+    </table>
+
+    <div class="ds-preview" style="display:flex;gap:16px;flex-wrap:wrap;padding:16px;">
+        <div class="os-raised" style="width:100px;height:60px;display:flex;align-items:center;justify-content:center;background:var(--os-chrome);font-size:10px;color:var(--os-text);">.os-raised</div>
+        <div class="os-sunken" style="width:100px;height:60px;display:flex;align-items:center;justify-content:center;background:var(--os-input-bg);font-size:10px;color:var(--os-text);">.os-sunken</div>
+        <div class="os-groove" style="width:100px;height:60px;display:flex;align-items:center;justify-content:center;background:var(--os-chrome);font-size:10px;color:var(--os-text);">.os-groove</div>
+        <div class="os-ridge" style="width:100px;height:60px;display:flex;align-items:center;justify-content:center;background:var(--os-chrome);font-size:10px;color:var(--os-text);">.os-ridge</div>
+        <div class="os-etch" style="width:100px;height:60px;display:flex;align-items:center;justify-content:center;background:var(--os-chrome);font-size:10px;color:var(--os-text);">.os-etch</div>
+    </div>
+</div>
+
+
+<!-- ────────── FULL CSS VARIABLE TABLE ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">CSS Variable Reference</h2>
+    <p class="ds-section-desc">Complete list of all CSS custom properties defined in <code>css/theme-variables.css</code>. Your AI agent should use these variable names when generating CSS.</p>
+
+    <div style="border:2px solid;border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);background:var(--os-input-bg);overflow:auto;max-height:400px;">
+        <table class="ds-prop-table" style="margin:0;">
+            <thead><tr><th>Variable</th><th>Value</th><th>Purpose</th></tr></thead>
+            <tbody>
+                <tr><td><code>--os-chrome</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#D8DBE8;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#D8DBE8</td><td>Primary chrome surface (window frames, toolbars, menubars)</td></tr>
+                <tr><td><code>--os-chrome-light</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#E8EAF2;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#E8EAF2</td><td>Lighter chrome (hover states, sidebar)</td></tr>
+                <tr><td><code>--os-chrome-dark</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#C0C4D4;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#C0C4D4</td><td>Darker chrome (pressed states, scrollbar track)</td></tr>
+                <tr><td><code>--bevel-light</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#F4F5FA;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#F4F5FA</td><td>3D edge — light side (top/left of raised elements)</td></tr>
+                <tr><td><code>--bevel-dark</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#9498AC;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#9498AC</td><td>3D edge — dark side (bottom/right of raised elements)</td></tr>
+                <tr><td><code>--os-accent</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#2B5BB5;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#2B5BB5</td><td>Primary accent (selection, active tabs, links)</td></tr>
+                <tr><td><code>--os-accent-light</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#4A7BD5;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#4A7BD5</td><td>Lighter accent (hover on accent, focus ring)</td></tr>
+                <tr><td><code>--os-teal</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#1E8A65;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#1E8A65</td><td>Secondary accent (success states, health indicators, CPU bars)</td></tr>
+                <tr><td><code>--os-cyan</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#18A080;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#18A080</td><td>Highlight / glow accent</td></tr>
+                <tr><td><code>--os-surface</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#FFFFFF;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#FFFFFF</td><td>Window body content area</td></tr>
+                <tr><td><code>--os-surface-sunken</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#C8CBD8;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#C8CBD8</td><td>Sunken/inset areas (desktop, dialog backdrops)</td></tr>
+                <tr><td><code>--os-input-bg</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#FFFFFF;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#FFFFFF</td><td>Input field background</td></tr>
+                <tr><td><code>--os-text</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#1A1A2E;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#1A1A2E</td><td>Primary text colour</td></tr>
+                <tr><td><code>--os-text-secondary</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#5A5D76;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#5A5D76</td><td>Muted/secondary text</td></tr>
+                <tr><td><code>--os-text-disabled</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#8C90A6;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#8C90A6</td><td>Disabled text</td></tr>
+                <tr><td><code>--os-danger</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#DC3545;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#DC3545</td><td>Error / destructive actions (close button, stop process)</td></tr>
+                <tr><td><code>--os-warning</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#E8A317;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#E8A317</td><td>Warning state (low disk, busy process)</td></tr>
+                <tr><td><code>--titlebar-start</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#1B3F8B;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#1B3F8B</td><td>Active titlebar gradient start (left)</td></tr>
+                <tr><td><code>--titlebar-end</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#2B5BB5;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#2B5BB5</td><td>Active titlebar gradient end (right)</td></tr>
+                <tr><td><code>--titlebar-inactive-start</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#7A8BB5;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#7A8BB5</td><td>Inactive titlebar gradient start</td></tr>
+                <tr><td><code>--titlebar-inactive-end</code></td><td><span style="display:inline-block;width:14px;height:10px;background:#9AACCC;border:1px solid #999;vertical-align:middle;margin-right:4px;"></span>#9AACCC</td><td>Inactive titlebar gradient end</td></tr>
+                <tr><td><code>--os-font</code></td><td colspan="2">"Segoe UI", Tahoma, Geneva, Verdana, sans-serif</td></tr>
+                <tr><td><code>--os-font-mono</code></td><td colspan="2">"Cascadia Mono", "Consolas", monospace</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<!-- ────────── DESIGN PRINCIPLES ────────── -->
+<div class="ds-section">
+    <h2 class="ds-section-title">Design Principles for AI Agents</h2>
+    <p class="ds-section-desc">When generating MaahiOS UI code, follow these rules:</p>
+
+    <table class="ds-prop-table">
+        <thead><tr><th>#</th><th>Principle</th><th>Details</th></tr></thead>
+        <tbody>
+            <tr><td>1</td><td><strong>Use CSS variables</strong></td><td>Never hardcode colours. Always use <code>var(--os-*)</code> tokens.</td></tr>
+            <tr><td>2</td><td><strong>3D beveled borders</strong></td><td>Raised elements: <code>border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light)</code>. Sunken: reverse order.</td></tr>
+            <tr><td>3</td><td><strong>Chrome surfaces</strong></td><td>Window frames, toolbars, menubars all use <code>var(--os-chrome)</code> as background.</td></tr>
+            <tr><td>4</td><td><strong>Gradient titlebars</strong></td><td>Active: <code>linear-gradient(to right, var(--titlebar-start), var(--titlebar-end))</code>. Inactive: use inactive vars.</td></tr>
+            <tr><td>5</td><td><strong>SVG icons at consistent sizes</strong></td><td>32px for full, 16px for toolbar/titlebar, 10px for window buttons. All from <code>icons/icon-*.svg</code>.</td></tr>
+            <tr><td>6</td><td><strong>Small font sizes</strong></td><td>11px default for data-dense UI. 10px for status bars. 9px for badges/labels.</td></tr>
+            <tr><td>7</td><td><strong>Selection = accent colour</strong></td><td>Selected rows, active sidebar items, focused tabs all use <code>var(--os-accent)</code> background with white text.</td></tr>
+            <tr><td>8</td><td><strong>Status badges</strong></td><td>Use <code>.os-badge</code> variants: <code>.os-badge-teal</code> (healthy/running), <code>.os-badge-warning</code> (warning), <code>.os-badge-danger</code> (error), <code>.os-badge-default</code> (idle).</td></tr>
+            <tr><td>9</td><td><strong>Window structure order</strong></td><td>Titlebar → Menubar → Toolbar → Address bar (optional) → Body → Status bar. Always.</td></tr>
+            <tr><td>10</td><td><strong>Accessibility of text</strong></td><td>Primary text <code>#1A1A2E</code> on white/chrome surfaces. White text on accent/gradient/dark backgrounds.</td></tr>
+        </tbody>
+    </table>
+</div>

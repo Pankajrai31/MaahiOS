@@ -35,6 +35,6 @@ Write-Host "QEMU will run indefinitely. Close window to stop." -ForegroundColor 
 Write-Host ""
 if (Test-Path "serial.log") { Remove-Item "serial.log" -Force }
 if (Test-Path "qemu_debug.log") { Remove-Item "qemu_debug.log" -Force }
-& "C:\Program Files\qemu\qemu-system-i386.exe" -cdrom boot.iso -m 512M -serial file:serial.log
+& "C:\Program Files\qemu\qemu-system-i386.exe" -cdrom boot.iso -m 512M -serial file:serial.log -netdev user,id=net0 -device e1000,netdev=net0
 Write-Host ""
 Write-Host "QEMU exited." -ForegroundColor Yellow
